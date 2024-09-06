@@ -1,0 +1,40 @@
+# General
+*.log
+*.tmp
+*.swp
+*.DS_Store
+*.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+env/
+
+# Flask
+instance/
+.env
+*.db
+
+# Kafka
+# Kafka logs are often stored in `/tmp` or `/var/log/kafka` 
+# (adjust the paths if necessary)
+logs/
+kafka-logs/
+tmp/
+
+# Spark
+# Spark work and log directories
+spark-logs/
+spark-work/
+*.pid
+*.out
+*.err
+
+# PostgreSQL
+# PostgreSQL data directories
+*.sql
+*.dump
+pgdata/
