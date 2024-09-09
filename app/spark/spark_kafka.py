@@ -6,15 +6,18 @@ from pyspark.sql.types import StringType
 # Initialize Spark session with Kafka support
 spark = SparkSession.builder \
     .appName("KafkaSparkStreaming") \
-    .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.2")  \
+    .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0")  \
     .getOrCreate()
 
-# Create a DataFrame that reads from the input Kafka topic name ltaData
-kafka_df = spark.readStream.format("kafka")\
-    .option("kafka.bootstrap.servers", "localhost:9092")\
-    .option("subscribe", "ltaData")\
-    .option("startingOffsets", "earliest")\
-    .load()
+try:
+    kafka_df = spark.readStream.format("kafka") \
+        .option("kafka.bootstrap.servers", "localhost:9092") \
+        .option("subscribe", "ltaData") \
+        .load()
+
+    print("Kafka DataFrame created successfully!")
+except Exception as e:
+    print("Error creating Kafka DataFrame:", str(e))
 
 # Convert the binary Kafka message value to string
 raw_df = kafka_df.selectExpr("CAST(value AS STRING) as message")

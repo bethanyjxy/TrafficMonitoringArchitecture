@@ -1,13 +1,10 @@
 from confluent_kafka import Consumer, KafkaError
 from confluent_kafka.admin import AdminClient, NewTopic
-import requests
 import json
-import time
 
 # Kafka configuration
-kafka_topic = 'traffic_incidents'
+kafka_topics = ['traffic_incidents', 'traffic_images', 'traffic_speedbands']  # List of topics
 kafka_broker = 'localhost:9092'
-
 
 # Admin client to manage Kafka topics
 admin_client = AdminClient({
@@ -15,6 +12,7 @@ admin_client = AdminClient({
 })
 
 def create_topic(topic_name):
+    """Create a Kafka topic if it does not exist."""
     # List existing topics
     topic_metadata = admin_client.list_topics(timeout=10)
     
@@ -28,25 +26,38 @@ def create_topic(topic_name):
         admin_client.create_topics([new_topic])
         print(f"Topic '{topic_name}' created.")
 
-# Create the topic automatically before starting consumer
-create_topic(kafka_topic)
-
+# Create the topics automatically before starting consumer
+for topic in kafka_topics:
+    create_topic(topic)
 
 # Kafka consumer configuration
 consumer_config = {
-    'bootstrap.servers': kafka_broker,  # Kafka broker address
-    'group.id': 'traffic_consumer_group',  # Consumer group
-    'auto.offset.reset': 'earliest'  # Start from the earliest message
+    'bootstrap.servers': kafka_broker,       # Kafka broker address
+    'group.id': 'traffic_consumer_group',    # Consumer group
+    'auto.offset.reset': 'earliest'          # Start from the earliest message
 }
 
 # Initialize Kafka consumer
 consumer = Consumer(consumer_config)
 
-# Subscribe to the Kafka topic
-consumer.subscribe([kafka_topic])
+# Subscribe to the Kafka topics
+consumer.subscribe(kafka_topics)
+
+def handle_message(topic, message):
+    """Process messages based on the topic."""
+    data = json.loads(message.value().decode('utf-8'))
+    
+    if topic == 'traffic_incidents':
+        print(f"Received incident: {data}")
+    elif topic == 'traffic_images':
+        print(f"Received traffic image: {data}")
+    elif topic == 'traffic_speedbands':
+        print(f"Received traffic speedband: {data}")
+    else:
+        print(f"Received message from unknown topic '{topic}': {data}")
 
 if __name__ == "__main__":
-    print("Listening to Kafka topic...")
+    print("Listening to Kafka topics...")
     try:
         while True:
             # Poll for messages (timeout 1 second)
@@ -60,9 +71,8 @@ if __name__ == "__main__":
                 else:
                     print(f"Error: {msg.error()}")
                     continue
-            # Deserialize the message value (assuming it's JSON)
-            incident = json.loads(msg.value().decode('utf-8'))
-            print(f"Received incident: {incident}")
+            # Handle the received message based on its topic
+            handle_message(msg.topic(), msg)
     except KeyboardInterrupt:
         pass
     finally:
