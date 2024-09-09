@@ -1,54 +1,44 @@
+
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import from_json, col
-from pyspark.sql.types import StructType, StructField, StringType, DoubleType
-import os
+from pyspark.sql.functions import col, from_json, udf, json_tuple
+from pyspark.sql.types import StringType
 
-# Set Spark configurations
-os.environ['SPARK_HOME'] = '/home/bethany/Software/spark-3.5.2-bin-hadoop3'
-os.environ['PYSPARK_SUBMIT_ARGS'] = '--jars /home/bethany/Software/spark-3.5.2-bin-hadoop3/jars/spark-sql-kafka-0-10_2.12-3.5.2.jar pyspark-shell'
-
-# Initialize Spark Session
+# Initialize Spark session with Kafka support
 spark = SparkSession.builder \
-    .appName("KafkaToPostgreSQL") \
+    .appName("KafkaSparkStreaming") \
+    .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.2")  \
     .getOrCreate()
 
-# Define the schema for the Kafka messages
-schema = StructType([
-    StructField("Type", StringType(), True),
-    StructField("Latitude", DoubleType(), True),
-    StructField("Longitude", DoubleType(), True),
-    StructField("Message", StringType(), True)
-])
-
-# Read data from Kafka
-df = spark.readStream \
-    .format("kafka") \
-    .option("kafka.bootstrap.servers", "localhost:9092") \
-    .option("subscribe", "traffic_data") \
+# Create a DataFrame that reads from the input Kafka topic name ltaData
+kafka_df = spark.readStream.format("kafka")\
+    .option("kafka.bootstrap.servers", "localhost:9092")\
+    .option("subscribe", "ltaData")\
+    .option("startingOffsets", "earliest")\
     .load()
 
-# Convert Kafka value to JSON format and apply the schema
-json_df = df.selectExpr("CAST(value AS STRING) as json").select(from_json(col("json"), schema).alias("data")).select("data.*")
+# Convert the binary Kafka message value to string
+raw_df = kafka_df.selectExpr("CAST(value AS STRING) as message")
 
-# Process data (optional): You can perform any transformation you need here
-processed_df = json_df.filter(json_df.Type.isNotNull())  # Example: filter out null values
+raw_df.printSchema()
 
-# Write the processed data to PostgreSQL
-def write_to_postgresql(df, epoch_id):
-    # Replace with your PostgreSQL credentials
-    url = "jdbc:postgresql://localhost:5432/trafficmonitoring"
-    properties = {
-        "user": "bethany",
-        "password": "bethany",
-        "driver": "org.postgresql.Driver"
-    }
+# Define a UDF to preprocess the JSON data dynamically
+#@udf(returnType=StringType())
+#def preprocess_json(json_str):
+    # Preprocessing steps 
+  #  return json_str 
 
-    # Write DataFrame to PostgreSQL
-    df.write.jdbc(url=url, table="traffic_incidents", mode="append", properties=properties)
-
-processed_df.writeStream \
-    .foreachBatch(write_to_postgresql) \
-    .start() \
-    .awaitTermination()
+# Apply preprocessing UDF to the raw JSON data
+#preprocessed_df = raw_df.withColumn("preprocessed_data", preprocess_json(col("json_data")))
 
 
+
+# Write the transformed messages to another Kafka topic
+query = ( 
+    raw_df
+    .writeStream.format("kafka")
+    .option("kafka.bootstrap.servers", "localhost:9092")
+    .option("topic", "dest-topic")
+    .option("checkpointLocation", "checkpoint_folder")
+    .start())
+
+query.awaitTermination()
