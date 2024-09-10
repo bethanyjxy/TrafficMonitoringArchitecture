@@ -1,4 +1,3 @@
-
 services:
   flask-app:
     build: ./app  # Assuming the Dockerfile is in the app folder
