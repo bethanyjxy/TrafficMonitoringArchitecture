@@ -1,47 +1,87 @@
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, from_json, udf, json_tuple
-from pyspark.sql.types import StringType
+from pyspark.sql.types import StructType, StringType, DoubleType, IntegerType
 
-# Initialize Spark session with Kafka support
+# Initialize Spark session with Kafka support #.config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0")  
 spark = SparkSession.builder \
-    .appName("KafkaSparkStreaming") \
-    .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0")  \
+    .appName("KafkaToSparkStream") \
     .getOrCreate()
 
-try:
-    kafka_df = spark.readStream.format("kafka") \
-        .option("kafka.bootstrap.servers", "localhost:9092") \
-        .option("subscribe", "ltaData") \
-        .load()
+# Kafka topic and broker configurations
+kafka_incidents_topic = 'traffic_incidents'
+kafka_images_topic = 'traffic_images'
+kafka_speedbands_topic = 'traffic_speedbands'
+kafka_broker = "localhost:9092"
 
-    print("Kafka DataFrame created successfully!")
-except Exception as e:
-    print("Error creating Kafka DataFrame:", str(e))
+# Define schema for each topic's data
+incidents_schema = StructType() \
+    .add("Type", StringType()) \
+    .add("Latitude", DoubleType()) \
+    .add("Longitude", DoubleType()) \
+    .add("Message", StringType())
 
-# Convert the binary Kafka message value to string
-raw_df = kafka_df.selectExpr("CAST(value AS STRING) as message")
+speedbands_schema = StructType() \
+    .add("LinkID", StringType()) \
+    .add("RoadName", StringType()) \
+    .add("RoadCategory", StringType()) \
+    .add("SpeedBand", IntegerType()) \
+    .add("MinimumSpeed", IntegerType()) \
+    .add("MaximumSpeed", IntegerType()) \
+    .add("StartLon", DoubleType())
 
-raw_df.printSchema()
+images_schema = StructType() \
+    .add("CameraID", StringType()) \
+    .add("Latitude", DoubleType()) \
+    .add("Longitude", DoubleType()) \
+    .add("ImageLink", StringType())
 
-# Define a UDF to preprocess the JSON data dynamically
-#@udf(returnType=StringType())
-#def preprocess_json(json_str):
-    # Preprocessing steps 
-  #  return json_str 
+# Read Kafka streams from multiple topics
+kafka_stream = spark \
+    .readStream \
+    .format("kafka") \
+    .option("kafka.bootstrap.servers", kafka_broker) \
+    .option("subscribe", f"{kafka_incidents_topic},{kafka_images_topic},{kafka_speedbands_topic}") \
+    .option("startingOffsets", "earliest") \
+    .load()
 
-# Apply preprocessing UDF to the raw JSON data
-#preprocessed_df = raw_df.withColumn("preprocessed_data", preprocess_json(col("json_data")))
+# Select and cast the Kafka value (which is in bytes) to String
+kafka_stream = kafka_stream.selectExpr("CAST(topic AS STRING)", "CAST(value AS STRING)")
 
+# Split the stream based on topic
 
+# Incident stream processing
+incident_stream = kafka_stream.filter(col("topic") == kafka_incidents_topic) \
+    .withColumn("value", from_json(col("value"), incidents_schema)) \
+    .select(col("value.*"))
 
-# Write the transformed messages to another Kafka topic
-query = ( 
-    raw_df
-    .writeStream.format("kafka")
-    .option("kafka.bootstrap.servers", "localhost:9092")
-    .option("topic", "dest-topic")
-    .option("checkpointLocation", "checkpoint_folder")
-    .start())
+# Speedbands stream processing
+speedbands_stream = kafka_stream.filter(col("topic") == kafka_speedbands_topic) \
+    .withColumn("value", from_json(col("value"), speedbands_schema)) \
+    .select(col("value.*"))
 
-query.awaitTermination()
+# Image stream processing
+image_stream = kafka_stream.filter(col("topic") == kafka_images_topic) \
+    .withColumn("value", from_json(col("value"), images_schema)) \
+    .select(col("value.*"))
+
+# Output the processed streams (in this example, to console)
+incident_query = incident_stream.writeStream \
+    .outputMode("append") \
+    .format("console") \
+    .start()
+
+speedbands_query = speedbands_stream.writeStream \
+    .outputMode("append") \
+    .format("console") \
+    .start()
+
+image_query = image_stream.writeStream \
+    .outputMode("append") \
+    .format("console") \
+    .start()
+
+# Wait for termination
+incident_query.awaitTermination()
+speedbands_query.awaitTermination()
+image_query.awaitTermination()
