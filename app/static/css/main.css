@@ -25,6 +25,7 @@ h1 {
     padding: 14px 16px;
     text-decoration: none;
     font-size: 17px;
+    font-weight: bold;
 }
 
 /* Change the color of links on hover */
@@ -33,12 +34,10 @@ h1 {
     color: black;
 }
 
-
-/* Add a color to the active/current link 
+/* Style for the active link */
 .topnav a.active {
-    background-color: #04AA6D;
-    color: white;
-} */
+    color: #333333; 
+}
 
 /* Main content styling */
 .content {
