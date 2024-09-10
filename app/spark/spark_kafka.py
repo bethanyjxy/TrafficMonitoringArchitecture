@@ -7,7 +7,6 @@ from pyspark.sql.types import StructType, StringType, DoubleType, IntegerType
 # Initialize Spark session with Kafka support #.config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0")  
 spark = SparkSession.builder \
     .appName("KafkaToSparkStream") \
-    .appName("KafkaToSparkStream") \
     .getOrCreate()
 
 # Kafka topic and broker configurations
