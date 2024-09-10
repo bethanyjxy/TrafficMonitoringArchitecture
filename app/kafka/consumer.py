@@ -4,7 +4,7 @@ from kafka_to_hdfs import send_to_hdfs
 import json
 
 # Kafka configuration
-kafka_topics = ['traffic_incidents', 'traffic_images', 'traffic_speedbands']  # List of topics
+kafka_topics = ['traffic_incidents', 'traffic_images', 'traffic_speedbands', 'traffic_vms', 'traffic_erp']  # List of topics
 kafka_broker = 'localhost:9092'
 
 # Kafka consumer configuration
@@ -23,13 +23,17 @@ consumer.subscribe(kafka_topics)
 def handle_message(topic, message):
     """Process messages based on the topic."""
     data = json.loads(message.value().decode('utf-8'))
-    
+
     if topic == 'traffic_incidents':
         print(f"Received incident: {data}")
     elif topic == 'traffic_images':
         print(f"Received traffic image: {data}")
     elif topic == 'traffic_speedbands':
         print(f"Received traffic speedband: {data}")
+    elif topic == 'traffic_vms':
+        print(f"Received VMS: {data}")
+    elif topic == 'traffic_erp':
+        print(f"Received ERP rates: {data}")
     else:
         print(f"Received message from unknown topic '{topic}': {data}")
     

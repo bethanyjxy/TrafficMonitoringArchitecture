@@ -14,6 +14,8 @@ spark = SparkSession.builder \
 kafka_incidents_topic = 'traffic_incidents'
 kafka_images_topic = 'traffic_images'
 kafka_speedbands_topic = 'traffic_speedbands'
+kafka_vms_topic = 'traffic_vms'
+kafka_erp_topic = 'traffic_erp'
 kafka_broker = "localhost:9092"
 
 # Define schema for each topic's data
@@ -38,12 +40,27 @@ images_schema = StructType() \
     .add("Longitude", DoubleType()) \
     .add("ImageLink", StringType())
 
+vms_schema = StructType() \
+    .add("EquipmentID", StringType()) \
+    .add("Latitude", DoubleType()) \
+    .add("Longitude", DoubleType()) \
+    .add("Message", StringType())
+
+erp_schema = StructType() \
+    .add("VehicleType", StringType()) \
+    .add("DayType", StringType()) \
+    .add("StartTime", StringType()) \
+    .add("EndTime", StringType()) \
+    .add("ZoneID", StringType()) \
+    .add("ChargeAmount", IntegerType()) \
+    .add("EffectiveDate", StringType())
+
 # Read Kafka streams from multiple topics
 kafka_stream = spark \
     .readStream \
     .format("kafka") \
     .option("kafka.bootstrap.servers", kafka_broker) \
-    .option("subscribe", f"{kafka_incidents_topic},{kafka_images_topic},{kafka_speedbands_topic}") \
+    .option("subscribe", f"{kafka_incidents_topic},{kafka_images_topic},{kafka_speedbands_topic},{kafka_vms_topic},{kafka_erp_topic}") \
     .option("startingOffsets", "earliest") \
     .load()
 
@@ -67,6 +84,16 @@ image_stream = kafka_stream.filter(col("topic") == kafka_images_topic) \
     .withColumn("value", from_json(col("value"), images_schema)) \
     .select(col("value.*"))
 
+# VMS stream processing
+vms_stream = kafka_stream.filter(col("topic") == kafka_vms_topic) \
+    .withColumn("value", from_json(col("value"), vms_schema)) \
+    .select(col("value.*"))
+
+# ERP rates stream processing
+erp_stream = kafka_stream.filter(col("topic") == kafka_erp_topic) \
+    .withColumn("value", from_json(col("value"), erp_schema)) \
+    .select(col("value.*"))
+
 # Output the processed streams (in this example, to console)
 incident_query = incident_stream.writeStream \
     .outputMode("append") \
@@ -83,7 +110,19 @@ image_query = image_stream.writeStream \
     .format("console") \
     .start()
 
+vms_query = vms_stream.writeStream \
+    .outputMode("append") \
+    .format("console") \
+    .start()
+
+erp_query = erp_stream.writeStream \
+    .outputMode("append") \
+    .format("console") \
+    .start()
+
 # Wait for termination
 incident_query.awaitTermination()
 speedbands_query.awaitTermination()
 image_query.awaitTermination()
+vms_query.awaitTermination()
+erp_query.awaitTermination()
