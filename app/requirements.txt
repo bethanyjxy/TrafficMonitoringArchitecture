@@ -6,3 +6,4 @@ plotly
 kafka-python==2.0.2
 kafka==1.3.5
 confluent-kafka==2.5.3
+folium==0.17.0
