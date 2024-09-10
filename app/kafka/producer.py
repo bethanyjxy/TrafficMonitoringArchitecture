@@ -10,6 +10,8 @@ api_key = '7wjYG/IcSsKUBvgpZWYdmA=='
 kafka_incidents_topic = 'traffic_incidents'
 kafka_images_topic = 'traffic_images'
 kafka_speedbands_topic = 'traffic_speedbands'
+kafka_vms_topic = 'traffic_vms'
+kafka_erp_topic = 'traffic_erp'
 kafka_broker = 'localhost:9092'  # Replace with your Kafka broker address
 
 # Kafka producer configuration
@@ -74,6 +76,38 @@ def fetch_traffic_speedbands():
     else:
         print(f"Error fetching traffic speed bands data: {response.status_code}")
         return []
+    
+def fetch_traffic_vms():
+    """ Fetch Traffic Authorities messages from the external API. """
+    url = "https://datamall2.mytransport.sg/ltaodataservice/VMS"
+    headers = {
+        'AccountKey': api_key,
+        'accept': 'application/json'
+    }
+    
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code == 200:
+        return response.json().get('value', [])
+    else:
+        print(f"Error fetching VMS data: {response.status_code}")
+        return []
+    
+def fetch_traffic_erp():
+    """ Fetch ERP rates from the external API. """
+    url = "https://datamall2.mytransport.sg/ltaodataservice/ERPRates"
+    headers = {
+        'AccountKey': api_key,
+        'accept': 'application/json'
+    }
+    
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code == 200:
+        return response.json().get('value', [])
+    else:
+        print(f"Error fetching ERP rates data: {response.status_code}")
+        return []
 
 def send_to_kafka(topic, data):
     """ Send fetched data to Kafka topic. """
@@ -100,6 +134,14 @@ if __name__ == "__main__":
         # Fetch and send traffic speed bands
         speedbands = fetch_traffic_speedbands()
         send_to_kafka(kafka_speedbands_topic, speedbands)
+
+        # Fetch and send traffic VMS
+        vms = fetch_traffic_vms()
+        send_to_kafka(kafka_vms_topic, vms)
+
+        # Fetch and send traffic ERP rates
+        erp = fetch_traffic_erp()
+        send_to_kafka(kafka_erp_topic, erp)
 
         # Wait 60 seconds before fetching again
         time.sleep(60)
