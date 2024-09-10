@@ -1,47 +1,49 @@
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, from_json, udf, json_tuple
-from pyspark.sql.types import StringType
+from pyspark.sql.types import StructType, StringType, DoubleType
 
-# Initialize Spark session with Kafka support
+# Initialize Spark session with Kafka support #.config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0")  
 spark = SparkSession.builder \
-    .appName("KafkaSparkStreaming") \
-    .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0")  \
+    .appName("KafkaToSparkStream") \
     .getOrCreate()
 
-try:
-    kafka_df = spark.readStream.format("kafka") \
-        .option("kafka.bootstrap.servers", "localhost:9092") \
-        .option("subscribe", "ltaData") \
-        .load()
+# Kafka topic and broker configurations
+kafka_topic = "traffic_incidents"
+kafka_broker = "localhost:9092"
 
-    print("Kafka DataFrame created successfully!")
-except Exception as e:
-    print("Error creating Kafka DataFrame:", str(e))
+# Define the schema of the incoming JSON data
+schema = StructType() \
+    .add("Type", StringType()) \
+    .add("Latitude", DoubleType()) \
+    .add("Longitude", DoubleType()) \
+    .add("Message", StringType())
 
-# Convert the binary Kafka message value to string
-raw_df = kafka_df.selectExpr("CAST(value AS STRING) as message")
+# Read the stream from the Kafka topic
+kafka_stream = spark \
+    .readStream \
+    .format("kafka") \
+    .option("kafka.bootstrap.servers", kafka_broker) \
+    .option("subscribe", kafka_topic) \
+    .option("startingOffsets", "earliest") \
+    .load()
 
-raw_df.printSchema()
+# The Kafka message value is in bytes, so we cast it to a string
+traffic_data = kafka_stream.selectExpr("CAST(value AS STRING)")
 
-# Define a UDF to preprocess the JSON data dynamically
-#@udf(returnType=StringType())
-#def preprocess_json(json_str):
-    # Preprocessing steps 
-  #  return json_str 
+# Parse the JSON message
+parsed_data = traffic_data.withColumn("value", from_json(col("value"), schema)) \
+    .select(col("value.*"))
 
-# Apply preprocessing UDF to the raw JSON data
-#preprocessed_df = raw_df.withColumn("preprocessed_data", preprocess_json(col("json_data")))
+# Perform stream processing on the data (e.g., filtering, aggregations)
+# For demonstration, we'll just filter for "Accidents"
+filtered_data = parsed_data.filter(parsed_data.Type == "Accident")
 
+# Output the results to the console (can be redirected to another sink like a DB)
+query = filtered_data.writeStream \
+    .outputMode("append") \
+    .format("console") \
+    .start()
 
-
-# Write the transformed messages to another Kafka topic
-query = ( 
-    raw_df
-    .writeStream.format("kafka")
-    .option("kafka.bootstrap.servers", "localhost:9092")
-    .option("topic", "dest-topic")
-    .option("checkpointLocation", "checkpoint_folder")
-    .start())
-
+# Await termination of the streaming query
 query.awaitTermination()

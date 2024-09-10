@@ -1,4 +1,3 @@
-
 services:
   flask-app:
     build: ./app  # Assuming the Dockerfile is in the app folder
@@ -55,7 +54,8 @@ services:
   spark:
     image: bitnami/spark:latest
     ports:
-      - "8080:8080"
+      - "8080:8080"  # Spark UI
+      - "7077:7077"  # Spark master port
     environment:
       - SPARK_MODE=master
     volumes:
