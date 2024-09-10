@@ -3,9 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Traffic Monitoring Dashboard</title>
+    <title>Live Traffic Map</title>
     <link rel="stylesheet" href="/static/css/main.css">
-    <!--<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">-->
+    <!-- Optional: Add some basic styling for the map container -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        #map {
+            height: 80vh;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
     <h1>Traffic Monitoring Dashboard</h1>
@@ -15,6 +30,12 @@
         <a href="/traffic_overview">Traffic Overview</a>
         <a href="/live_traffic">Live Traffic</a>
         <a href="/traffic_prediction">Traffic Prediction</a>
+    </div>
+    
+    <div id="map">
+        {{ map_html|safe }}  
+    </div>
+
     </div>
 </body>
 </html>
