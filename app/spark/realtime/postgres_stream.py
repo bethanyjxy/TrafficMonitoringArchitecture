@@ -16,10 +16,10 @@ def main():
 
     
     # PostgreSQL connection properties
-    postgres_url = "jdbc:postgresql://localhost:5432/trafficmonitoring"
+    postgres_url = "jdbc:postgresql://localhost:5432/traffic_db"
     postgres_properties = {
-        "user": "admin",
-        "password": "admin",
+        "user": "traffic_admin",
+        "password": "traffic_pass",
         "driver": "org.postgresql.Driver"
     }
 

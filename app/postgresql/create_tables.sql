@@ -1,5 +1,5 @@
 -- Create table for traffic incidents
-CREATE TABLE IF NOT EXISTS incident (
+CREATE TABLE IF NOT EXISTS incident_table (
     id SERIAL PRIMARY KEY,
     Type VARCHAR(255),
     Latitude DOUBLE PRECISION,
@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS incident (
 );
 
 -- Create table for traffic speedbands
-CREATE TABLE IF NOT EXISTS traffic_speedband (
+CREATE TABLE IF NOT EXISTS speedbands_table (
     id SERIAL PRIMARY KEY,
     LinkID VARCHAR(255),
     RoadName VARCHAR(255),
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS traffic_speedband (
 );
 
 -- Create table for traffic images
-CREATE TABLE IF NOT EXISTS traffic_image (
+CREATE TABLE IF NOT EXISTS image_table (
     id SERIAL PRIMARY KEY,
     CameraID VARCHAR(255),
     Latitude DOUBLE PRECISION,
