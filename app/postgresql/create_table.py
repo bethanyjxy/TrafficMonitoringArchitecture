@@ -71,14 +71,11 @@ def create_tables():
         """,
         
         """
-        CREATE TABLE IF NOT EXISTS erp_table (
-            VehicleType VARCHAR(255),
-            DayType VARCHAR(255),
-            StartTime VARCHAR(255),
-            EndTime VARCHAR(255),
-            ZoneID VARCHAR(255),
-            ChargeAmount INTEGER,
-            EffectiveDate DATE
+        CREATE TABLE IF NOT EXISTS vms_table (
+            EquipmentID VARCHAR(255),
+            Latitude DOUBLE PRECISION,
+            Longitude DOUBLE PRECISION,
+            Message TEXT
         )
         """,
 
