@@ -60,3 +60,45 @@ def process_stream(kafka_stream):
         .select(col("value.*"))
 
     return incident_stream, speedbands_stream, image_stream
+
+def write_to_console(df, table_name):
+    # Output the dataframe to the console for testing purposes
+    df.show(truncate=False)
+
+def main():
+    # Kafka configurations
+    kafka_broker = "localhost:9092"
+    kafka_topics = "traffic_incidents,traffic_images,traffic_speedbands"
+
+    # Create Spark session
+    spark = create_spark_session()
+
+    # Read Kafka stream
+    kafka_stream = read_kafka_stream(spark, kafka_broker, kafka_topics)
+
+    # Process streams
+    incident_stream, speedbands_stream, image_stream = process_stream(kafka_stream)
+
+    # For testing purposes, print the streams to the console
+    incident_query = incident_stream.writeStream \
+        .outputMode("append") \
+        .foreachBatch(lambda df, epochId: write_to_console(df, "incident_table")) \
+        .start()
+
+    speedbands_query = speedbands_stream.writeStream \
+        .outputMode("append") \
+        .foreachBatch(lambda df, epochId: write_to_console(df, "speedbands_table")) \
+        .start()
+
+    image_query = image_stream.writeStream \
+        .outputMode("append") \
+        .foreachBatch(lambda df, epochId: write_to_console(df, "image_table")) \
+        .start()
+
+    # Wait for the termination of the queries
+    incident_query.awaitTermination()
+    speedbands_query.awaitTermination()
+    image_query.awaitTermination()
+
+if __name__ == "__main__":
+    main()
