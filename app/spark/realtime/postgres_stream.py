@@ -15,11 +15,12 @@ def main():
     kafka_topics = "traffic_incidents,traffic_images,traffic_speedbands,traffic_vms,traffic_erp"
 
     
+
     # PostgreSQL connection properties
-    postgres_url = "jdbc:postgresql://localhost:5432/traffic_db"
+    postgres_url = "jdbc:postgresql://localhost:5432/trafficmonitoring"
     postgres_properties = {
-        "user": "traffic_admin",
-        "password": "traffic_pass",
+        "user": "admin",
+        "password": "admin",
         "driver": "org.postgresql.Driver"
     }
 
