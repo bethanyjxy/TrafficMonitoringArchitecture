@@ -45,6 +45,21 @@ def process_stream(kafka_stream):
         .add("Latitude", DoubleType()) \
         .add("Longitude", DoubleType()) \
         .add("ImageLink", StringType())
+        
+    vms_schema = StructType() \
+        .add("EquipmentID", StringType()) \
+        .add("Latitude", DoubleType()) \
+        .add("Longitude", DoubleType()) \
+        .add("Message", StringType())
+
+    erp_schema = StructType() \
+        .add("VehicleType", StringType()) \
+        .add("DayType", StringType()) \
+        .add("StartTime", StringType()) \
+        .add("EndTime", StringType()) \
+        .add("ZoneID", StringType()) \
+        .add("ChargeAmount", IntegerType()) \
+        .add("EffectiveDate", StringType())
 
     # Split the stream based on topic
     incident_stream = kafka_stream.filter(col("topic") == "traffic_incidents") \
@@ -58,8 +73,18 @@ def process_stream(kafka_stream):
     image_stream = kafka_stream.filter(col("topic") == "traffic_images") \
         .withColumn("value", from_json(col("value"), images_schema)) \
         .select(col("value.*"))
+        
+    # VMS stream processing
+    vms_stream = kafka_stream.filter(col("topic") == "traffic_vms") \
+        .withColumn("value", from_json(col("value"), vms_schema)) \
+        .select(col("value.*"))
 
-    return incident_stream, speedbands_stream, image_stream
+    # ERP rates stream processing
+    erp_stream = kafka_stream.filter(col("topic") == "traffic_erp") \
+        .withColumn("value", from_json(col("value"), erp_schema)) \
+        .select(col("value.*"))
+
+    return incident_stream, speedbands_stream, image_stream, vms_stream, erp_stream
 
 def write_to_console(df, table_name):
     # Output the dataframe to the console for testing purposes
@@ -68,7 +93,7 @@ def write_to_console(df, table_name):
 def main():
     # Kafka configurations
     kafka_broker = "localhost:9092"
-    kafka_topics = "traffic_incidents,traffic_images,traffic_speedbands"
+    kafka_topics = "traffic_incidents,traffic_images,traffic_speedbands,traffic_vms,traffic_erp"
 
     # Create Spark session
     spark = create_spark_session()
@@ -77,7 +102,7 @@ def main():
     kafka_stream = read_kafka_stream(spark, kafka_broker, kafka_topics)
 
     # Process streams
-    incident_stream, speedbands_stream, image_stream = process_stream(kafka_stream)
+    incident_stream, speedbands_stream, image_stream, vms_stream, erp_stream = process_stream(kafka_stream)
 
     # For testing purposes, print the streams to the console
     incident_query = incident_stream.writeStream \
@@ -94,11 +119,23 @@ def main():
         .outputMode("append") \
         .foreachBatch(lambda df, epochId: write_to_console(df, "image_table")) \
         .start()
+        
+    vms_query = vms_stream.writeStream \
+        .outputMode("append") \
+        .foreachBatch(lambda df, epochId: write_to_console(df, "vms_table")) \
+        .start()
+
+    erp_query = erp_stream.writeStream \
+        .outputMode("append") \
+        .foreachBatch(lambda df, epochId: write_to_console(df, "erp_table")) \
+        .start()
 
     # Wait for the termination of the queries
     incident_query.awaitTermination()
     speedbands_query.awaitTermination()
     image_query.awaitTermination()
+    vms_query.awaitTermination()
+    erp_query.awaitTermination()
 
 if __name__ == "__main__":
     main()
