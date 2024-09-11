@@ -1,6 +1,11 @@
-from pyspark.sql import SparkSession, Row
-from pyspark.sql.functions import col, to_date, regexp_extract, current_timestamp, current_date, lit
-from pyspark.sql.types import StructType, StructField, StringType, TimestampType, IntegerType
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../config')))
+from postgres_config import SPARK_POSTGRES
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, to_date, regexp_extract, current_timestamp, current_date
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType
 from datetime import datetime
 import time
 
@@ -17,12 +22,8 @@ def generate_id():
 
 def main():
     # PostgreSQL connection properties
-    postgres_url = "jdbc:postgresql://localhost:5432/trafficmonitoring"
-    postgres_properties = {
-        "user": "admin",
-        "password": "admin",
-        "driver": "org.postgresql.Driver"
-    }
+    postgres_url = SPARK_POSTGRES['url']
+    postgres_properties = SPARK_POSTGRES['properties']
 
     # Create Spark session 
     spark = SparkSession.builder \
@@ -62,7 +63,7 @@ def main():
    # Generate a unique ID
     unique_id = generate_id()
 
-    # Create a DataFrame with the Name, Date, and Result columns
+    # Create a DataFrame with the ID, Name and Result columns
     report_name = f"Incident Report {current_date_str}"
     data = [(unique_id, report_name, total_count)]
     schema = StructType([

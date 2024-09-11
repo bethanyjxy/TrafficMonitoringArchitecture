@@ -1,13 +1,19 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../config')))
+from postgres_config import POSTGRES_DB
+
 import psycopg2
 from psycopg2 import sql
+
 
 def create_database():
     # Connect to the default PostgreSQL database with the correct credentials
     conn = psycopg2.connect(
-        dbname="traffic_db",         # Default database
-        user="traffic_admin",      # User from docker-compose
-        password="traffic_pass",   # Password from docker-compose
-        host="localhost"           # Host as configured in docker-compose
+        dbname=POSTGRES_DB['dbname'],
+        user=POSTGRES_DB['user'],
+        password=POSTGRES_DB['password'],
+        host=POSTGRES_DB['host']
     )
     conn.autocommit = True
     cursor = conn.cursor()
@@ -23,11 +29,11 @@ def create_database():
 def create_tables():
     # Connect to the new database
     conn = psycopg2.connect(
-        dbname="traffic_db",        # Database created/used in docker-compose
-        user="traffic_admin",       # User from docker-compose
-        password="traffic_pass",    # Password from docker-compose
-        host="localhost",           # Host as configured in docker-compose
-        port="5432"                 # Default port for PostgreSQL
+        dbname=POSTGRES_DB['dbname'],
+        user=POSTGRES_DB['user'],
+        password=POSTGRES_DB['password'],
+        host=POSTGRES_DB['host'],
+        port = POSTGRES_DB['port']
     )
     cursor = conn.cursor()
 
@@ -61,6 +67,30 @@ def create_tables():
             Latitude DOUBLE PRECISION,
             Longitude DOUBLE PRECISION,
             ImageLink TEXT
+        )
+        """,
+        
+        """
+        CREATE TABLE IF NOT EXISTS erp_table (
+            VehicleType VARCHAR(255),
+            DayType VARCHAR(255),
+            StartTime VARCHAR(255),
+            EndTime VARCHAR(255),
+            ZoneID VARCHAR(255),
+            ChargeAmount INTEGER,
+            EffectiveDate DATE
+        )
+        """,
+
+        """
+        CREATE TABLE IF NOT EXISTS erp_table (
+            VehicleType VARCHAR(255),
+            DayType VARCHAR(255),
+            StartTime VARCHAR(255),
+            EndTime VARCHAR(255),
+            ZoneID VARCHAR(255),
+            ChargeAmount INTEGER,
+            EffectiveDate DATE
         )
         """
     ]
