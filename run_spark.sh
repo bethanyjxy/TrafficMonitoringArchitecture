@@ -4,7 +4,7 @@ python3 app/kafka/consumer/kafka_incidents_consumer.py &
 python3 app/kafka/consumer/kafka_images_consumer.py &
 python3 app/kafka/consumer/kafka_speedbands_consumer.py &
 python3 app/kafka/consumer/kafka_erp_consumer.py &
-python3 app/kafka/consumer/kafka_vms_consumer.py 
+python3 app/kafka/consumer/kafka_vms_consumer.py &
 # Start Kafka producer in the background
 echo "Starting Kafka Producer..."
 python3 app/kafka/producer/producer.py &
