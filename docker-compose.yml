@@ -1,6 +1,7 @@
 services:
   flask-app:
     build: ./app  # Assuming the Dockerfile is in the app folder
+    container_name: flaskapp
     ports:
       - "5000:5000"
     volumes:
@@ -17,6 +18,7 @@ services:
 
   postgres:
     image: postgis/postgis:16-3.4
+    container_name: postgres
     ports:
       - "5432:5432"
     environment:
@@ -29,6 +31,7 @@ services:
 
 
   zookeeper:
+    container_name: zookeeper
     image: confluentinc/cp-zookeeper:latest
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
@@ -37,6 +40,7 @@ services:
       - 2181:2181
     
   kafka:
+    container_name: kafka
     image: confluentinc/cp-kafka:latest
     depends_on:
       - zookeeper
@@ -49,9 +53,40 @@ services:
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
+  namenode:
+    container_name: namenode
+    image: apache/hadoop:3  # Use the correct image
+    hostname: namenode
+    command: ["hdfs", "namenode"]
+    user: root
+    ports:
+      - 9870:9870  # NameNode Web UI
+      - 9000:9000  # HDFS transfer port
+    volumes:
+      - ./namenode:/tmp/hadoop-root/dfs/name  # Ensure the directory is mounted
+      - ./config/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml  # Mount config files
+      - ./config/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml
+    environment:
+      ENSURE_NAMENODE_DIR: "/tmp/hadoop-root/dfs/name"  # Ensure the NameNode directory
 
+    networks:
+      - hadoop-networks
+      
+  datanode:
+    container_name: datanode
+    image: apache/hadoop:3
+    command: ["hdfs", "datanode"]
+    user: root
+    ports:
+      - 9864:9864  # DataNode Web UI
+    volumes:
+      - ./datanode:/tmp/hadoop-root/dfs/data  # Ensure the directory is mounted
+      - ./config/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml
+    networks:
+      - hadoop-network
 
   spark:
+    container_name: spark
     image: bitnami/spark:latest
     ports:
       - "8080:8080"  # Spark UI
@@ -64,6 +99,7 @@ services:
       - kafka
 
   airflow:
+    container_name: airflow
     image: apache/airflow:latest
     ports:
       - "8081:8081"
@@ -77,6 +113,9 @@ services:
       - postgres
 
 networks:
+  hadoop-network:
+    driver: bridge
+
   kafka_network:
     driver: bridge
 
