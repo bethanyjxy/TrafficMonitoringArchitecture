@@ -3,12 +3,13 @@ body {
     margin: 0;
     padding: 0;
     background-color: #E8E8E8;
+    align-items: center; /* Center horizontally */
+    justify-content: center; /* Center vertically */
 }
 
 h1 {
     color: #333;;
 }
-
 
 /* Style for the top navigation bar */
 .topnav {
@@ -39,7 +40,35 @@ h1 {
     color: #333333; 
 }
 
-/* Main content styling */
-.content {
-    padding: 20px;
+/* Filter Bar Styling */
+.filter-bar {
+    background-color: #f8f9fa; 
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+/* Style for the filter labels */
+.filter-bar label {
+    margin-right: 15px; /* Space between checkboxes */
+    font-size: 16px; 
+    color: #333; 
+    cursor: pointer; 
+}
+
+/* Style for the filter checkboxes */
+.filter-bar input[type="checkbox"] {
+    margin-right: 5px; 
+}
+
+/* Style for the "Apply Filters" button */
+#apply-filters {
+    background-color: #007bff;
+    color: #fff; 
+    border-radius: 6px; 
+    padding: 10px 20px;
+    font-size: 16px; 
+    cursor: pointer;
+    transition: background-color 0.3s ease; 
 }
