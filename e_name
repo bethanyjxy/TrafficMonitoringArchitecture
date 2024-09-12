@@ -1,0 +1,12 @@
+                                            List of databases
+       Name       |     Owner     | Encoding |  Collate   |   Ctype    |        Access privileges        
+------------------+---------------+----------+------------+------------+---------------------------------
+ postgres         | traffic_admin | UTF8     | en_US.utf8 | en_US.utf8 | 
+ template0        | traffic_admin | UTF8     | en_US.utf8 | en_US.utf8 | =c/traffic_admin               +
+                  |               |          |            |            | traffic_admin=CTc/traffic_admin
+ template1        | traffic_admin | UTF8     | en_US.utf8 | en_US.utf8 | =c/traffic_admin               +
+                  |               |          |            |            | traffic_admin=CTc/traffic_admin
+ template_postgis | traffic_admin | UTF8     | en_US.utf8 | en_US.utf8 | 
+ traffic_db       | traffic_admin | UTF8     | en_US.utf8 | en_US.utf8 | 
+(5 rows)
+
