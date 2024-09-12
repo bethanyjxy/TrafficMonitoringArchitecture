@@ -54,34 +54,31 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
   namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
     container_name: namenode
-    image: apache/hadoop:3  # Use the correct image
-    hostname: namenode
-    command: ["hdfs", "namenode"]
-    user: root
-    ports:
-      - 9870:9870  # NameNode Web UI
-      - 9000:9000  # HDFS transfer port
-    volumes:
-      - ./namenode:/tmp/hadoop-root/dfs/name  # Ensure the directory is mounted
-      - ./config/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml  # Mount config files
-      - ./config/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml
     environment:
-      ENSURE_NAMENODE_DIR: "/tmp/hadoop-root/dfs/name"  # Ensure the NameNode directory
-
-    networks:
-      - hadoop-networks
-      
-  datanode:
-    container_name: datanode
-    image: apache/hadoop:3
-    command: ["hdfs", "datanode"]
-    user: root
-    ports:
-      - 9864:9864  # DataNode Web UI
+      - CLUSTER_NAME=test
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+      - CORE_CONF_hadoop_http_staticuser_user=root
+      - HDFS_CONF_dfs_replication=1
     volumes:
-      - ./datanode:/tmp/hadoop-root/dfs/data  # Ensure the directory is mounted
-      - ./config/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml
+      - namenode-data:/hadoop/dfs/name
+    ports:
+      - "9870:9870"
+      - "9000:9000"
+    networks:
+      - hadoop-network
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+      - CORE_CONF_hadoop_http_staticuser_user=root
+      - HDFS_CONF_dfs_replication=1
+    volumes:
+      - datanode-data:/hadoop/dfs/data
+    depends_on:
+      - namenode
     networks:
       - hadoop-network
 
@@ -121,3 +118,5 @@ networks:
 
 volumes:
   postgres_data: {}
+  namenode-data:
+  datanode-data:
