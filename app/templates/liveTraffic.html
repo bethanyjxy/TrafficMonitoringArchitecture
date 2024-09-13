@@ -16,7 +16,7 @@
             height: 60vh;
             width: 90vw;
             margin: 20px auto;
-            margin-bottom: 600px; /
+            margin-bottom: 200px; /
             
         }
         h1 {
@@ -26,14 +26,7 @@
     </style>
 </head>
 <body>
-    <h1>Traffic Monitoring Dashboard</h1>
-
-    <div class="topnav">
-        <a href="/">Home</a>
-        <a href="/traffic_overview">Traffic Overview</a>
-        <a class="active"  href="/live_traffic">Live Traffic</a>
-        <a href="/traffic_prediction">Traffic Prediction</a>
-    </div>
+    {% include 'navbar.html' %}
 
     <div class="filter-bar">
         <label><input type="checkbox" class="data-filter" value="incidents"> Incidents</label>

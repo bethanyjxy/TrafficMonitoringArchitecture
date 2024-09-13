@@ -15,7 +15,7 @@ def serve_static(filename):
 # Route to landing page
 @templates_blueprint.route('/')
 def serve_main():
-    return send_from_directory('templates', 'main.html')
+    return render_template('main.html')
 
 # Route for Dashboard, served by Dash
 @templates_blueprint.route('/dashboard')
