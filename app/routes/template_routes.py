@@ -29,7 +29,7 @@ live_traffic_blueprint = Blueprint('live_traffic_blueprint', __name__)
 @live_traffic_blueprint.route('/live_traffic')
 def live_traffic():
     """Display live traffic map with Folium based on selected filters."""
-    filters = request.args.get('filters', '')  # Get filters from the query string
+    filters = request.args.get('filters', '')
     selected_filters = filters.split(',') if filters else []
 
     # Map of filters to table names
@@ -62,7 +62,7 @@ def live_traffic():
                 if not data:
                     print(f"No data found for {table_name}")
                 for row in data:
-                    color = filter_colors.get(filter_type, 'black')  # Use filter color
+                    color = filter_colors.get(filter_type, 'black')
                     lat = row.get('latitude')
                     lon = row.get('longitude')
 
@@ -70,7 +70,7 @@ def live_traffic():
                     if filter_type == 'incidents' and lat and lon:
                         folium.Marker(
                             [lat, lon],
-                            popup=row.get('message', 'No message'),
+                            popup=row.get('message'), 
                             icon=folium.Icon(color=color)
                         ).add_to(map_obj)
                     elif filter_type == 'speedbands':
@@ -79,7 +79,7 @@ def live_traffic():
                         if start_lat and start_lon:
                             folium.Marker(
                                 [start_lat, start_lon],
-                                popup=row.get('roadname', 'No name'),
+                                popup=row.get('roadname'), 
                                 icon=folium.Icon(color=color)
                             ).add_to(map_obj)
                     elif filter_type == 'images' and lat and lon:
@@ -92,7 +92,7 @@ def live_traffic():
                     elif filter_type == 'vms' and lat and lon:
                         folium.Marker(
                             [lat, lon],
-                            popup=row.get('message', 'No message'),
+                            popup=row.get('message'),
                             icon=folium.Icon(color=color)
                         ).add_to(map_obj)
             except Exception as e:

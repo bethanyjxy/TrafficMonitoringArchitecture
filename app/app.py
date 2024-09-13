@@ -6,7 +6,7 @@ from postgresql.db_functions import check_db_connection
 
 from dash import html, dcc, Dash
 from dash.dependencies import Input, Output
-from flask import Flask, send_from_directory, render_template
+from flask import Flask, send_from_directory, render_template, Response
 import folium
 # Import blueprints
 from routes.template_routes import live_traffic_blueprint, templates_blueprint
@@ -42,18 +42,14 @@ app.layout = html.Div(children=[
 ])
 
 
-# Callback to check database connection when the button is clicked
-@app.callback(
-    Output('connection-result', 'children'),
-    [Input('check-connection-button', 'n_clicks')]
-)
-def update_db_status(n_clicks):
-    if n_clicks is None:
-        return ""
-    status = check_db_connection()  # Use the check_db_connection function from db_functions
-    return status
+@server.route('/check-connection')
+def check_connection():
+    try:
+        status = check_db_connection()  # Use the function to check DB connection
+        return Response(status, content_type="text/plain")
+    except Exception as e:
+        return Response(f"Error: {str(e)}", content_type="text/plain")
 
 # Run the Dash server
 if __name__ == '__main__':
     server.run(debug=True, host='0.0.0.0', port=5000)
-

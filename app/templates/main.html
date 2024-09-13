@@ -6,15 +6,21 @@
     <title>Traffic Monitoring Dashboard</title>
     <link rel="stylesheet" href="/static/css/main.css">
     <!--<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">-->
+
     <script>
         function checkConnection() {
             fetch('/check-connection')
                 .then(response => response.text())
                 .then(data => {
                     document.getElementById('connection-result').innerText = data;
+                })
+                .catch(error => {
+                    document.getElementById('connection-result').innerText = 'Error checking connection';
+                    console.error('Error:', error);
                 });
         }
     </script>
+
 </head>
 <body>
     <h1>Traffic Monitoring Dashboard</h1>
@@ -28,7 +34,7 @@
 
     <div class = "checks">
         <!-- A simple display for testing -->
-        <div id="db-status">PostgreSQL Connection: Unknown</div>
+        <div id="db-status">PostgreSQL Connection:</div>
         <button onclick="checkConnection()">Check PostgreSQL Connection</button>
         <div id="connection-result"></div>
     </div>

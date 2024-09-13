@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Traffic Map</title>
     <link rel="stylesheet" href="/static/css/main.css">
-    <!-- Optional: Add some basic styling for the map container -->
+    
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -13,8 +13,8 @@
             padding: 0;
         }
         #map {
-            height: 60vh; /* Fixed height */
-            width: 90vw;  /* Fixed width */
+            height: 60vh;
+            width: 90vw;
             margin: 20px auto; /
             
         }
@@ -53,23 +53,22 @@
 
     <script>
         document.getElementById('apply-filters').addEventListener('click', function() {
-            // Get all selected checkboxes
             const selectedFilters = Array.from(document.querySelectorAll('.data-filter:checked'))
                 .map(checkbox => checkbox.value);
-        
+    
             // Construct the query string from selected filters
             const queryString = selectedFilters.length > 0 
                 ? `filters=${selectedFilters.join(',')}` 
                 : '';
-        
+    
             // Redirect to the live_traffic route with the query string
             window.location.href = `/live_traffic?${queryString}`;
         });
-        
+    
         window.addEventListener('load', function() {
             const params = new URLSearchParams(window.location.search);
             const filters = params.get('filters');
-            
+    
             if (filters) {
                 const filterArray = filters.split(',');
                 filterArray.forEach(filter => {
@@ -80,6 +79,6 @@
                 });
             }
         });
-        </script>
+    </script>
 </body>
 </html>
