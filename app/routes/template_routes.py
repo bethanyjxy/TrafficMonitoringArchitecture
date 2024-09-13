@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, send_from_directory, request
 from dash import Dash
 import folium
 from folium.plugins import MarkerCluster
-from postgresql.db_functions import fetch_data_from_table
+from postgresql.db_functions import *
 
 # Create a Blueprint for template-related routes
 templates_blueprint = Blueprint('templates_blueprint', __name__)
@@ -103,3 +103,12 @@ def live_traffic():
 
     # Render the template with the map
     return render_template('liveTraffic.html', map_html=map_html)
+
+
+@live_traffic_blueprint.route('/traffic_overview')
+def traffic_overview():
+    erp_data = fetch_data_from_table('erp_table')
+
+    incidents_data = fetch_data_from_table('incident_table')
+
+    return render_template('trafficOverview.html', erp_data=erp_data, incidents=incidents_data)

@@ -14,7 +14,8 @@ def connect_db():
             dbname=POSTGRES_DB['dbname'],
             user=POSTGRES_DB['user'],
             password=POSTGRES_DB['password'],
-            host=POSTGRES_DB['host']
+            host=POSTGRES_DB['host'],
+            port=POSTGRES_DB['port']
         )
         return connection
     except Exception as e:
@@ -23,15 +24,18 @@ def connect_db():
     
 def check_db_connection():
     """Check if a connection to the database can be established."""
+    connection = None
     try:
         connection = connect_db()
         if connection is None:
             return "Connection failed."
-        connection.close()
         return "Successfully connected to PostgreSQL!"
     except Exception as e:
         return f"Connection failed: {e}"
-    
+    finally:
+        if connection:
+            connection.close()
+
 
 def fetch_data_from_table(table_name):
     """Fetch all data from the specified table."""
@@ -40,14 +44,17 @@ def fetch_data_from_table(table_name):
         return []
 
     cursor = conn.cursor()
-    query = sql.SQL("SELECT * FROM {}").format(sql.Identifier(table_name))
+
+    # Use sql.Identifier for safe table name injection
+    query = sql.SQL("SELECT * FROM {} limit 20 ").format(sql.Identifier(table_name))
     cursor.execute(query)
+    
+    # Fetch all rows and column names
     data = cursor.fetchall()
     column_names = [desc[0].lower() for desc in cursor.description]  # Convert column names to lowercase
-    cursor.close()
-    conn.close()
     
-    # Convert fetched data into a list of dictionaries with lowercase keys
+    # Convert each row to a dictionary mapping column names to values
     data_dicts = [dict(zip(column_names, row)) for row in data]
-    return data_dicts
 
+    cursor.close()
+    return data_dicts

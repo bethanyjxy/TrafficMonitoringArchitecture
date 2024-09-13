@@ -45,10 +45,13 @@ app.layout = html.Div(children=[
 @server.route('/check-connection')
 def check_connection():
     try:
-        status = check_db_connection()  # Use the function to check DB connection
-        return Response(status, content_type="text/plain")
+        status = check_db_connection()
+        if "Successfully" in status:
+            return Response(status, content_type="text/plain", status=200)
+        else:
+            return Response(status, content_type="text/plain", status=500)
     except Exception as e:
-        return Response(f"Error: {str(e)}", content_type="text/plain")
+        return Response(f"Error: {str(e)}", content_type="text/plain", status=500)
 
 # Run the Dash server
 if __name__ == '__main__':

@@ -12,7 +12,7 @@ def write_to_postgres(df, table_name, postgres_url, postgres_properties):
 def main():
     # Kafka configurations
     kafka_broker = "localhost:9092"
-    kafka_topics = "traffic_incidents,traffic_images,traffic_speedbands"
+    kafka_topics = "traffic_incidents,traffic_images,traffic_speedbands,traffic_vms,traffic_erp"
 
 
     # PostgreSQL connection properties
