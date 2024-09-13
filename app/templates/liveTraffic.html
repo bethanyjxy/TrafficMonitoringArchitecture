@@ -15,7 +15,8 @@
         #map {
             height: 60vh;
             width: 90vw;
-            margin: 20px auto; /
+            margin: 20px auto;
+            margin-bottom: 600px; /
             
         }
         h1 {
@@ -50,7 +51,75 @@
     <div container>
         <!-- notification box -->
     </div>
-
+    
+    <div class="table-container">
+        <div class="table-title">Incident Table</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Latitude</th>
+                    <th>Longitude</th>
+                    <th>Message</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if incidents %}
+                    {% for incident in incidents %}
+                    <tr>
+                        <td>{{ incident['type'] }}</td>
+                        <td>{{ incident['latitude'] }}</td>
+                        <td>{{ incident['longitude'] }}</td>
+                        <td>{{ incident['message'] }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5">No incidents found</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="table-container">
+        <div class="table-title">ERP Table</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Vehicle Type</th>
+                    <th>Day Type</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th>Zone ID</th>
+                    <th>Charge Amount</th>
+                    <th>Effective Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if erp_data %}
+                    {% for erp in erp_data %}
+                    <tr>
+                        <td>{{ erp['vehicletype'] }}</td>
+                        <td>{{ erp['daytype'] }}</td>
+                        <td>{{ erp['starttime'] }}</td>
+                        <td>{{ erp['endtime'] }}</td>
+                        <td>{{ erp['zoneid'] }}</td>
+                        <td>{{ erp['chargeamount'] }}</td>
+                        <td>{{ erp['effectivedate'] }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="3">No ERP data found</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Optional: Button to refresh the tables -->
+    <button class="refresh-button" onclick="window.location.reload();">Refresh Tables</button>
     <script>
         document.getElementById('apply-filters').addEventListener('click', function() {
             const selectedFilters = Array.from(document.querySelectorAll('.data-filter:checked'))

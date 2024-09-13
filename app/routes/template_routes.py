@@ -28,6 +28,9 @@ live_traffic_blueprint = Blueprint('live_traffic_blueprint', __name__)
 
 @live_traffic_blueprint.route('/live_traffic')
 def live_traffic():
+    erp_data = fetch_data_from_table('erp_table')
+
+    incidents_data = fetch_data_from_table('incident_table')
     """Display live traffic map with Folium based on selected filters."""
     filters = request.args.get('filters', '')
     selected_filters = filters.split(',') if filters else []
@@ -102,13 +105,10 @@ def live_traffic():
     map_html = map_obj._repr_html_()
 
     # Render the template with the map
-    return render_template('liveTraffic.html', map_html=map_html)
+    return render_template('liveTraffic.html', map_html=map_html, erp_data=erp_data, incidents=incidents_data)
 
 
 @live_traffic_blueprint.route('/traffic_overview')
 def traffic_overview():
-    erp_data = fetch_data_from_table('erp_table')
 
-    incidents_data = fetch_data_from_table('incident_table')
-
-    return render_template('trafficOverview.html', erp_data=erp_data, incidents=incidents_data)
+    return render_template('trafficOverview.html')
