@@ -1,0 +1,110 @@
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+#map {
+    height: 60vh;
+    width: 90vw;
+    margin: 20px auto;
+    margin-bottom: 600px; /
+    
+}
+h1 {
+    text-align: center;
+    margin-top: 20px;
+}
+/* Filter Bar Styling */
+.filter-bar {
+    background-color: #f8f9fa; 
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+/* Style for the filter labels */
+.filter-bar label {
+    margin-right: 15px; /* Space between checkboxes */
+    font-size: 16px; 
+    color: #333; 
+    cursor: pointer; 
+}
+
+/* Style for the filter checkboxes */
+.filter-bar input[type="checkbox"] {
+    margin-right: 5px; 
+}
+
+/* Style for the "Apply Filters" button */
+#apply-filters {
+    background-color: #007bff;
+    color: #fff; 
+    border-radius: 6px; 
+    padding: 10px 20px;
+    font-size: 16px; 
+    cursor: pointer;
+    transition: background-color 0.3s ease; 
+}
+
+
+.table-container {
+    width: 80%;
+    margin: 0 auto;
+    margin-bottom: 40px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #fff;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: left;
+}
+
+th {
+    background-color: #007bff;
+    color: white;
+}
+
+tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+tr:hover {
+    background-color: #ddd;
+}
+
+th, td {
+    padding: 15px;
+    text-align: center;
+}
+
+.table-title {
+    text-align: center;
+    margin-bottom: 10px;
+    font-size: 1.2em;
+    color: #333;
+}
+
+/* Button styling */
+.refresh-button {
+    display: block;
+    width: 200px;
+    margin: 20px auto;
+    padding: 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.refresh-button:hover {
+    background-color: #45a049;
+}
