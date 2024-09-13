@@ -5,124 +5,126 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Traffic Map</title>
     <link rel="stylesheet" href="/static/css/livetraffic.css">
-
+    <link rel="stylesheet" href="/static/css/navbar.css">
 </head>
 <body>
+
     {% include 'navbar.html' %}
 
-    <div class="filter-bar">
-        <label><input type="checkbox" class="data-filter" value="incidents"> Incidents</label>
-        <label><input type="checkbox" class="data-filter" value="erp"> ERP</label>
-        <label><input type="checkbox" class="data-filter" value="speedbands"> Traffic Speed</label>
-        <label><input type="checkbox" class="data-filter" value="images"> Traffic Camera</label>
-        <label><input type="checkbox" class="data-filter" value="vms"> VMS</label>
-        <button id="apply-filters">Apply Filter</button>
-    </div>
+    <div class="main-content">
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <label><input type="checkbox" class="data-filter" value="incidents"> Incidents</label>
+            <label><input type="checkbox" class="data-filter" value="images"> Traffic Camera</label>
+            <label><input type="checkbox" class="data-filter" value="vms"> VMS</label>
+            <button id="apply-filters">Apply Filter</button>
+        </div>
 
-    <div id="map">
-        {{ map_html|safe }}  
-    </div>
+        <!-- Map -->
+        <div id="map">
+            {{ map_html|safe }}
+        </div>
 
-    <div container>
-        <!-- notification box -->
+        <!-- Incident Table -->
+        <div class="table-container">
+            <div class="table-title">Incident Table</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Latitude</th>
+                        <th>Longitude</th>
+                        <th>Message</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if incidents %}
+                        {% for incident in incidents %}
+                        <tr>
+                            <td>{{ incident['type'] }}</td>
+                            <td>{{ incident['latitude'] }}</td>
+                            <td>{{ incident['longitude'] }}</td>
+                            <td>{{ incident['message'] }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4">No incidents found</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ERP Table -->
+        <div class="table-container">
+            <div class="table-title">ERP Table</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Vehicle Type</th>
+                        <th>Day Type</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th>Zone ID</th>
+                        <th>Charge Amount</th>
+                        <th>Effective Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if erp_data %}
+                        {% for erp in erp_data %}
+                        <tr>
+                            <td>{{ erp['vehicletype'] }}</td>
+                            <td>{{ erp['daytype'] }}</td>
+                            <td>{{ erp['starttime'] }}</td>
+                            <td>{{ erp['endtime'] }}</td>
+                            <td>{{ erp['zoneid'] }}</td>
+                            <td>{{ erp['chargeamount'] }}</td>
+                            <td>{{ erp['effectivedate'] }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7">No ERP data found</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Optional: Button to refresh the tables -->
+        <button class="refresh-button" onclick="window.location.reload();">Refresh Tables</button>
+
+        <script>
+            document.getElementById('apply-filters').addEventListener('click', function() {
+                const selectedFilters = Array.from(document.querySelectorAll('.data-filter:checked'))
+                    .map(checkbox => checkbox.value);
+        
+                // Construct the query string from selected filters
+                const queryString = selectedFilters.length > 0 
+                    ? `filters=${selectedFilters.join(',')}` 
+                    : '';
+        
+                // Redirect to the live_traffic route with the query string
+                window.location.href = `/live_traffic?${queryString}`;
+            });
+        
+            window.addEventListener('load', function() {
+                const params = new URLSearchParams(window.location.search);
+                const filters = params.get('filters');
+        
+                if (filters) {
+                    const filterArray = filters.split(',');
+                    filterArray.forEach(filter => {
+                        const checkbox = document.querySelector(`.data-filter[value="${filter}"]`);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                        }
+                    });
+                }
+            });
+        </script>
     </div>
-    
-    <div class="table-container">
-        <div class="table-title">Incident Table</div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Type</th>
-                    <th>Latitude</th>
-                    <th>Longitude</th>
-                    <th>Message</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% if incidents %}
-                    {% for incident in incidents %}
-                    <tr>
-                        <td>{{ incident['type'] }}</td>
-                        <td>{{ incident['latitude'] }}</td>
-                        <td>{{ incident['longitude'] }}</td>
-                        <td>{{ incident['message'] }}</td>
-                    </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td colspan="5">No incidents found</td>
-                    </tr>
-                {% endif %}
-            </tbody>
-        </table>
-    </div>
-    
-    <div class="table-container">
-        <div class="table-title">ERP Table</div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Vehicle Type</th>
-                    <th>Day Type</th>
-                    <th>Start Time</th>
-                    <th>End Time</th>
-                    <th>Zone ID</th>
-                    <th>Charge Amount</th>
-                    <th>Effective Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% if erp_data %}
-                    {% for erp in erp_data %}
-                    <tr>
-                        <td>{{ erp['vehicletype'] }}</td>
-                        <td>{{ erp['daytype'] }}</td>
-                        <td>{{ erp['starttime'] }}</td>
-                        <td>{{ erp['endtime'] }}</td>
-                        <td>{{ erp['zoneid'] }}</td>
-                        <td>{{ erp['chargeamount'] }}</td>
-                        <td>{{ erp['effectivedate'] }}</td>
-                    </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td colspan="3">No ERP data found</td>
-                    </tr>
-                {% endif %}
-            </tbody>
-        </table>
-    </div>
-    
-    <!-- Optional: Button to refresh the tables -->
-    <button class="refresh-button" onclick="window.location.reload();">Refresh Tables</button>
-    <script>
-        document.getElementById('apply-filters').addEventListener('click', function() {
-            const selectedFilters = Array.from(document.querySelectorAll('.data-filter:checked'))
-                .map(checkbox => checkbox.value);
-    
-            // Construct the query string from selected filters
-            const queryString = selectedFilters.length > 0 
-                ? `filters=${selectedFilters.join(',')}` 
-                : '';
-    
-            // Redirect to the live_traffic route with the query string
-            window.location.href = `/live_traffic?${queryString}`;
-        });
-    
-        window.addEventListener('load', function() {
-            const params = new URLSearchParams(window.location.search);
-            const filters = params.get('filters');
-    
-            if (filters) {
-                const filterArray = filters.split(',');
-                filterArray.forEach(filter => {
-                    const checkbox = document.querySelector(`.data-filter[value="${filter}"]`);
-                    if (checkbox) {
-                        checkbox.checked = true;
-                    }
-                });
-            }
-        });
-    </script>
 </body>
 </html>

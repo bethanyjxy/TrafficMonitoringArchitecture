@@ -1,32 +1,56 @@
-
 body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
 }
+
+/* Navbar Styling */
+.topnav {
+    background-color: #333;
+    overflow: hidden;
+    width: 220px; /* Adjust as needed */
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%; /* Full height */
+    z-index: 1000; /* Ensure it’s on top */
+    padding-top: 75px; /* Space for header */
+}
+
+/* Main content styles */
+.main-content {
+    margin-left: 220px; /* Space for the sidebar */
+    margin-top: 80px; /* Space for the header */
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+/* Map styling */
 #map {
-    height: 60vh;
-    width: 90vw;
+    height: 75vh; /* Increased height */
+    width: 80vw; /* Adjust to fit beside the sidebar */
     margin: 20px auto;
-    margin-bottom: 600px; /
-    
+    margin-bottom: 40px; /* Ensure there is space below the map */
 }
-h1 {
-    text-align: center;
-    margin-top: 20px;
-}
+
 /* Filter Bar Styling */
 .filter-bar {
-    background-color: #f8f9fa; 
+    background-color: #f8f9fa;
     padding: 10px;
     border-radius: 5px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
+    width: 80vw; /* Same width as map */
+    margin-bottom: 20px; /* Space below filter bar */
+    position: relative;
+    z-index: 2; /* Ensure it’s above the map but below the table */
 }
 
 /* Style for the filter labels */
 .filter-bar label {
-    margin-right: 15px; /* Space between checkboxes */
+    margin-right: 15px;
     font-size: 16px; 
     color: #333; 
     cursor: pointer; 
@@ -48,13 +72,29 @@ h1 {
     transition: background-color 0.3s ease; 
 }
 
-
+/* Table container styling */
 .table-container {
-    width: 80%;
+    width: 80vw; /* Same width as map */
     margin: 0 auto;
+    margin-top: 20px; /* Space above the table, reduced to move it lower */
     margin-bottom: 40px;
+    position: relative;
+    z-index: 1; /* Ensure it’s below the filter bar but above the map */
 }
 
+/* Notification box styling */
+.noti-box {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    width: 80vw; 
+    max-width: 1200px;
+    margin-bottom: 20px;
+}
+
+/* Table styling */
 table {
     width: 100%;
     border-collapse: collapse;

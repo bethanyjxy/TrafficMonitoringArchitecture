@@ -1,43 +1,67 @@
 body {
-    font-family:Arial, sans-serif;
+    font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #E8E8E8;
-    align-items: center; /* Center horizontally */
-    justify-content: center; /* Center vertically */
 }
 
-h1 {
+/* Header styles */
+.header {
+    background-color: #2a85e7;
+    color: white;
     text-align: center;
-    color: #333;;
+    padding: 15px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    border-bottom: 2px solid #0056b3;
+    width: 100%; 
+    box-sizing: border-box; 
+    position: fixed;
+    top: 0; 
+    left: 0; 
+    z-index: 1000; /* Ensure it is above other content */
 }
 
-/* Style for the top navigation bar */
-.topnav {
+/* Style for the navigation bar */
+.navbar {
     background-color: orange;
-    overflow: hidden;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 150px;
+    height: calc(100vh - 60px); /* Full height minus header height */
+    position: fixed; 
+    top: 60px; /* Position below the header; adjust based on header height */
+    left: 0;
+    overflow-y: auto;
 }
 
-/* Links inside the navigation bar */
-.topnav a {
-    float: left;
+/* Style for links inside the navigation bar */
+.navbar .nav-link {
     display: block;
     color: white;
     text-align: center;
-    padding: 16px 18px;
+    padding: 10px;
     text-decoration: none;
-    font-size: 17px;
+    font-size: 16px;
     font-weight: bold;
     transition: background-color 0.3s, color 0.3s;
 }
 
 /* Change the color of links on hover */
-.topnav a:hover {
-    background-color: #ddd;
+.navbar .nav-link:hover {
+    background-color: #9fa7c3;
     color: black;
 }
 
 /* Style for the active link */
-.topnav a.active {
-    color: #333333; 
+.navbar .nav-link.active {
+    background-color: #5a77a6;
+    color: white;
+}
+
+/* Main content styles */
+.content {
+    margin-left: 220px;
+    padding: 20px;
+    margin-top: 75px;
 }
