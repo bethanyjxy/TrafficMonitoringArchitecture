@@ -5,7 +5,7 @@ WORKDIR /app
 COPY . /app
 
 
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 ENV SPARK_CLASSPATH="/opt/spark/jars/postgresql-42.2.18.jar"
 

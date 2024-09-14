@@ -108,7 +108,7 @@ def live_traffic():
     return render_template('liveTraffic.html', map_html=map_html, erp_data=erp_data, incidents=incidents_data)
 
 
-@live_traffic_blueprint.route('/traffic_overview')
+@templates_blueprint.route('/traffic_overview')
 def traffic_overview():
 
     return render_template('trafficOverview.html')

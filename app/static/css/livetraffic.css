@@ -4,23 +4,11 @@ body {
     padding: 0;
 }
 
-/* Navbar Styling */
-.topnav {
-    background-color: #333;
-    overflow: hidden;
-    width: 220px; /* Adjust as needed */
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100%; /* Full height */
-    z-index: 1000; /* Ensure it’s on top */
-    padding-top: 75px; /* Space for header */
-}
 
 /* Main content styles */
 .main-content {
-    margin-left: 220px; /* Space for the sidebar */
-    margin-top: 80px; /* Space for the header */
+    
+    margin-top: 10px; /* Space for the header */
     padding: 20px;
     display: flex;
     flex-direction: column;
@@ -31,9 +19,9 @@ body {
 /* Map styling */
 #map {
     height: 75vh; /* Increased height */
-    width: 80vw; /* Adjust to fit beside the sidebar */
+    width: 170%; /* Adjust to fit beside the sidebar */
     margin: 20px auto;
-    margin-bottom: 40px; /* Ensure there is space below the map */
+    margin-bottom: 20px; /* Ensure there is space below the map */
 }
 
 /* Filter Bar Styling */
@@ -63,7 +51,7 @@ body {
 
 /* Style for the "Apply Filters" button */
 #apply-filters {
-    background-color: #007bff;
+    background-color: #7fabda;
     color: #fff; 
     border-radius: 6px; 
     padding: 10px 20px;
@@ -74,11 +62,10 @@ body {
 
 /* Table container styling */
 .table-container {
-    width: 80vw; /* Same width as map */
+
     margin: 0 auto;
-    margin-top: 20px; /* Space above the table, reduced to move it lower */
     margin-bottom: 40px;
-    position: relative;
+    
     z-index: 1; /* Ensure it’s below the filter bar but above the map */
 }
 
@@ -104,7 +91,7 @@ table {
 th, td {
     border: 1px solid #ddd;
     padding: 12px;
-    text-align: left;
+    text-align: center;
 }
 
 th {

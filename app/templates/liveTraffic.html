@@ -9,8 +9,8 @@
 </head>
 <body>
 
-    {% include 'navbar.html' %}
-
+    {% extends 'base.html' %}
+    {% block content %}
     <div class="main-content">
         <!-- Filter Bar -->
         <div class="filter-bar">
@@ -21,7 +21,7 @@
         </div>
 
         <!-- Map -->
-        <div id="map">
+        <div class="container" id="map">
             {{ map_html|safe }}
         </div>
 
@@ -126,5 +126,8 @@
             });
         </script>
     </div>
+    {% endblock %}
+
 </body>
+
 </html>

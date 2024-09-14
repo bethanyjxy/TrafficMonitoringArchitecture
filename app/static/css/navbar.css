@@ -3,6 +3,8 @@ body {
     margin: 0;
     padding: 0;
 }
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
+
 
 /* Header styles */
 .header {
@@ -15,53 +17,84 @@ body {
     border-bottom: 2px solid #0056b3;
     width: 100%; 
     box-sizing: border-box; 
+}
+/* Base styles for the sidebar */
+.sidebar {
     position: fixed;
-    top: 0; 
-    left: 0; 
-    z-index: 1000; /* Ensure it is above other content */
-}
-
-/* Style for the navigation bar */
-.navbar {
-    background-color: orange;
-    padding: 10px;
-    border-radius: 5px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    width: 150px;
-    height: calc(100vh - 60px); /* Full height minus header height */
-    position: fixed; 
-    top: 60px; /* Position below the header; adjust based on header height */
     left: 0;
-    overflow-y: auto;
+    top: 0;
+    width: 60px; /* Collapsed width showing only icons */
+    height: 100%;
+    background-color: #343a40;
+    transition: width 0.3s ease;
+    overflow-x: hidden;
+    z-index: 1000;
 }
 
-/* Style for links inside the navigation bar */
-.navbar .nav-link {
-    display: block;
+.sidebar-content {
+    padding: 5px;
     color: white;
-    text-align: center;
-    padding: 10px;
+}
+
+.sidebar ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.sidebar ul li {
+    margin: 15px 0;
+}
+
+.sidebar ul li a {
+    color: white;
+    display: flex;
+    align-items: center;
     text-decoration: none;
-    font-size: 16px;
-    font-weight: bold;
-    transition: background-color 0.3s, color 0.3s;
+    margin-bottom: 20px;
 }
 
-/* Change the color of links on hover */
-.navbar .nav-link:hover {
-    background-color: #9fa7c3;
-    color: black;
+.sidebar ul li a i {
+    font-size: 20px;
+    margin-right: 10px;
 }
 
-/* Style for the active link */
-.navbar .nav-link.active {
-    background-color: #5a77a6;
-    color: white;
+/* Hide text when sidebar is collapsed */
+.sidebar ul li a .menu-text {
+    display: none;
+    white-space: nowrap;
 }
 
-/* Main content styles */
-.content {
-    margin-left: 220px;
-    padding: 20px;
-    margin-top: 75px;
+/* Expand sidebar on hover */
+.sidebar:hover {
+    width: 200px; /* Expanded width */
+}
+
+.sidebar:hover .menu-text {
+    display: inline-block; /* Show text when expanded */
+}
+
+/* Ensure main content is not affected */
+.main-content {
+    margin-right: 10px; /* Adjust as necessary */
+}
+
+/* The hidden trigger zone for hover detection */
+.trigger-zone {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 10px; /* Small strip for hovering */
+    height: 100%;
+    z-index: 999; /* Make sure it's on top */
+}
+
+/* Hovering over the trigger zone reveals the sidebar */
+.trigger-zone:hover + .sidebar {
+    left: 0;
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        left: -200px;
+    }
 }
