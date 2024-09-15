@@ -1,6 +1,6 @@
 body {
     font-family: Arial, sans-serif;
-    margin: 0;
+    margin-left: 1200px;
     padding: 0;
 }
 
@@ -14,14 +14,20 @@ body {
     flex-direction: column;
     align-items: center;
     position: relative;
+    margin-left: 50px; 
+    flex:1;
 }
-
+.main-content.shift {
+    margin-left: 200px; /* Shifted when sidebar is open */
+}
 /* Map styling */
 #map {
     height: 75vh; /* Increased height */
-    width: 170%; /* Adjust to fit beside the sidebar */
-    margin: 20px auto;
-    margin-bottom: 20px; /* Ensure there is space below the map */
+    border: 1px solid #ddd;
+    border-radius: 2px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+    margin-bottom: 30px; /* Ensure there is space below the map */
 }
 
 /* Filter Bar Styling */
@@ -33,7 +39,7 @@ body {
     width: 80vw; /* Same width as map */
     margin-bottom: 20px; /* Space below filter bar */
     position: relative;
-    z-index: 2; /* Ensure it’s above the map but below the table */
+
 }
 
 /* Style for the filter labels */
@@ -51,11 +57,10 @@ body {
 
 /* Style for the "Apply Filters" button */
 #apply-filters {
-    background-color: #7fabda;
     color: #fff; 
     border-radius: 6px; 
     padding: 10px 20px;
-    font-size: 16px; 
+    font-size: 14px; 
     cursor: pointer;
     transition: background-color 0.3s ease; 
 }
