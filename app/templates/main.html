@@ -5,14 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Traffic Monitoring Dashboard</title>
     <link rel="stylesheet" href="/static/css/main.css">
-
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    
     {% extends 'base.html' %}
     {% block content %}
+    
+    <!-- Dashboard Overview Content -->
+    <div class="dashboard-overview">
+        <!-- Key Metrics Section -->
+        <div class="key-metrics">
+            <div class="key-metric">
+                <h3>Total Incidents</h3>
+                <p id="total-incidents">120</p>
+            </div>
+            <div class="key-metric">
+                <h3>Active Cameras</h3>
+                <p id="active-cameras">45</p>
+            </div>
+            <div class="key-metric">
+                <h3>Active VMS</h3>
+                <p id="active-vms">30</p>
+            </div>
+            <div class="key-metric">
+                <h3>ERP Charges</h3>
+                <p id="erp-charges">$500</p>
+            </div>
+        </div>
+
+        <!-- Incident Type Breakdown (Chart) -->
+        <div class="chart-container">
+            <canvas id="incidentTypeChart"></canvas>
+        </div>
+
+        <!-- Traffic Overview (Line Chart) -->
+        <div class="chart-container">
+            <canvas id="trafficChart"></canvas>
+        </div>
+    </div>
 
 
+    <!-- Load Leaflet for map -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     
 </body>
 {% endblock %}

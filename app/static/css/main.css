@@ -1,0 +1,25 @@
+/* Dashboard styling */
+.dashboard-overview {
+
+    padding: 20px;
+}
+
+.key-metrics {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 30px;
+}
+
+.key-metric {
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 20px;
+    text-align: center;
+    width: 20%;
+}
+
+.chart-container {
+    margin-bottom: 30px;
+}
+
