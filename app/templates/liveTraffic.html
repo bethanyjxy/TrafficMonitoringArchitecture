@@ -11,6 +11,16 @@
 
     {% extends 'base.html' %}
     {% block content %}
+
+        
+    <!-- Embed the Dash dashboard as an iframe -->
+    <iframe src="/map/" width="1300px" height="1300px" style="border:none;"></iframe>
+
+
+
+    <!-- Load Leaflet for map -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    
     <div class="main-content">
         <!-- Filter Bar -->
         <div class="filter-bar">

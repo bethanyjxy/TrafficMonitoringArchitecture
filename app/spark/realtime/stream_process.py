@@ -39,8 +39,7 @@ def process_stream(kafka_stream):
         .select(col("value.*")) \
         .withColumn("incident_date", regexp_extract(col("Message"), date_regex, 1)) \
         .withColumn("incident_time", regexp_extract(col("Message"), date_regex, 2)) \
-        .withColumn("datetime_str", concat(lit("2024/"), col("incident_date"), lit(" "), col("incident_time"))) \
-        .withColumn("incident_datetime", to_timestamp(col("datetime_str"), "yyyy/M/d HH:mm")) \
+        .withColumn("datetime_str", concat(lit("2024/"), col("incident_date"), lit(" "), col("incident_time"))) 
 
             
     speedbands_schema = StructType() \

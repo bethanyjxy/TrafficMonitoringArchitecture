@@ -58,3 +58,4 @@ def fetch_data_from_table(table_name):
 
     cursor.close()
     return data_dicts
+

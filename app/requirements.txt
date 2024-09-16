@@ -10,3 +10,4 @@ folium==0.17.0
 pyspark==3.5.2
 kafka-python==2.0.2
 hdfs==2.7.3
+pandas==2.2.2
