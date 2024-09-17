@@ -1,5 +1,6 @@
 import sys
 import os
+import dash_bootstrap_components as dbc
 import random
 import psycopg2
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../config')))
@@ -12,7 +13,6 @@ from dash.dependencies import Input, Output, State
 from flask import Flask, send_from_directory, render_template, Response
 import folium
 # Import blueprints
-import dash_bootstrap_components as dbc
 from routes.template_routes import live_traffic_blueprint, templates_blueprint
 
 
@@ -20,16 +20,16 @@ from routes.template_routes import live_traffic_blueprint, templates_blueprint
 server = Flask(__name__)
 
 # Initialize Dash app (Dash uses Flask under the hood)
-trafficmap_app = Dash(__name__, server=server, url_base_pathname='/map/', suppress_callback_exceptions=True)
-
-overview_app = Dash(__name__, server=server, url_base_pathname='/overview/', suppress_callback_exceptions=True,  external_stylesheets=[dbc.themes.BOOTSTRAP])
+traffic_app = Dash(__name__, server=server, url_base_pathname='/map/', suppress_callback_exceptions=True)
+overview_app = Dash(__name__, server=server, url_base_pathname='/overview/',
+                    external_stylesheets=[dbc.themes.BOOTSTRAP])  # Ensure Bootstrap is loaded
 
 # Register blueprints
 server.register_blueprint(live_traffic_blueprint)
 server.register_blueprint(templates_blueprint) 
 
 # Layout for Dash app
-trafficmap_app.layout = html.Div([
+traffic_app.layout = html.Div([
     html.H3('Real-Time Live Traffic', className="text-center mb-4"),
      # Dropdown to select the table
     dcc.Dropdown(
@@ -56,7 +56,7 @@ trafficmap_app.layout = html.Div([
     # Auto-refresh every 10 seconds
     dcc.Interval(id='interval-component', interval=10*1000, n_intervals=0)
 ])
-@trafficmap_app.callback(
+@traffic_app.callback(
     [Output('map-output', 'children'), Output('incident-table', 'children')],
     [Input('interval-component', 'n_intervals'), Input('table-selector', 'value')]
 )
@@ -189,44 +189,11 @@ def update_map(n, selected_table):
         return dcc.Graph(figure=fig)
 
 
-# Traffic Overview
-def fetch_traffic_data():
-    return pd.DataFrame({
-        'latitude': [1.3521 + random.uniform(-0.02, 0.02) for _ in range(10)],
-        'longitude': [103.8198 + random.uniform(-0.02, 0.02) for _ in range(10)],
-        'type': random.choices(['Accident', 'Roadblock', 'Congestion'], k=10),
-        'message': random.choices(['Minor accident', 'Heavy congestion', 'Roadblock in effect'], k=10),
-        'datetime_str': pd.date_range(start='2024-01-01', periods=10).strftime('%Y-%m-%d %H:%M:%S')
-    })
+@server.route('/map/')
+def render_map():
+    return traffic_app.index()
 
-# Traffic Map Page Layout
-trafficmap_app.layout = html.Div([
-    html.H3('Real-Time Live Traffic', className="text-center mb-4"),
-    
-    # Div to display map
-    dcc.Graph(id='traffic-map'),
-    
-    # Auto-refresh every 10 seconds
-    dcc.Interval(id='interval-component-map', interval=10*1000, n_intervals=0)
-])
 
-# Callback to update the traffic map
-@trafficmap_app.callback(
-    Output('traffic-map', 'figure'),
-    [Input('interval-component-map', 'n_intervals')]
-)
-def update_traffic_map(n):
-    data = fetch_traffic_data()
-    
-    fig = px.scatter_mapbox(data, lat="latitude", lon="longitude", hover_name="type", hover_data=["message"],
-                            color="type", zoom=11, height=400, width=1000)
-
-    fig.update_layout(
-        mapbox_style="open-street-map",
-        mapbox=dict(center=dict(lat=1.3521, lon=103.8198), zoom=11),
-        margin={"r": 0, "t": 0, "l": 0, "b": 0},
-    )
-    return fig
 
 # Dummy Data for Traffic Overview
 def fetch_overview_data():
@@ -278,7 +245,6 @@ overview_app.layout = html.Div([
         ], className="mb-4")  # Adds bottom margin to row
     ], className="p-4", style={'background-color': '#f8f9fa', 'border-radius': '8px'}),  # Light background with padding and rounded corners
 
-
     # Second Row: Trend Chart
     dbc.Row([
         dbc.Col(
@@ -317,15 +283,10 @@ def update_trend_chart(n):
         yaxis_title="Number of Incidents"
     )
     return fig
-@server.route('/map/')
-def traffic_map():
-    return render_template('traffic_map.html')  # Renders the map template
 
-# Flask Route to render the traffic overview page
 @server.route('/overview/')
 def traffic_overview():
-    return render_template('trafficOverview.html')
-
+    return render_template('traffic_overview.html')
 # Run the Dash server
 if __name__ == '__main__':
     server.run(debug=True, host='0.0.0.0', port=5000)
