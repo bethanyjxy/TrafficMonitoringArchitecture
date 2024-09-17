@@ -58,6 +58,9 @@ def create_tables():
             MinimumSpeed INTEGER,
             MaximumSpeed INTEGER,
             StartLon DOUBLE PRECISION
+            StartLat DOUBLE PRECISION
+            EndLon DOUBLE PRECISION
+            EndLat DOUBLE PRECISION
 )
         """,
         """

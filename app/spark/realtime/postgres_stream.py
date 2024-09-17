@@ -1,13 +1,5 @@
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../config')))
-from postgres_config import SPARK_POSTGRES
-
 from pyspark.sql import SparkSession
 from stream_process import create_spark_session, read_kafka_stream, process_stream
-
-
-#from config.postgres_config import SPARK_POSTGRES
 
 def write_to_postgres(df, table_name, postgres_url, postgres_properties):
     try:
@@ -22,11 +14,14 @@ def main():
     kafka_broker = "localhost:9092"
     kafka_topics = "traffic_incidents,traffic_images,traffic_speedbands,traffic_vms,traffic_erp"
 
-    
 
     # PostgreSQL connection properties
-    postgres_url = SPARK_POSTGRES['url']
-    postgres_properties = SPARK_POSTGRES['properties']
+    postgres_url = "jdbc:postgresql://localhost:5432/traffic_db"
+    postgres_properties = {
+        "user": "traffic_admin",
+        "password": "traffic_pass",
+        "driver": "org.postgresql.Driver"
+    }
 
     # Create Spark session
     spark = create_spark_session()

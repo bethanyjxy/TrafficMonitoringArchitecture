@@ -1,0 +1,142 @@
+body {
+    font-family: Arial, sans-serif;
+    margin-left: 1200px;
+    padding: 0;
+}
+
+
+/* Main content styles */
+.main-content {
+    
+    margin-top: 10px; /* Space for the header */
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    margin-left: 50px; 
+    flex:1;
+}
+.main-content.shift {
+    margin-left: 200px; /* Shifted when sidebar is open */
+}
+/* Map styling */
+#map {
+    height: 68vh; /* Increased height */
+    border: 1px solid #ddd;
+    border-radius: 2px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+    margin-bottom: 30px; /* Ensure there is space below the map */
+}
+
+/* Filter Bar Styling */
+.filter-bar {
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    width: 80vw; /* Same width as map */
+    margin-bottom: 20px; /* Space below filter bar */
+    position: relative;
+
+}
+
+/* Style for the filter labels */
+.filter-bar label {
+    margin-right: 15px;
+    font-size: 16px; 
+    color: #333; 
+    cursor: pointer; 
+}
+
+/* Style for the filter checkboxes */
+.filter-bar input[type="checkbox"] {
+    margin-right: 5px; 
+}
+
+/* Style for the "Apply Filters" button */
+#apply-filters {
+    color: #fff; 
+    border-radius: 6px; 
+    padding: 10px 20px;
+    font-size: 14px; 
+    cursor: pointer;
+    transition: background-color 0.3s ease; 
+}
+
+/* Table container styling */
+.table-container {
+
+    margin: 0 auto;
+    margin-bottom: 40px;
+    
+    z-index: 1; /* Ensure it’s below the filter bar but above the map */
+}
+
+/* Notification box styling */
+.noti-box {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    width: 80vw; 
+    max-width: 1200px;
+    margin-bottom: 20px;
+}
+
+/* Table styling */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #fff;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: center;
+}
+
+th {
+    background-color: #007bff;
+    color: white;
+}
+
+tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+tr:hover {
+    background-color: #ddd;
+}
+
+th, td {
+    padding: 15px;
+    text-align: center;
+}
+
+.table-title {
+    text-align: center;
+    margin-bottom: 10px;
+    font-size: 1.2em;
+    color: #333;
+}
+
+/* Button styling */
+.refresh-button {
+    display: block;
+    width: 200px;
+    margin: 20px auto;
+    padding: 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.refresh-button:hover {
+    background-color: #45a049;
+}

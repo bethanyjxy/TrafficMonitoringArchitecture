@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, from_json
+from pyspark.sql.functions import col, from_json,  regexp_extract, concat, lit, to_timestamp
 from pyspark.sql.types import StructType, StringType, DoubleType, IntegerType
 
 def create_spark_session():
@@ -31,6 +31,17 @@ def process_stream(kafka_stream):
         .add("Longitude", DoubleType()) \
         .add("Message", StringType())
 
+    date_regex = r"\((\d{1,2}/\d{1,2})\)(\d{1,2}:\d{2})"
+
+    # Split the stream based on topic
+    incident_stream = kafka_stream.filter(col("topic") == "traffic_incidents") \
+        .withColumn("value", from_json(col("value"), incidents_schema)) \
+        .select(col("value.*")) \
+        .withColumn("incident_date", regexp_extract(col("Message"), date_regex, 1)) \
+        .withColumn("incident_time", regexp_extract(col("Message"), date_regex, 2)) \
+        .withColumn("datetime_str", concat(lit("2024/"), col("incident_date"), lit(" "), col("incident_time"))) 
+
+            
     speedbands_schema = StructType() \
         .add("LinkID", StringType()) \
         .add("RoadName", StringType()) \
@@ -38,19 +49,38 @@ def process_stream(kafka_stream):
         .add("SpeedBand", IntegerType()) \
         .add("MinimumSpeed", IntegerType()) \
         .add("MaximumSpeed", IntegerType()) \
-        .add("StartLon", DoubleType())
-
+        .add("StartLon", DoubleType()) \
+        .add("StartLat", DoubleType()) \
+        .add("EndLon", DoubleType()) \
+        .add("EndLat", DoubleType())
+    
+    speedbands_stream = kafka_stream.filter(col("topic") == "traffic_speedbands") \
+        .withColumn("value", from_json(col("value"), speedbands_schema)) \
+        .select(col("value.*"))
+        
+        
+        
     images_schema = StructType() \
         .add("CameraID", StringType()) \
         .add("Latitude", DoubleType()) \
         .add("Longitude", DoubleType()) \
         .add("ImageLink", StringType())
+
+    image_stream = kafka_stream.filter(col("topic") == "traffic_images") \
+        .withColumn("value", from_json(col("value"), images_schema)) \
+        .select(col("value.*"))
+        
         
     vms_schema = StructType() \
         .add("EquipmentID", StringType()) \
         .add("Latitude", DoubleType()) \
         .add("Longitude", DoubleType()) \
         .add("Message", StringType())
+    
+    # VMS stream processing
+    vms_stream = kafka_stream.filter(col("topic") == "traffic_vms") \
+        .withColumn("value", from_json(col("value"), vms_schema)) \
+        .select(col("value.*"))
 
     erp_schema = StructType() \
         .add("VehicleType", StringType()) \
@@ -60,24 +90,6 @@ def process_stream(kafka_stream):
         .add("ZoneID", StringType()) \
         .add("ChargeAmount", IntegerType()) \
         .add("EffectiveDate", StringType())
-
-    # Split the stream based on topic
-    incident_stream = kafka_stream.filter(col("topic") == "traffic_incidents") \
-        .withColumn("value", from_json(col("value"), incidents_schema)) \
-        .select(col("value.*"))
-
-    speedbands_stream = kafka_stream.filter(col("topic") == "traffic_speedbands") \
-        .withColumn("value", from_json(col("value"), speedbands_schema)) \
-        .select(col("value.*"))
-
-    image_stream = kafka_stream.filter(col("topic") == "traffic_images") \
-        .withColumn("value", from_json(col("value"), images_schema)) \
-        .select(col("value.*"))
-        
-    # VMS stream processing
-    vms_stream = kafka_stream.filter(col("topic") == "traffic_vms") \
-        .withColumn("value", from_json(col("value"), vms_schema)) \
-        .select(col("value.*"))
 
     # ERP rates stream processing
     erp_stream = kafka_stream.filter(col("topic") == "traffic_erp") \
