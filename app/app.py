@@ -1,6 +1,6 @@
 import sys
 import os
-
+import random
 import psycopg2
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../config')))
 from postgres_config import POSTGRES_DB
@@ -12,6 +12,7 @@ from dash.dependencies import Input, Output, State
 from flask import Flask, send_from_directory, render_template, Response
 import folium
 # Import blueprints
+import dash_bootstrap_components as dbc
 from routes.template_routes import live_traffic_blueprint, templates_blueprint
 
 
@@ -19,14 +20,16 @@ from routes.template_routes import live_traffic_blueprint, templates_blueprint
 server = Flask(__name__)
 
 # Initialize Dash app (Dash uses Flask under the hood)
-app = Dash(__name__, server=server, url_base_pathname='/map/', suppress_callback_exceptions=True)
+trafficmap_app = Dash(__name__, server=server, url_base_pathname='/map/', suppress_callback_exceptions=True)
+
+overview_app = Dash(__name__, server=server, url_base_pathname='/overview/', suppress_callback_exceptions=True,  external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 # Register blueprints
 server.register_blueprint(live_traffic_blueprint)
 server.register_blueprint(templates_blueprint) 
 
 # Layout for Dash app
-app.layout = html.Div([
+trafficmap_app.layout = html.Div([
     html.H3('Real-Time Live Traffic', className="text-center mb-4"),
      # Dropdown to select the table
     dcc.Dropdown(
@@ -53,7 +56,7 @@ app.layout = html.Div([
     # Auto-refresh every 10 seconds
     dcc.Interval(id='interval-component', interval=10*1000, n_intervals=0)
 ])
-@app.callback(
+@trafficmap_app.callback(
     [Output('map-output', 'children'), Output('incident-table', 'children')],
     [Input('interval-component', 'n_intervals'), Input('table-selector', 'value')]
 )
@@ -186,10 +189,142 @@ def update_map(n, selected_table):
         return dcc.Graph(figure=fig)
 
 
-@server.route('/map/')
-def render_map():
-    return app.index()
+# Traffic Overview
+def fetch_traffic_data():
+    return pd.DataFrame({
+        'latitude': [1.3521 + random.uniform(-0.02, 0.02) for _ in range(10)],
+        'longitude': [103.8198 + random.uniform(-0.02, 0.02) for _ in range(10)],
+        'type': random.choices(['Accident', 'Roadblock', 'Congestion'], k=10),
+        'message': random.choices(['Minor accident', 'Heavy congestion', 'Roadblock in effect'], k=10),
+        'datetime_str': pd.date_range(start='2024-01-01', periods=10).strftime('%Y-%m-%d %H:%M:%S')
+    })
 
+# Traffic Map Page Layout
+trafficmap_app.layout = html.Div([
+    html.H3('Real-Time Live Traffic', className="text-center mb-4"),
+    
+    # Div to display map
+    dcc.Graph(id='traffic-map'),
+    
+    # Auto-refresh every 10 seconds
+    dcc.Interval(id='interval-component-map', interval=10*1000, n_intervals=0)
+])
+
+# Callback to update the traffic map
+@trafficmap_app.callback(
+    Output('traffic-map', 'figure'),
+    [Input('interval-component-map', 'n_intervals')]
+)
+def update_traffic_map(n):
+    data = fetch_traffic_data()
+    
+    fig = px.scatter_mapbox(data, lat="latitude", lon="longitude", hover_name="type", hover_data=["message"],
+                            color="type", zoom=11, height=400, width=1000)
+
+    fig.update_layout(
+        mapbox_style="open-street-map",
+        mapbox=dict(center=dict(lat=1.3521, lon=103.8198), zoom=11),
+        margin={"r": 0, "t": 0, "l": 0, "b": 0},
+    )
+    return fig
+
+# Dummy Data for Traffic Overview
+def fetch_overview_data():
+    return {
+        "incident_count": random.randint(100, 500),
+        "vehicle_count": random.randint(10000, 50000),
+        "average_speed": random.randint(50, 100)
+    }
+
+def fetch_trend_data():
+    dates = pd.date_range(start='2023-01-01', periods=30)
+    data = {"date": dates, "incidents": [random.randint(10, 100) for _ in range(30)]}
+    return pd.DataFrame(data)
+
+# Traffic Overview Page Layout
+overview_app.layout = html.Div([
+    html.H3('Traffic Overview', className="text-center mb-4"),
+
+    # Container with colored background for the metrics
+    dbc.Container([
+        dbc.Row([
+            dbc.Col(
+                dbc.Card([
+                    dbc.CardBody([
+                        html.H4("Incidents", className="card-title"),
+                        html.P(id="incident-count", className="card-text", style={'font-size': '24px', 'font-weight': 'bold'}),
+                    ])
+                ], className="shadow p-3 mb-4 bg-primary text-white rounded"),  # Blue card with white text
+                width=4
+            ),
+            dbc.Col(
+                dbc.Card([
+                    dbc.CardBody([
+                        html.H4("Vehicles", className="card-title"),
+                        html.P(id="vehicle-count", className="card-text", style={'font-size': '24px', 'font-weight': 'bold'}),
+                    ])
+                ], className="shadow p-3 mb-4 bg-success text-white rounded"),  # Green card with white text
+                width=4
+            ),
+            dbc.Col(
+                dbc.Card([
+                    dbc.CardBody([
+                        html.H4("Average Speed", className="card-title"),
+                        html.P(id="average-speed", className="card-text", style={'font-size': '24px', 'font-weight': 'bold'}),
+                    ])
+                ], className="shadow p-3 mb-4 bg-warning text-white rounded"),  # Yellow card with white text
+                width=4
+            )
+        ], className="mb-4")  # Adds bottom margin to row
+    ], className="p-4", style={'background-color': '#f8f9fa', 'border-radius': '8px'}),  # Light background with padding and rounded corners
+
+
+    # Second Row: Trend Chart
+    dbc.Row([
+        dbc.Col(
+            dcc.Graph(id='trend-chart'),
+            width=12
+        )
+    ]),
+
+    # Auto-refresh every 10 seconds
+    dcc.Interval(id='interval-component-overview', interval=10*1000, n_intervals=0)
+])
+
+# Callback to update the numerical data (Incident Count, Vehicle Count, Average Speed)
+@overview_app.callback(
+    [Output('incident-count', 'children'),
+     Output('vehicle-count', 'children'),
+     Output('average-speed', 'children')],
+    [Input('interval-component-overview', 'n_intervals')]
+)
+def update_overview_data(n):
+    data = fetch_overview_data()
+    return f"{data['incident_count']} Incidents", f"{data['vehicle_count']} Vehicles", f"{data['average_speed']} km/h"
+
+# Callback to update the trend chart
+@overview_app.callback(
+    Output('trend-chart', 'figure'),
+    [Input('interval-component-overview', 'n_intervals')]
+)
+def update_trend_chart(n):
+    df = fetch_trend_data()
+    fig = px.line(df, x="date", y="incidents", title="Incident Trends Over Time")
+    fig.update_layout(
+        margin={"r":0,"t":50,"l":0,"b":0},
+        title={'x':0.5, 'xanchor': 'center'},
+        xaxis_title="Date",
+        yaxis_title="Number of Incidents"
+    )
+    return fig
+@server.route('/map/')
+def traffic_map():
+    return render_template('traffic_map.html')  # Renders the map template
+
+# Flask Route to render the traffic overview page
+@server.route('/overview/')
+def traffic_overview():
+    return render_template('trafficOverview.html')
 
 # Run the Dash server
 if __name__ == '__main__':
