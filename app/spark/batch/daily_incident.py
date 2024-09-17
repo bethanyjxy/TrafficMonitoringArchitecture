@@ -1,13 +1,20 @@
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../config')))
-from postgres_config import SPARK_POSTGRES
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, to_date, regexp_extract, current_timestamp, current_date
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType
 from datetime import datetime
 import time
+
+SPARK_POSTGRES = {
+    'url': 'jdbc:postgresql://localhost:5432/traffic_db',
+    'properties': {
+        'user': 'traffic_admin',
+        'password': 'traffic_pass',
+        'driver': 'org.postgresql.Driver'
+    }
+}
 
 def write_to_postgres(df, table_name, postgres_url, postgres_properties):
     try:
@@ -33,7 +40,7 @@ def main():
         .getOrCreate()
 
     # Path to batch data in HDFS
-    batch_data_path = "hdfs://localhost:9000/user/hadoop/traffic_data/traffic_incidents.json"
+    batch_data_path = "hdfs://namenode:9000/user/hadoop/traffic_data/traffic_incidents.json"
 
     # Read JSON data
     df = spark.read.format("json").load(batch_data_path)
