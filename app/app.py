@@ -99,7 +99,6 @@ def update_map(n, selected_table):
             columns=[
                 {"name": "Datetime", "id": "datetime_str"},
                 {"name": "Incident", "id": "message"}
-
             ],
             data=df[[ "message", "datetime_str"]].to_dict('records'),
             style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'},
