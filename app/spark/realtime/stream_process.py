@@ -47,16 +47,24 @@ def process_stream(kafka_stream):
         .add("RoadName", StringType()) \
         .add("RoadCategory", StringType()) \
         .add("SpeedBand", IntegerType()) \
-        .add("MinimumSpeed", IntegerType()) \
-        .add("MaximumSpeed", IntegerType()) \
-        .add("StartLon", DoubleType()) \
-        .add("StartLat", DoubleType()) \
-        .add("EndLon", DoubleType()) \
-        .add("EndLat", DoubleType())
+        .add("MinimumSpeed", StringType()) \
+        .add("MaximumSpeed", StringType()) \
+        .add("StartLon", StringType()) \
+        .add("StartLat", StringType()) \
+        .add("EndLon", StringType()) \
+        .add("EndLat", StringType())  
     
     speedbands_stream = kafka_stream.filter(col("topic") == "traffic_speedbands") \
         .withColumn("value", from_json(col("value"), speedbands_schema)) \
         .select(col("value.*"))
+        
+    speedbands_stream = speedbands_stream \
+        .withColumn("MinimumSpeed", col("MinimumSpeed").cast("int")) \
+        .withColumn("MaximumSpeed", col("MaximumSpeed").cast("int")) \
+        .withColumn("StartLon", col("StartLon").cast("double")) \
+        .withColumn("StartLat", col("StartLat").cast("double")) \
+        .withColumn("EndLon", col("EndLon").cast("double")) \
+        .withColumn("EndLat", col("EndLat").cast("double"))
         
         
         
@@ -88,7 +96,7 @@ def process_stream(kafka_stream):
         .add("StartTime", StringType()) \
         .add("EndTime", StringType()) \
         .add("ZoneID", StringType()) \
-        .add("ChargeAmount", IntegerType()) \
+        .add("ChargeAmount", DoubleType()) \
         .add("EffectiveDate", StringType())
 
     # ERP rates stream processing

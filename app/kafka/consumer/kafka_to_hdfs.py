@@ -4,7 +4,7 @@ import json
 import os
 
 # HDFS configuration
-hdfs_url = 'http://namenode:9870'  # Replace with your HDFS URL
+hdfs_url = 'http://localhost:9870'  # Replace with your HDFS URL
 hdfs_user = 'hadoop'  # Replace with your HDFS user
 hdfs_directory = '/user/hadoop/traffic_data/'  # HDFS directory path
 

@@ -79,7 +79,7 @@ def update_map(n, selected_table):
         fig.update_traces(marker=dict(size=10, sizemode='area'),  # Default marker size
                           selector=dict(mode='markers'),
                           hoverinfo='text',
-                          hoverlabel=dict(bgcolor="white", font_size=16))
+                          hoverlabel=dict(bgcolor="white", font_size=10))
 
         # Use Mapbox open street map style
         fig.update_layout(
@@ -155,7 +155,7 @@ def update_map(n, selected_table):
             
         )
         fig.update_traces(marker=dict(sizemode="diameter", size=10, opacity=0.7))
-        return dcc.Graph(figure=fig)
+        return dcc.Graph(figure=fig), None
     
 
     elif selected_table == 'vms_table':
@@ -185,7 +185,7 @@ def update_map(n, selected_table):
         )
         fig.update_traces(marker=dict(sizemode="diameter", size=10, opacity=0.7))
 
-        return dcc.Graph(figure=fig)
+        return dcc.Graph(figure=fig), None
 
 
 @server.route('/map/')
@@ -194,94 +194,7 @@ def render_map():
 
 
 
-# Dummy Data for Traffic Overview
-def fetch_overview_data():
-    return {
-        "incident_count": random.randint(100, 500),
-        "vehicle_count": random.randint(10000, 50000),
-        "average_speed": random.randint(50, 100)
-    }
 
-def fetch_trend_data():
-    dates = pd.date_range(start='2023-01-01', periods=30)
-    data = {"date": dates, "incidents": [random.randint(10, 100) for _ in range(30)]}
-    return pd.DataFrame(data)
-
-# Traffic Overview Page Layout
-overview_app.layout = html.Div([
-    html.H3('Traffic Overview', className="text-center mb-4"),
-
-    # Container with colored background for the metrics
-    dbc.Container([
-        dbc.Row([
-            dbc.Col(
-                dbc.Card([
-                    dbc.CardBody([
-                        html.H4("Incidents", className="card-title"),
-                        html.P(id="incident-count", className="card-text", style={'font-size': '24px', 'font-weight': 'bold'}),
-                    ])
-                ], className="shadow p-3 mb-4 bg-primary text-white rounded"),  # Blue card with white text
-                width=4
-            ),
-            dbc.Col(
-                dbc.Card([
-                    dbc.CardBody([
-                        html.H4("Vehicles", className="card-title"),
-                        html.P(id="vehicle-count", className="card-text", style={'font-size': '24px', 'font-weight': 'bold'}),
-                    ])
-                ], className="shadow p-3 mb-4 bg-success text-white rounded"),  # Green card with white text
-                width=4
-            ),
-            dbc.Col(
-                dbc.Card([
-                    dbc.CardBody([
-                        html.H4("Average Speed", className="card-title"),
-                        html.P(id="average-speed", className="card-text", style={'font-size': '24px', 'font-weight': 'bold'}),
-                    ])
-                ], className="shadow p-3 mb-4 bg-warning text-white rounded"),  # Yellow card with white text
-                width=4
-            )
-        ], className="mb-4")  # Adds bottom margin to row
-    ], className="p-4", style={'background-color': '#f8f9fa', 'border-radius': '8px'}),  # Light background with padding and rounded corners
-
-    # Second Row: Trend Chart
-    dbc.Row([
-        dbc.Col(
-            dcc.Graph(id='trend-chart'),
-            width=12
-        )
-    ]),
-
-    # Auto-refresh every 10 seconds
-    dcc.Interval(id='interval-component-overview', interval=10*1000, n_intervals=0)
-])
-
-# Callback to update the numerical data (Incident Count, Vehicle Count, Average Speed)
-@overview_app.callback(
-    [Output('incident-count', 'children'),
-     Output('vehicle-count', 'children'),
-     Output('average-speed', 'children')],
-    [Input('interval-component-overview', 'n_intervals')]
-)
-def update_overview_data(n):
-    data = fetch_overview_data()
-    return f"{data['incident_count']} Incidents", f"{data['vehicle_count']} Vehicles", f"{data['average_speed']} km/h"
-
-# Callback to update the trend chart
-@overview_app.callback(
-    Output('trend-chart', 'figure'),
-    [Input('interval-component-overview', 'n_intervals')]
-)
-def update_trend_chart(n):
-    df = fetch_trend_data()
-    fig = px.line(df, x="date", y="incidents", title="Incident Trends Over Time")
-    fig.update_layout(
-        margin={"r":0,"t":50,"l":0,"b":0},
-        title={'x':0.5, 'xanchor': 'center'},
-        xaxis_title="Date",
-        yaxis_title="Number of Incidents"
-    )
-    return fig
 
 @server.route('/overview/')
 def traffic_overview():

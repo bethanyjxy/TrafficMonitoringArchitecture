@@ -46,7 +46,7 @@ def fetch_data_from_table(table_name):
     cursor = conn.cursor()
 
     # Use sql.Identifier for safe table name injection
-    query = sql.SQL("SELECT * FROM {}").format(sql.Identifier(table_name))
+    query = sql.SQL("SELECT * FROM {} LIMIT 500").format(sql.Identifier(table_name))
     cursor.execute(query)
     
     # Fetch all rows and column names
@@ -58,4 +58,3 @@ def fetch_data_from_table(table_name):
 
     cursor.close()
     return data_dicts
-
