@@ -43,7 +43,8 @@ def process_stream(kafka_stream):
         .withColumn("incident_time", regexp_extract(col("Message"), time_regex, 1)) \
         .withColumn("incident_message", regexp_replace(col("Message"), pattern_regex, "")) \
         .withColumn("incident_message", trim(col("incident_message"))) \
-        .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") )
+        .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") ) \
+        .dropDuplicates(["Type", "Latitude", "Longitude", "Message"]) 
           
     speedbands_schema = StructType() \
         .add("LinkID", StringType()) \
@@ -60,7 +61,8 @@ def process_stream(kafka_stream):
     speedbands_stream = kafka_stream.filter(col("topic") == "traffic_speedbands") \
         .withColumn("value", from_json(col("value"), speedbands_schema)) \
         .select(col("value.*"))\
-        .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") )
+        .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") ) \
+        .dropDuplicates(["LinkID"])
         
         
         
@@ -74,7 +76,8 @@ def process_stream(kafka_stream):
     image_stream = kafka_stream.filter(col("topic") == "traffic_images") \
         .withColumn("value", from_json(col("value"), images_schema)) \
         .select(col("value.*")) \
-        .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") )
+        .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") ) \
+        .dropDuplicates(["CameraID"])
         
         
     vms_schema = StructType() \
@@ -87,7 +90,8 @@ def process_stream(kafka_stream):
     vms_stream = kafka_stream.filter(col("topic") == "traffic_vms") \
         .withColumn("value", from_json(col("value"), vms_schema)) \
         .select(col("value.*"))\
-        .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") )
+        .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") ) \
+        .dropDuplicates(["EquipmentID"])
 
     erp_schema = StructType() \
         .add("VehicleType", StringType()) \

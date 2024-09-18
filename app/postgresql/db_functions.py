@@ -2,6 +2,7 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../config')))
 from postgres_config import POSTGRES_DB
+from datetime import datetime
 
 import psycopg2
 from psycopg2 import sql
@@ -58,4 +59,6 @@ def fetch_data_from_table(table_name):
 
     cursor.close()
     return data_dicts
+
+
 

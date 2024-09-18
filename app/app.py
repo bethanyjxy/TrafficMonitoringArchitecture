@@ -91,6 +91,8 @@ def update_map(n, selected_table):
             margin={"r":0,"t":0,"l":0,"b":0},  # Remove margins
             
         )
+        
+        df = df.sort_values(by=['incident_date', 'incident_time'], ascending=[False, False])  # Sort by date and time in descending order
 
         fig.update_traces(marker=dict(sizemode="diameter", size=10, opacity=0.7))
          # Create incident table to display recent incidents
