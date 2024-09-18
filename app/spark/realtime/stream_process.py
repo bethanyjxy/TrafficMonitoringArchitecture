@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, from_json,  regexp_extract, concat, lit, to_timestamp
+from pyspark.sql.functions import col, from_json,  regexp_extract, concat, lit, current_timestamp, regexp_replace, date_format, trim, to_timestamp
 from pyspark.sql.types import StructType, StringType, DoubleType, IntegerType
 
 def create_spark_session():
@@ -32,16 +32,19 @@ def process_stream(kafka_stream):
         .add("Message", StringType())
 
     date_regex = r"\((\d{1,2}/\d{1,2})\)(\d{1,2}:\d{2})"
+    pattern_regex = r"\(\d{1,2}/\d{1,2}\)\d{2}:\d{2}"
+    time_regex = r"(\d{2}:\d{2})" 
 
     # Split the stream based on topic
     incident_stream = kafka_stream.filter(col("topic") == "traffic_incidents") \
         .withColumn("value", from_json(col("value"), incidents_schema)) \
         .select(col("value.*")) \
         .withColumn("incident_date", regexp_extract(col("Message"), date_regex, 1)) \
-        .withColumn("incident_time", regexp_extract(col("Message"), date_regex, 2)) \
-        .withColumn("datetime_str", concat(lit("2024/"), col("incident_date"), lit(" "), col("incident_time"))) 
-
-            
+        .withColumn("incident_time", regexp_extract(col("Message"), time_regex, 1)) \
+        .withColumn("incident_message", regexp_replace(col("Message"), pattern_regex, "")) \
+        .withColumn("incident_message", trim(col("incident_message"))) \
+        .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") )
+          
     speedbands_schema = StructType() \
         .add("LinkID", StringType()) \
         .add("RoadName", StringType()) \
@@ -56,7 +59,8 @@ def process_stream(kafka_stream):
     
     speedbands_stream = kafka_stream.filter(col("topic") == "traffic_speedbands") \
         .withColumn("value", from_json(col("value"), speedbands_schema)) \
-        .select(col("value.*"))
+        .select(col("value.*"))\
+        .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") )
         
         
         
@@ -66,9 +70,11 @@ def process_stream(kafka_stream):
         .add("Longitude", DoubleType()) \
         .add("ImageLink", StringType())
 
+    # Define the image stream with the additional timestamp column
     image_stream = kafka_stream.filter(col("topic") == "traffic_images") \
         .withColumn("value", from_json(col("value"), images_schema)) \
-        .select(col("value.*"))
+        .select(col("value.*")) \
+        .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") )
         
         
     vms_schema = StructType() \
@@ -80,7 +86,8 @@ def process_stream(kafka_stream):
     # VMS stream processing
     vms_stream = kafka_stream.filter(col("topic") == "traffic_vms") \
         .withColumn("value", from_json(col("value"), vms_schema)) \
-        .select(col("value.*"))
+        .select(col("value.*"))\
+        .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") )
 
     erp_schema = StructType() \
         .add("VehicleType", StringType()) \
@@ -90,11 +97,13 @@ def process_stream(kafka_stream):
         .add("ZoneID", StringType()) \
         .add("ChargeAmount", IntegerType()) \
         .add("EffectiveDate", StringType())
+        
 
     # ERP rates stream processing
     erp_stream = kafka_stream.filter(col("topic") == "traffic_erp") \
         .withColumn("value", from_json(col("value"), erp_schema)) \
-        .select(col("value.*"))
+        .select(col("value.*"))\
+        .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") )
 
     return incident_stream, speedbands_stream, image_stream, vms_stream, erp_stream
 

@@ -1,6 +1,6 @@
 <configuration>
   <property>
-    <name>fs.defaultFS</name>
-    <value>hdfs://namenode:9000</value>  <!-- This points to the NameNode -->
+      <name>fs.defaultFS</name>
+      <value>hdfs://hadoop-namenode:9000</value>
   </property>
 </configuration>
