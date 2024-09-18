@@ -79,7 +79,7 @@ def update_map(n, selected_table):
         fig.update_traces(marker=dict(size=10, sizemode='area'),  # Default marker size
                           selector=dict(mode='markers'),
                           hoverinfo='text',
-                          hoverlabel=dict(bgcolor="white", font_size=16))
+                          hoverlabel=dict(bgcolor="white", font_size=10))
 
         # Use Mapbox open street map style
         fig.update_layout(
