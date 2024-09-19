@@ -91,16 +91,20 @@ def update_map(n, selected_table):
             margin={"r":0,"t":0,"l":0,"b":0},  # Remove margins
             
         )
+        
+        df = df.sort_values(by=['incident_date', 'incident_time'], ascending=[False, False])  # Sort by date and time in descending order
 
         fig.update_traces(marker=dict(sizemode="diameter", size=10, opacity=0.7))
          # Create incident table to display recent incidents
         incident_table_component = dash_table.DataTable(
             id='incident-table',
             columns=[
-                {"name": "Datetime", "id": "datetime_str"},
-                {"name": "Incident", "id": "message"}
+                {"name": "Date", "id": "incident_date"},
+                {"name": "Time", "id": "incident_time"},
+                {"name": "Incident", "id": "incident_message"}
+
             ],
-            data=df[[ "message", "datetime_str"]].to_dict('records'),
+            data=df[["incident_date", "incident_time", "incident_message"]].to_dict('records'),
             style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'},
             style_cell={'textAlign': 'left', 'fontSize': 12, 'font-family': 'Arial', 'padding': '5px'},
             page_size=10  # Show 10 incidents per page
