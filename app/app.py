@@ -14,6 +14,7 @@ from flask import Flask, send_from_directory, render_template, Response
 import folium
 # Import blueprints
 from routes.template_routes import live_traffic_blueprint, templates_blueprint
+import plotly.graph_objects as go
 
 
 # Initialize Flask server
@@ -30,32 +31,45 @@ server.register_blueprint(templates_blueprint)
 
 # Layout for Dash app
 traffic_app.layout = html.Div([
+    # Page Title
     html.H3('Real-Time Live Traffic', className="text-center mb-4"),
-     # Dropdown to select the table
-    dcc.Dropdown(
-        id='table-selector',style={"width": "50%", "margin-bottom": "20px"},
-        options=[
-            {'label': 'Incident Table', 'value': 'incident_table'},
-            {'label': 'VMS Table', 'value': 'vms_table'},
-            {'label': 'Camera Table', 'value': 'image_table'} 
-        ],
-        value='incident_table'  # Default table
-    ),
     
-    # Div to display map
-    html.Div([
-        # Div for the map
-        html.Div(id='map-output',  style={'flex': '60%', 'padding': '10px', 'flex-shrink': '0'}),  # Map takes 60% width, doesn't shrink
-        # Div for the table
-        html.Div([
-            html.H4('Recent Incidents', className="text-center mb-4"),  # Title for the table
-            html.Div(id='incident-table')  # Table will be generated here
-        ], style={'flex': '40%', 'padding': '10px', 'display': 'flex', 'flex-direction': 'column', 'flex-shrink': '0'}) 
-    ], style={'flex-direction': 'row', 'width': '100%', 'overflow': 'hidden' }),
-
-    # Auto-refresh every 10 seconds
-    dcc.Interval(id='interval-component', interval=10*1000, n_intervals=0)
-])
+    # Dropdown to select the table
+    dbc.Row([
+        dbc.Col(
+            dcc.Dropdown(
+                id='table-selector',
+                style={"width": "70%"},
+                options=[
+                    {'label': 'Incident Table', 'value': 'incident_table'},
+                    {'label': 'VMS Table', 'value': 'vms_table'},
+                    {'label': 'Camera Table', 'value': 'image_table'} 
+                ],
+                value='incident_table'  # Default table
+            ),
+            width=6,  # Dropdown takes half the width
+            className="mb-4"  # Add some bottom margin for spacing
+        )
+    ], justify="center"),  # Center the dropdown
+    
+    # Div to display map and table
+    dbc.Row([
+        # Column for the map
+        dbc.Col(
+            html.Div(id='map-output', style={'padding': '10px'}),
+            width=8,  # Map takes up more space
+            className="shadow-sm p-3 mb-4 bg-white rounded"  # Add some styling and spacing
+        ),
+        # Column for the incident table
+        dbc.Col([
+            html.H4('Recent Incidents', className="text-center mb-4"),
+            html.Div(id='incident-table')
+        ], width=4, className="shadow-sm p-3 mb-4 bg-white rounded")  # Table takes up less space and has similar styling
+    ], justify="space-between", style={'padding': '0 15px'}),  # Ensure consistent padding
+    
+    # Auto-refresh every 2 seconds
+    dcc.Interval(id='interval-component', interval=2*1000, n_intervals=0)
+], style={'max-width': '100%', 'margin': '0 auto', 'padding': '20px', 'overflow-x': 'hidden'})
 @traffic_app.callback(
     [Output('map-output', 'children'), Output('incident-table', 'children')],
     [Input('interval-component', 'n_intervals'), Input('table-selector', 'value')]
@@ -73,13 +87,13 @@ def update_map(n, selected_table):
         
         # Scatter map with incidents as points
         fig = px.scatter_mapbox(df, lat="latitude", lon="longitude", hover_name="type", hover_data=["message"],
-                                color="type",  zoom=11, height=400,width=1000)
+                                color="type",  zoom=11, height=600,width=1200)
 
         # Set map style and marker behavior on hover
-        fig.update_traces(marker=dict(size=10, sizemode='area'),  # Default marker size
+        fig.update_traces(marker=dict(size=14, sizemode='area'),  # Default marker size
                           selector=dict(mode='markers'),
                           hoverinfo='text',
-                          hoverlabel=dict(bgcolor="white", font_size=10))
+                          hoverlabel=dict(bgcolor="white", font_size=12, font_family="Arial"))
 
         # Use Mapbox open street map style
         fig.update_layout(
@@ -94,7 +108,7 @@ def update_map(n, selected_table):
         
         df = df.sort_values(by=['incident_date', 'incident_time'], ascending=[False, False])  # Sort by date and time in descending order
 
-        fig.update_traces(marker=dict(sizemode="diameter", size=10, opacity=0.7))
+        fig.update_traces(marker=dict(sizemode="diameter", size=12, opacity=0.7))
          # Create incident table to display recent incidents
         incident_table_component = dash_table.DataTable(
             id='incident-table',
@@ -102,13 +116,13 @@ def update_map(n, selected_table):
                 {"name": "Date", "id": "incident_date"},
                 {"name": "Time", "id": "incident_time"},
                 {"name": "Incident", "id": "incident_message"}
-
             ],
-            data=df[["incident_date", "incident_time", "incident_message"]].to_dict('records'),
+            data=[],  # Initially set to empty to force re-render
             style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'},
             style_cell={'textAlign': 'left', 'fontSize': 12, 'font-family': 'Arial', 'padding': '5px'},
-            page_size=10  # Show 10 incidents per page
+            page_size=10
         )
+        incident_table_component.data = df[["incident_date", "incident_time", "incident_message"]].to_dict('records')
 
         return dcc.Graph(figure=fig), incident_table_component
     
@@ -143,7 +157,7 @@ def update_map(n, selected_table):
         #     margin={"r": 0, "t": 0, "l": 0, "b": 0},
         # )
         fig = px.scatter_mapbox(df, lat="latitude", lon="longitude", hover_name="cameraid", zoom=11, height=400,width=1000)
-        fig.update_traces(marker=dict(size=10, sizemode='area'),  # Default marker size
+        fig.update_traces(marker=dict(size=12, sizemode='area'),  # Default marker size
                           selector=dict(mode='markers'),
                           hoverinfo='text',
                           hoverlabel=dict(bgcolor="white", font_size=16))
@@ -158,7 +172,7 @@ def update_map(n, selected_table):
             margin={"r":0,"t":0,"l":0,"b":0},  # Remove margins
             
         )
-        fig.update_traces(marker=dict(sizemode="diameter", size=10, opacity=0.7))
+        fig.update_traces(marker=dict(sizemode="diameter", size=12, opacity=0.7))
         return dcc.Graph(figure=fig), None
     
 
@@ -169,13 +183,13 @@ def update_map(n, selected_table):
         
         # Scatter map with VMS locations as points
         fig = px.scatter_mapbox(df, lat="latitude", lon="longitude", hover_name="message",
-                                 zoom=11, height=400,width=1000)
+                                 zoom=11, height=600,width=1200)
 
         # Set map style and marker behavior on hover
         fig.update_traces(marker=dict(size=10, sizemode='area'),  # Default marker size
                           selector=dict(mode='markers'),
                           hoverinfo='text',
-                          hoverlabel=dict(bgcolor="white", font_size=16))
+                          hoverlabel=dict(bgcolor="white", font_size=12))
 
         # Use Mapbox open street map style
         fig.update_layout(
@@ -187,7 +201,7 @@ def update_map(n, selected_table):
             margin={"r":0,"t":0,"l":0,"b":0},  # Remove margins
             
         )
-        fig.update_traces(marker=dict(sizemode="diameter", size=10, opacity=0.7))
+        fig.update_traces(marker=dict(sizemode="diameter", size=12, opacity=0.7))
 
         return dcc.Graph(figure=fig), None
 
@@ -197,7 +211,138 @@ def render_map():
     return traffic_app.index()
 
 
+# Traffic Overview Page Layout
+overview_app.layout = html.Div([
+    html.H3('Traffic Overview', className="text-center mb-4"),
 
+    # First Row: Metrics Cards
+html.Div([
+    dbc.Row([
+        dbc.Col(
+            dbc.Card([
+                dbc.CardBody([
+                    html.Span("Incidents Today: ", className="card-title", style={'font-size': '24px', 'font-weight': 'bold'}),
+                    html.Span(id="incident-count", className="card-text", style={'font-size': '24px', 'font-weight': 'bold'}),
+                ])
+            ], className="shadow p-3 mb-4 bg-primary text-white rounded"),
+            width=4
+        )
+    ], className="mb-4", style={'flex-wrap': 'wrap', 'justify-content': 'space-between'})
+], style={'max-width': '100%', 'margin': '0 auto', 'padding': '0 15px'}),
+
+    # Second Row: Trend, Pie, and Bar Charts
+    html.Div([
+        dbc.Row([
+            dbc.Col(
+                dcc.Graph(id='correlation-chart'),
+                width=4
+               
+            ),
+            dbc.Col(
+                dcc.Graph(id='pie-chart'),
+                width=4
+            ),
+            dbc.Col(
+                dcc.Graph(id='trend-chart'),
+                width=4
+            )
+        ], className="mb-4", style={'flex-wrap': 'wrap', 'justify-content': 'space-between'})
+    ], style={'max-width': '100%', 'margin': '0 auto', 'padding': '0 15px'}),
+
+    # Auto-refresh every 10 seconds
+    dcc.Interval(id='interval-component-overview', interval=2*1000, n_intervals=0)
+], style={'overflow-x': 'hidden'})
+
+
+@overview_app.callback(
+    Output('incident-count', 'children'),
+    Input('interval-component-overview', 'n_intervals')
+)
+def update_incident_count(n):
+    # Fetch the number of incidents today
+    incident_count = fetch_incident_count_today()
+    # Return the formatted string for display in the card
+    return f"{incident_count}"
+
+
+# Callback to update the trend chart
+@overview_app.callback(
+    Output('trend-chart', 'figure'),
+    [Input('interval-component-overview', 'n_intervals')]
+)
+def update_trend_chart(n):
+    df = fetch_incidents_over_time()
+    fig = px.line(
+        df, 
+        x="incident_date", 
+        y="incident_count", 
+        title="Incident Trends Over Time",
+        labels={"incident_date": "Date", "incident_count": "Number of Incidents"}
+    )
+
+    fig.update_traces(
+        hovertemplate="Date: %{x}<br>Number of Incidents: %{y}<extra></extra>"
+    )
+
+    fig.update_layout(
+        margin={"r":0,"t":50,"l":0,"b":0},
+        title={'x':0.5, 'xanchor': 'center'},
+        xaxis_title="Date",
+        yaxis_title="Number of Incidents",
+        template="simple_white",
+        hovermode="x unified"
+    )
+    return fig
+
+
+@overview_app.callback(
+    Output('correlation-chart', 'figure'),
+    Input('interval-component-overview', 'n_intervals')
+)
+def update_correlation_chart(n):
+    df = fetch_vms_incident_correlation()
+
+    fig = px.scatter(
+    df, 
+    x="incident_count", 
+    y="vms_message", 
+    size="incident_count", 
+    title="Correlation Between VMS Messages and Incidents",
+    labels={"incident_count": "Total Incidents", "vms_message": "VMS Message"},
+    hover_data={"incident_count": False, "vms_message": False}
+    )
+    fig.update_traces(
+        hovertemplate="<b>%{y}</b><br>Total Incidents: %{x}<extra></extra>"
+    )
+    fig.update_layout(
+        margin={"r":0,"t":50,"l":0,"b":0},
+        title={'x':0.5, 'xanchor': 'center'},
+        xaxis_title="Number of Incidents",
+        yaxis_title="VMS Message",
+        template="plotly_white",
+        hovermode="closest"
+    )
+    return fig
+
+@overview_app.callback(
+    Output('pie-chart', 'figure'),
+    [Input('interval-component-overview', 'n_intervals')]
+)
+def update_pie_chart(n):
+    df = fetch_vehicle_type_incidents()
+    fig = px.pie(
+        df, 
+        values="vehicle_count", 
+        names="vehicle_type", 
+        title="Incidents by Vehicle Type",
+        labels={"vehicle_count": "Vehicles", "vehicle_type": "Type"}
+    )
+
+    fig.update_traces(
+        hovertemplate="<b>%{label}</b><br>Vehicles: %{value}<extra></extra>"
+    )
+
+    return fig
 
 
 @server.route('/overview/')

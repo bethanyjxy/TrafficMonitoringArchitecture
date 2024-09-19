@@ -67,7 +67,8 @@ def fetch_incident_count_today():
     query = """
     SELECT COUNT(*) AS incident_count
     FROM incident_table
-    WHERE DATE(created_at) = CURRENT_DATE;
+    WHERE TO_DATE(incident_date || '/' || EXTRACT(YEAR FROM CURRENT_DATE), 'DD/MM/YYYY') = CURRENT_DATE;
+
     """
     conn = connect_db()
     if not conn:
@@ -84,12 +85,13 @@ def fetch_incident_count_today():
 # Fetch the incidents over time for the past month
 def fetch_incidents_over_time():
     """Fetch the number of incidents per day over the past 30 days."""
-    query = """
-    SELECT DATE(created_at) AS incident_date, COUNT(*) AS incident_count
+    current_year = datetime.now().year  # Get the current year
+    query = f"""
+    SELECT TO_TIMESTAMP("incident_date" || '/{current_year} ' || "incident_time", 'DD/MM/YYYY HH24:MI') AS incident_datetime, 
+           COUNT(*) AS incident_count
     FROM incident_table
-    WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
-    GROUP BY incident_date
-    ORDER BY incident_date;
+    GROUP BY incident_datetime
+    ORDER BY incident_datetime;
     """
     conn = connect_db()
     if not conn:
@@ -103,6 +105,7 @@ def fetch_incidents_over_time():
 
     # Convert result to pandas DataFrame
     df = pd.DataFrame(result, columns=["incident_date", "incident_count"])
+
     return df
 
 
@@ -110,7 +113,7 @@ def fetch_incidents_over_time():
 def fetch_vehicle_type_incidents():
     """Fetch the breakdown of vehicle types involved in incidents."""
     query = """
-    SELECT Type AS vehicle_type, COUNT(*) AS vehicle_count
+    SELECT "Type" AS vehicle_type, COUNT(*) AS vehicle_count
     FROM incident_table
     GROUP BY vehicle_type
     ORDER BY vehicle_count DESC;
@@ -134,11 +137,11 @@ def fetch_vehicle_type_incidents():
 def fetch_erp_charges_over_time():
     """Fetch ERP charges over time grouped by vehicle type."""
     query = """
-    SELECT StartTime, EndTime, VehicleType, SUM(ChargeAmount) AS total_charge
+    SELECT "StartTime", "EndTime", "VehicleType", SUM("ChargeAmount") AS total_charge
     FROM erp_table
-    WHERE EffectiveDate = CURRENT_DATE
-    GROUP BY StartTime, EndTime, VehicleType
-    ORDER BY StartTime;
+    WHERE "EffectiveDate" = CURRENT_DATE
+    GROUP BY "StartTime", "EndTime", "VehicleType"
+    ORDER BY "StartTime";
     """
     conn = connect_db()
     if not conn:
@@ -154,16 +157,19 @@ def fetch_erp_charges_over_time():
     df = pd.DataFrame(result, columns=["StartTime", "EndTime", "VehicleType", "total_charge"])
     return df
 
-
-# Fetch ERP charges by vehicle type (stacked bar chart data)
-def fetch_erp_charges_by_vehicle_type():
-    """Fetch the total ERP charges by vehicle type."""
+def fetch_vms_incident_correlation():
+    """Fetch the correlation between VMS messages and incident occurrences."""
     query = """
-    SELECT VehicleType, SUM(ChargeAmount) AS total_charge
-    FROM erp_table
-    WHERE EffectiveDate = CURRENT_DATE
-    GROUP BY VehicleType
-    ORDER BY total_charge DESC;
+    SELECT v."Message" AS vms_message, COUNT(*) AS incident_count
+    FROM vms_table v
+    LEFT JOIN incident_table i
+    ON i."Latitude" BETWEEN v."Latitude" - 0.1 AND v."Latitude" + 0.1
+    AND i."Longitude" BETWEEN v."Longitude" - 0.1 AND v."Longitude" + 0.1
+    AND ABS(EXTRACT(EPOCH FROM (
+        TO_TIMESTAMP(i."incident_date" || '/2024 ' || i."incident_time", 'DD/MM/YYYY HH24:MI') - v."timestamp"::TIMESTAMP))) <= 3600
+    GROUP BY v."Message"
+    ORDER BY incident_count DESC;
+    ;
     """
     conn = connect_db()
     if not conn:
@@ -172,12 +178,14 @@ def fetch_erp_charges_by_vehicle_type():
     with conn.cursor() as cursor:
         cursor.execute(query)
         result = cursor.fetchall()
-
+    
     conn.close()
-
+    
     # Convert result to pandas DataFrame
-    df = pd.DataFrame(result, columns=["VehicleType", "total_charge"])
+    df = pd.DataFrame(result, columns=["vms_message", "incident_count"])
+    
     return df
+
 
 def fetch_today_table(table_name):
     """Fetch all incidents where the date matches the current day and month."""
