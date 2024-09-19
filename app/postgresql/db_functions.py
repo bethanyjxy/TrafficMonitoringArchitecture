@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../config')))
 from postgres_config import POSTGRES_DB
-
+import pandas as pd
 import psycopg2
 from psycopg2 import sql
 
@@ -58,3 +58,121 @@ def fetch_data_from_table(table_name):
 
     cursor.close()
     return data_dicts
+
+# Fetch the count of incidents for today
+def fetch_incident_count_today():
+    """Fetch the count of incidents that occurred today."""
+    query = """
+    SELECT COUNT(*) AS incident_count
+    FROM incident_table
+    WHERE DATE(created_at) = CURRENT_DATE;
+    """
+    conn = connect_db()
+    if not conn:
+        return 0
+
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        result = cursor.fetchone()
+    
+    conn.close()
+    return result[0] if result else 0
+
+
+# Fetch the incidents over time for the past month
+def fetch_incidents_over_time():
+    """Fetch the number of incidents per day over the past 30 days."""
+    query = """
+    SELECT DATE(created_at) AS incident_date, COUNT(*) AS incident_count
+    FROM incident_table
+    WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
+    GROUP BY incident_date
+    ORDER BY incident_date;
+    """
+    conn = connect_db()
+    if not conn:
+        return pd.DataFrame()
+
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        result = cursor.fetchall()
+    
+    conn.close()
+
+    # Convert result to pandas DataFrame
+    df = pd.DataFrame(result, columns=["incident_date", "incident_count"])
+    return df
+
+
+# Fetch vehicle types involved in incidents and their counts
+def fetch_vehicle_type_incidents():
+    """Fetch the breakdown of vehicle types involved in incidents."""
+    query = """
+    SELECT Type AS vehicle_type, COUNT(*) AS vehicle_count
+    FROM incident_table
+    GROUP BY vehicle_type
+    ORDER BY vehicle_count DESC;
+    """
+    conn = connect_db()
+    if not conn:
+        return pd.DataFrame()
+
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        result = cursor.fetchall()
+
+    conn.close()
+
+    # Convert result to pandas DataFrame
+    df = pd.DataFrame(result, columns=["vehicle_type", "vehicle_count"])
+    return df
+
+
+# Fetch ERP charges over time by vehicle type
+def fetch_erp_charges_over_time():
+    """Fetch ERP charges over time grouped by vehicle type."""
+    query = """
+    SELECT StartTime, EndTime, VehicleType, SUM(ChargeAmount) AS total_charge
+    FROM erp_table
+    WHERE EffectiveDate = CURRENT_DATE
+    GROUP BY StartTime, EndTime, VehicleType
+    ORDER BY StartTime;
+    """
+    conn = connect_db()
+    if not conn:
+        return pd.DataFrame()
+
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        result = cursor.fetchall()
+
+    conn.close()
+
+    # Convert result to pandas DataFrame
+    df = pd.DataFrame(result, columns=["StartTime", "EndTime", "VehicleType", "total_charge"])
+    return df
+
+
+# Fetch ERP charges by vehicle type (stacked bar chart data)
+def fetch_erp_charges_by_vehicle_type():
+    """Fetch the total ERP charges by vehicle type."""
+    query = """
+    SELECT VehicleType, SUM(ChargeAmount) AS total_charge
+    FROM erp_table
+    WHERE EffectiveDate = CURRENT_DATE
+    GROUP BY VehicleType
+    ORDER BY total_charge DESC;
+    """
+    conn = connect_db()
+    if not conn:
+        return pd.DataFrame()
+
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        result = cursor.fetchall()
+
+    conn.close()
+
+    # Convert result to pandas DataFrame
+    df = pd.DataFrame(result, columns=["VehicleType", "total_charge"])
+    return df
