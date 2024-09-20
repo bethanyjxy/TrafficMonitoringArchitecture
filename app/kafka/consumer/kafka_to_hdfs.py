@@ -15,7 +15,11 @@ def send_to_hdfs(topic, data):
     """Send data to HDFS."""
     file_path = os.path.join(hdfs_directory, f"{topic}.json")
     try:
-        # Check if the file exists
+        # Check if HDFS is reachable
+        hdfs_client.status('/')  # Check if HDFS is running
+        print("Connected to HDFS!")
+
+        # Check if the file exists, if not, create it
         if not hdfs_client.status(file_path, strict=False):
             print(f"File {file_path} not found, creating it...")
             # Create the file if it does not exist
