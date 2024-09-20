@@ -213,35 +213,35 @@ def render_map():
 
 # Traffic Overview Page Layout
 overview_app.layout = html.Div([
-    html.H3('Traffic Overview', className="text-center mb-4"),
+    html.H3('Traffic Overview', className="text-center mb-5 mt-5"),
 
     html.Div([
         # First Row: Metrics Card and Pie Chart
         dbc.Row([
             dbc.Col(
-                dcc.Graph(id='pie-chart', className="shadow p-3 mb-4"),
-                width=8
+                dcc.Graph(id='pie-chart', className="rounded shadow p-3 mb-4"),
+                width=6
             ),
             dbc.Col(
                 dbc.Card([
                     dbc.CardBody([
                         html.Span("Incidents Today: ", className="card-title", style={'font-size': '24px', 'font-weight': 'bold'}),
-                        html.Span(id="incident-count", className="card-text", style={'font-size': '24px', 'font-weight': 'bold'}),
+                        html.Span(id="incident-count", className="card-text ", style={'font-size': '24px', 'font-weight': 'bold'}),
                     ])
                 ], className="shadow p-3 mb-4 bg-primary text-white rounded"),
-                width=4
+                width=6
             )
             
-        ], className="mb-4", style={'flex-wrap': 'wrap', 'justify-content': 'space-between'}),
+        ], className="mb-4", style={'flex-wrap': 'wrap', 'justify-content': 'space-between' }),
 
         # Second Row: Correlation and Trend Charts
         dbc.Row([
             dbc.Col(
-                dcc.Graph(id='correlation-chart', className="shadow p-3 mb-4"),
+                dcc.Graph(id='correlation-chart', className="rounded shadow p-3 mb-4"),
                 width=6
             ),
             dbc.Col(
-                dcc.Graph(id='trend-chart', className="shadow p-3 mb-4"),
+                dcc.Graph(id='trend-chart', className="rounded shadow p-3 mb-4"),
                 width=6
             )
         ], className="mb-4", style={'flex-wrap': 'wrap', 'justify-content': 'space-between'}),
@@ -249,7 +249,7 @@ overview_app.layout = html.Div([
         # Auto-refresh every 10 seconds
         dcc.Interval(id='interval-component-overview', interval=2*1000, n_intervals=0)
     ], style={'overflow-x': 'hidden'})
-])
+]) 
 
 
 @overview_app.callback(
