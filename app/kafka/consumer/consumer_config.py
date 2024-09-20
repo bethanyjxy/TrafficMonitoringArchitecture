@@ -5,7 +5,9 @@ kafka_broker = 'localhost:9092'
 consumer_config = {
     'bootstrap.servers': kafka_broker,
     'group.id': 'traffic_consumer_group',
-    'auto.offset.reset': 'earliest'
+    'auto.offset.reset': 'earliest',
+    'enable.auto.commit': True,  # Automatically commit offsets
+    'auto.commit.interval.ms': 5000  # Commit offsets every 5 seconds
 }
 
 def initialize_consumer(topic):

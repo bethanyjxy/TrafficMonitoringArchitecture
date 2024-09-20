@@ -1,93 +1,25 @@
-body {
-    font-family: Arial, sans-serif;
-    margin-left: 1200px;
+
+/* Disable scrolling for the body */
+body, html {
+    margin: 0;
     padding: 0;
+    overflow-x: hidden;  /* Prevent horizontal scrolling */
+    overflow-y: hidden;  /* Prevent vertical scrolling */
+    height: 100%;
 }
 
-
-/* Main content styles */
-.main-content {
-    
-    margin-top: 10px; /* Space for the header */
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    position: relative;
-    margin-left: 50px; 
-    flex:1;
-}
-.main-content.shift {
-    margin-left: 200px; /* Shifted when sidebar is open */
-}
-/* Map styling */
-#map {
-    height: 68vh; /* Increased height */
-    border: 1px solid #ddd;
-    border-radius: 2px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-
-    margin-bottom: 30px; /* Ensure there is space below the map */
+/* Ensure iframe takes the full available space */
+iframe {
+    height: 80vh;  /* 100% of the viewport height */
+    border: none;
+    width: calc(100vw - 200px);  /* Adjust to account for the left margin */
+    margin-left: 200px; /* This margin can be adjusted if needed */
+    padding-right: 125px;
 }
 
-/* Filter Bar Styling */
-.filter-bar {
-    background-color: #f8f9fa;
-    padding: 10px;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    width: 80vw; /* Same width as map */
-    margin-bottom: 20px; /* Space below filter bar */
-    position: relative;
-
-}
-
-/* Style for the filter labels */
-.filter-bar label {
-    margin-right: 15px;
-    font-size: 16px; 
-    color: #333; 
-    cursor: pointer; 
-}
-
-/* Style for the filter checkboxes */
-.filter-bar input[type="checkbox"] {
-    margin-right: 5px; 
-}
-
-/* Style for the "Apply Filters" button */
-#apply-filters {
-    color: #fff; 
-    border-radius: 6px; 
-    padding: 10px 20px;
-    font-size: 14px; 
-    cursor: pointer;
-    transition: background-color 0.3s ease; 
-}
-
-/* Table container styling */
-.table-container {
-
-    margin: 0 auto;
-    margin-bottom: 40px;
-    
-    z-index: 1; /* Ensure it’s below the filter bar but above the map */
-}
-
-/* Notification box styling */
-.noti-box {
-    background-color: #f9f9f9;
-    padding: 15px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-    width: 80vw; 
-    max-width: 1200px;
-    margin-bottom: 20px;
-}
 
 /* Table styling */
-table {
+/* table {
     width: 100%;
     border-collapse: collapse;
     background-color: #fff;
@@ -125,7 +57,7 @@ th, td {
 }
 
 /* Button styling */
-.refresh-button {
+/* .refresh-button {
     display: block;
     width: 200px;
     margin: 20px auto;
@@ -139,4 +71,4 @@ th, td {
 
 .refresh-button:hover {
     background-color: #45a049;
-}
+} */ 

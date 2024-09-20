@@ -14,15 +14,16 @@
 
         
     <!-- Embed the Dash dashboard as an iframe -->
-    <iframe src="/map/" width="1300px" height="1300px" style="border:none;"></iframe>
+    <iframe src="/map/" style="width: 100%; height: 80vh; border: none;"></iframe>
+
 
 
 
     <!-- Load Leaflet for map -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     
-    <div class="main-content">
-        <!-- Filter Bar -->
+    <!-- <div class="main-content"> -->
+        <!-- Filter Bar
         <div class="filter-bar">
             <label><input type="checkbox" class="data-filter" value="incidents"> Incidents</label>
             <label><input type="checkbox" class="data-filter" value="images"> Traffic Camera</label>
@@ -31,12 +32,12 @@
         </div>
 
         <!-- Map -->
-        <div class="container" id="map">
+        <!-- <div class="container" id="map">
             {{ map_html|safe }}
-        </div>
+        </div> --> -->
 
         <!-- Incident Table -->
-        <div class="table-container">
+        <!-- <div class="table-container" style="padding-top: 1000px;">
             <div class="table-title">Incident Table</div>
             <table>
                 <thead>
@@ -67,7 +68,7 @@
         </div>
 
         <!-- ERP Table -->
-        <div class="table-container">
+        <!-- <div class="table-container">
             <div class="table-title">ERP Table</div>
             <table>
                 <thead>
@@ -101,10 +102,10 @@
                     {% endif %}
                 </tbody>
             </table>
-        </div>
+        </div> -->
 
         <!-- Optional: Button to refresh the tables -->
-        <button class="refresh-button" onclick="window.location.reload();">Refresh Tables</button>
+        <!-- <button class="refresh-button" onclick="window.location.reload();">Refresh Tables</button>
 
         <script>
             document.getElementById('apply-filters').addEventListener('click', function() {
@@ -134,7 +135,7 @@
                     });
                 }
             });
-        </script>
+        </script> -->
     </div>
     {% endblock %}
 

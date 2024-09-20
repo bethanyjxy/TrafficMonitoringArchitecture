@@ -1,22 +1,24 @@
 services:
   flask-app:
-    build: ./app  # Assuming the Dockerfile is in the app folder
+    build: ./app
     container_name: flaskapp
     ports:
       - "5000:5000"
     volumes:
-      - ./app:/app 
+      - ./app:/app
     environment:
       FLASK_ENV: development
       POSTGRES_DB: traffic_db
       POSTGRES_USER: traffic_admin
       POSTGRES_PASSWORD: traffic_pass
+      POSTGRES_HOST: postgres  # Reference postgres by service name
     depends_on:
       - postgres
       - kafka
       - namenode
       - datanode
-  
+    networks:
+      - hadoop-network  # Use a single network for simplicity
 
   postgres:
     image: postgis/postgis:16-3.4
@@ -29,8 +31,8 @@ services:
       POSTGRES_PASSWORD: traffic_pass
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
-
+    networks:
+      - hadoop-network
 
   zookeeper:
     container_name: zookeeper
@@ -40,7 +42,9 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - 2181:2181
-    
+    networks:
+      - hadoop-network
+
   kafka:
     container_name: kafka
     image: confluentinc/cp-kafka:latest
@@ -51,12 +55,14 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092  # Use service name for Kafka
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - hadoop-network
 
   namenode:
-    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    image: bde2020/hadoop-namenode:latest
     container_name: hadoop-namenode
     environment:
       - CLUSTER_NAME=test
@@ -66,13 +72,12 @@ services:
     volumes:
       - namenode-data:/hadoop/dfs/name
     ports:
-      - "9870:9870"
-      - "9000:9000"
+      - "9870:9870"  # Namenode web UI
     networks:
       - hadoop-network
 
   datanode:
-    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    image: bde2020/hadoop-datanode:latest
     container_name: hadoop-datanode
     environment:
       - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
@@ -82,6 +87,8 @@ services:
       - datanode-data:/hadoop/dfs/data
     depends_on:
       - namenode
+    ports:
+      - "9864:9864"  # Datanode web UI
     networks:
       - hadoop-network
 
@@ -96,7 +103,9 @@ services:
     volumes:
       - ./spark-data:/opt/spark/data
     depends_on:
-      - kafka
+      - namenode
+    networks:
+      - hadoop-network
 
   airflow:
     container_name: airflow
@@ -111,15 +120,14 @@ services:
       - ./logs:/usr/local/airflow/logs
     depends_on:
       - postgres
+    networks:
+      - hadoop-network
 
 networks:
-  hadoop-network:
-    driver: bridge
-
-  kafka_network:
+  hadoop-network:  # Single network for all services
     driver: bridge
 
 volumes:
   postgres_data: {}
-  namenode-data:
-  datanode-data:
+  namenode-data: {}
+  datanode-data: {}
