@@ -213,7 +213,7 @@ def render_map():
 
 # Traffic Overview Page Layout
 overview_app.layout = html.Div([
-    html.H3('Traffic Overview', className="text-center mb-5 mt-5"),
+    html.H3('Traffic Overview', className="text-center mb-5 mt-2"),
 
     html.Div([
         # First Row: Metrics Card and Pie Chart
