@@ -4,7 +4,7 @@ import dash_bootstrap_components as dbc
 import random
 import psycopg2
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../config')))
-from postgres_config import POSTGRES_DB
+from app.postgresql.postgres_config import POSTGRES_DB
 from postgresql.db_functions import *
 import plotly.express as px
 import pandas as pd
@@ -156,11 +156,13 @@ def update_map(n, selected_table):
         #     mapbox=dict(center=dict(lat=1.3521, lon=103.8198), zoom=11),
         #     margin={"r": 0, "t": 0, "l": 0, "b": 0},
         # )
-        fig = px.scatter_mapbox(df, lat="latitude", lon="longitude", hover_name="cameraid", zoom=11, height=400,width=1000)
+        traffic_images = fetch_recent_images()
+        img_df = pd.DataFrame(traffic_images)
+        fig = px.scatter_mapbox(img_df, lat="latitude", lon="longitude", hover_name="cameraid", zoom=11, height=400,width=1000)
         fig.update_traces(marker=dict(size=12, sizemode='area'),  # Default marker size
-                          selector=dict(mode='markers'),
-                          hoverinfo='text',
-                          hoverlabel=dict(bgcolor="white", font_size=16))
+                  selector=dict(mode='markers'),
+                  hoverinfo='text',
+                  hoverlabel=dict(bgcolor="white", font_size=16))
 
         # Use Mapbox open street map style
         fig.update_layout(

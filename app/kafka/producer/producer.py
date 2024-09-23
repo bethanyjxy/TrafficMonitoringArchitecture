@@ -48,12 +48,13 @@ def fetch_traffic_incidents():
 def fetch_traffic_images():
     """ Fetch traffic images from the external API. """
     url = "https://datamall2.mytransport.sg/ltaodataservice/Traffic-Imagesv2"
+    payload = {}
     headers = {
         'AccountKey': api_key,
         'accept': 'application/json'
     }
     
-    response = requests.get(url, headers=headers)
+    response = requests.request("GET", url, headers=headers, data=payload)
     
     if response.status_code == 200:
         return response.json().get('value', [])

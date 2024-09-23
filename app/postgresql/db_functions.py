@@ -1,13 +1,9 @@
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../config')))
 from postgres_config import POSTGRES_DB
 import pandas as pd
 from datetime import datetime, timedelta
 
 import psycopg2
 from psycopg2 import sql
-
 
 def connect_db():
     """Establish a connection to the PostgreSQL database."""
@@ -67,7 +63,8 @@ def fetch_incident_count_today():
     query = """
     SELECT COUNT(*) AS incident_count
     FROM incident_table
-    WHERE TO_DATE(incident_date || '/' || EXTRACT(YEAR FROM CURRENT_DATE), 'DD/MM/YYYY') = CURRENT_DATE;
+    WHERE TO_DATE(incident_date || '/' || EXTRACT(YEAR FROM CURRENT_DATE), 'DD/MM/YYYY') = CURRENT_DATE
+    LIMIT 100;
 
     """
     conn = connect_db()
@@ -223,15 +220,14 @@ def fetch_recent_images():
 
     cursor = conn.cursor()
 
-    # Calculate the timestamp for 5 minutes ago
-    five_minutes_ago = datetime.now() - timedelta(minutes=5)
-    five_minutes_ago_str = five_minutes_ago.strftime('%Y-%m-%d %H:%M:%S')  # Format for PostgreSQL timestamp
-
     # Define the query to select images with a timestamp within the last 5 minutes
-    query = sql.SQL("SELECT * FROM image_table WHERE timestamp >= %s")
+    query = """
+    SELECT * FROM image_table 
+    WHERE to_timestamp(timestamp, 'YYYY-MM-DD HH24:MI:SS') >= NOW() - INTERVAL '5 minutes'
+    """
     
-    # Execute query with the timestamp parameter
-    cursor.execute(query, [five_minutes_ago_str])
+    # Execute query
+    cursor.execute(query)
     
     # Fetch all rows and column names
     data = cursor.fetchall()
@@ -243,5 +239,3 @@ def fetch_recent_images():
     cursor.close()
     conn.close()  # Always close the connection when done
     return data_dicts
-
-

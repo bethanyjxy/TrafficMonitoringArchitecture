@@ -1,8 +1,4 @@
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../config')))
 from postgres_config import POSTGRES_DB
-
 import psycopg2
 from psycopg2 import sql
 
