@@ -4,12 +4,11 @@ from postgresql.db_functions import *
 import plotly.express as px
 import pandas as pd
 from dash import html, dcc, Dash,dash_table
-from dash.dependencies import Input, Output, State
-from flask import Flask, send_from_directory, render_template, Response
-import folium
+from dash.dependencies import Input, Output
+from flask import Flask, render_template
 # Import blueprints
 from routes.template_routes import live_traffic_blueprint, templates_blueprint
-import plotly.graph_objects as go
+
 
 
 # Initialize Flask server
