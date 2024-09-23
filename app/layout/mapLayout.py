@@ -18,9 +18,9 @@ layout = html.Div([
                 id='table-selector',
                 style={"width": "70%"},
                 options=[
-                    {'label': 'Incident Table', 'value': 'incident_table'},
-                    {'label': 'VMS Table', 'value': 'vms_table'},
-                    {'label': 'Camera Table', 'value': 'image_table'}
+                    {'label': 'Traffic Incident', 'value': 'incident_table'},
+                    {'label': 'Traffic Authorities Message', 'value': 'vms_table'},
+                    {'label': 'Camera Location', 'value': 'image_table'}
                 ],
                 value='incident_table'  # Default table
             ),
@@ -104,7 +104,7 @@ def register_callbacks(app):
         elif selected_table == 'image_table':
             traffic_images = fetch_recent_images()
             img_df = pd.DataFrame(traffic_images)
-            fig = px.scatter_mapbox(img_df, lat="latitude", lon="longitude", hover_name="cameraid", zoom=11, height=400,width=1000)
+            fig = px.scatter_mapbox(df, lat="latitude", lon="longitude", hover_name="cameraid", zoom=11, height=400,width=1000)
             fig.update_traces(marker=dict(size=12, sizemode='area'),  # Default marker size
                     selector=dict(mode='markers'),
                     hoverinfo='text',
