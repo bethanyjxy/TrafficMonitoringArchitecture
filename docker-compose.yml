@@ -11,14 +11,33 @@ services:
       POSTGRES_DB: traffic_db
       POSTGRES_USER: traffic_admin
       POSTGRES_PASSWORD: traffic_pass
-      POSTGRES_HOST: postgres  # Reference postgres by service name
+      POSTGRES_HOST: postgres # Reference postgres by service name
     depends_on:
       - postgres
       - kafka
       - namenode
       - datanode
     networks:
-      - hadoop-network  # Use a single network for simplicity
+      - hadoop-network # Use a single network for simplicity
+
+  airflow:
+    container_name: airflow
+    image: apache/airflow:latest
+    ports:
+      - "8081:8081"
+    environment:
+      LOAD_EX: "y"
+      EXECUTOR: "LocalExecutor"
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    volumes:
+      - ./dags:/usr/local/airflow/dags
+      - ./logs:/usr/local/airflow/logs
+    depends_on:
+      - postgres
+      - kafka
+      - spark
+    networks:
+      - hadoop-network
 
   postgres:
     image: postgis/postgis:16-3.4
@@ -55,7 +74,7 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092  # Use service name for Kafka
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092 # Use service name for Kafka
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     networks:
@@ -72,7 +91,7 @@ services:
     volumes:
       - namenode-data:/hadoop/dfs/name
     ports:
-      - "9870:9870"  # Namenode web UI
+      - "9870:9870" # Namenode web UI
     networks:
       - hadoop-network
 
@@ -88,7 +107,7 @@ services:
     depends_on:
       - namenode
     ports:
-      - "9864:9864"  # Datanode web UI
+      - "9864:9864" # Datanode web UI
     networks:
       - hadoop-network
 
@@ -96,8 +115,8 @@ services:
     container_name: spark
     image: bitnami/spark:latest
     ports:
-      - "8080:8080"  # Spark UI
-      - "7077:7077"  # Spark master port
+      - "8080:8080" # Spark UI
+      - "7077:7077" # Spark master port
     environment:
       - SPARK_MODE=master
     volumes:
@@ -107,24 +126,9 @@ services:
     networks:
       - hadoop-network
 
-  airflow:
-    container_name: airflow
-    image: apache/airflow:latest
-    ports:
-      - "8081:8081"
-    environment:
-      LOAD_EX: "y"
-      EXECUTOR: "LocalExecutor"
-    volumes:
-      - ./dags:/usr/local/airflow/dags
-      - ./logs:/usr/local/airflow/logs
-    depends_on:
-      - postgres
-    networks:
-      - hadoop-network
-
 networks:
-  hadoop-network:  # Single network for all services
+  hadoop-network:
+    # Single network for all services
     driver: bridge
 
 volumes:
