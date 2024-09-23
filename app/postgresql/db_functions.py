@@ -1,4 +1,4 @@
-from postgres_config import POSTGRES_DB
+from postgresql.postgres_config import POSTGRES_DB
 import pandas as pd
 from datetime import datetime, timedelta
 

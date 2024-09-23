@@ -102,9 +102,9 @@ def register_callbacks(app):
 
 
         elif selected_table == 'image_table':
-            traffic_images = fetch_recent_images()
-            img_df = pd.DataFrame(traffic_images)
-            fig = px.scatter_mapbox(df, lat="latitude", lon="longitude", hover_name="cameraid", zoom=11, height=400,width=1000)
+            #traffic_images = fetch_recent_images()
+            #img_df = pd.DataFrame(traffic_images)
+            fig = px.scatter_mapbox(df, lat="latitude", lon="longitude", hover_name="location", zoom=11, height=400,width=1000)
             fig.update_traces(marker=dict(size=12, sizemode='area'),  # Default marker size
                     selector=dict(mode='markers'),
                     hoverinfo='text',

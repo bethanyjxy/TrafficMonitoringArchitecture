@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, from_json,  regexp_extract, concat, lit, current_timestamp, regexp_replace, date_format, trim, to_timestamp
+from pyspark.sql.functions import udf, when, col, from_json,  regexp_extract, concat, lit, current_timestamp, regexp_replace, date_format, trim, to_timestamp
 from pyspark.sql.types import StructType, StringType, DoubleType, IntegerType
 from pyspark.sql import functions as F
 
@@ -107,13 +107,6 @@ camera_location_mapping = {
     "9706": "SLE(Woodlands) - Mandai Lake Flyover"
 }
 
-# Create a UDF to map CameraID to Location
-def map_camera_id_to_location(camera_id):
-    return camera_location_mapping.get(camera_id, "Unknown Location")
-
-map_camera_id_udf = F.udf(map_camera_id_to_location, StringType())
-
-
 def process_stream(kafka_stream):
     # Define schema for each topic's data
     incidents_schema = StructType() \
@@ -163,7 +156,12 @@ def process_stream(kafka_stream):
         .withColumn("EndLon", col("EndLon").cast("double")) \
         .withColumn("EndLat", col("EndLat").cast("double"))
         
-        
+    # Create a UDF to map CameraID to Location
+    def map_camera_id_to_location(camera_id):
+        return camera_location_mapping.get(camera_id, camera_id)  # Return camera_id if location is unknown
+
+    map_camera_id_udf = udf(map_camera_id_to_location, StringType())
+      
         
     images_schema = StructType() \
         .add("CameraID", StringType()) \
@@ -176,9 +174,10 @@ def process_stream(kafka_stream):
         .withColumn("value", from_json(col("value"), images_schema)) \
         .select(col("value.*")) \
         .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") ) \
+        .withColumn("Location", map_camera_id_udf(col("CameraID"))) \
         .dropDuplicates(["CameraID"])
         #.withColumn("Location", map_camera_id_udf(col("CameraID"))) \
-        
+      
         
     vms_schema = StructType() \
         .add("EquipmentID", StringType()) \
