@@ -117,7 +117,7 @@ def process_stream(kafka_stream):
 
     date_regex = r"\((\d{1,2}/\d{1,2})\)(\d{1,2}:\d{2})"
     pattern_regex = r"\(\d{1,2}/\d{1,2}\)\d{2}:\d{2}"
-    time_regex = r"(\d{2}:\d{2})" 
+    time_regex = r"(\d{1,2}:\d{2})"
 
     # Split the stream based on topic
     incident_stream = kafka_stream.filter(col("topic") == "traffic_incidents") \
@@ -189,6 +189,7 @@ def process_stream(kafka_stream):
     vms_stream = kafka_stream.filter(col("topic") == "traffic_vms") \
         .withColumn("value", from_json(col("value"), vms_schema)) \
         .select(col("value.*"))\
+        .filter(col("Message") != "") \
         .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") ) \
         .dropDuplicates(["EquipmentID"])
 
