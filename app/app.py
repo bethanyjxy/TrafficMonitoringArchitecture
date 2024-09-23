@@ -1,10 +1,5 @@
-import sys
-import os
+
 import dash_bootstrap_components as dbc
-import random
-import psycopg2
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../config')))
-from app.postgresql.postgres_config import POSTGRES_DB
 from postgresql.db_functions import *
 import plotly.express as px
 import pandas as pd
