@@ -1,4 +1,4 @@
-Flask==3.0.3
+Flask==2.2.3
 psycopg2-binary==2.9.9
 dash==2.18.0
 dash-bootstrap-components
@@ -11,3 +11,4 @@ pyspark==3.5.2
 kafka-python==2.0.2
 hdfs==2.7.3
 pandas==2.2.2
+apache-airflow==2.10.2

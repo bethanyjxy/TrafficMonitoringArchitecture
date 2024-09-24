@@ -34,3 +34,28 @@ def send_to_hdfs(topic, data):
     except Exception as e:
         print(f"Error sending data to HDFS: {e}")
         print(f"Check if HDFS is running and accessible at {hdfs_url}. Ensure the directory '{hdfs_directory}' exists and is writable.")
+        
+# Ensure you have the correct user and HDFS URL
+hdfs_directory = '/user/hadoop/traffic_data/'
+def createDirectory():
+    # Check if the traffic_data directory exists
+    try:
+        # Check if the directory exists
+        if hdfs_client.status(hdfs_directory, strict=False):
+            print(f"Directory {hdfs_directory} already exists.")
+        else:
+            # Create the traffic_data directory if it does not exist
+            hdfs_client.makedirs(hdfs_directory)
+            print(f"Directory {hdfs_directory} created successfully.")
+
+        # Change permissions for the directory
+        # Change '777' to your desired permission level
+        hdfs_client.set_permission(hdfs_directory, '777')  
+        print(f"Permissions for {hdfs_directory} set to 777.")
+
+    except Exception as e:
+        print(f"Error accessing or creating directory: {e}")
+        
+if __name__ == "__main__":
+    createDirectory()
+

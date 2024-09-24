@@ -2,6 +2,8 @@
 echo "Starting Kafka Producer..."
 python3 app/kafka/producer/producer.py &
 
+python3 app/kafka/consumer/kafka_to_hdfs.py &
+
 # Start Kafka consumer in the background
 echo "Starting Kafka Consumer..."
 python3 app/kafka/consumer/kafka_incidents_consumer.py &

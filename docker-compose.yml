@@ -18,25 +18,6 @@ services:
       - namenode
       - datanode
     networks:
-      - hadoop-network # Use a single network for simplicity
-
-  airflow:
-    container_name: airflow
-    image: apache/airflow:latest
-    ports:
-      - "8081:8081"
-    environment:
-      LOAD_EX: "y"
-      EXECUTOR: "LocalExecutor"
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-    volumes:
-      - ./dags:/usr/local/airflow/dags
-      - ./logs:/usr/local/airflow/logs
-    depends_on:
-      - postgres
-      - kafka
-      - spark
-    networks:
       - hadoop-network
 
   postgres:
@@ -53,8 +34,30 @@ services:
     networks:
       - hadoop-network
 
+  airflow:
+    container_name: airflow
+    image: apache/airflow:latest
+    ports:
+      - "8081:8081"
+    environment:
+      LOAD_EX: "y"
+      EXECUTOR: "LocalExecutor"
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://traffic_admin:traffic_pass@postgres:5432/traffic_db
+    volumes:
+      - ./app/airflow/dags:/usr/local/airflow/dags
+      - ./app/airflow/logs:/usr/local/airflow/logs
+    depends_on:
+      - postgres
+    networks:
+      - hadoop-network
+    command: webserver
+    healthcheck:
+      test: [ "CMD-SHELL", "[ -f /usr/local/airflow/airflow-webserver.pid ]" ]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+
   zookeeper:
-    container_name: zookeeper
     image: confluentinc/cp-zookeeper:latest
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
@@ -65,7 +68,6 @@ services:
       - hadoop-network
 
   kafka:
-    container_name: kafka
     image: confluentinc/cp-kafka:latest
     depends_on:
       - zookeeper
@@ -74,40 +76,53 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092 # Use service name for Kafka
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     networks:
       - hadoop-network
 
   namenode:
-    image: bde2020/hadoop-namenode:latest
-    container_name: hadoop-namenode
-    environment:
-      - CLUSTER_NAME=test
-      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
-      - CORE_CONF_hadoop_http_staticuser_user=root
-      - HDFS_CONF_dfs_replication=1
-    volumes:
-      - namenode-data:/hadoop/dfs/name
+    image: apache/hadoop:3.3.5
+    hostname: namenode
+    command: [ "hdfs", "namenode" ]
     ports:
-      - "9870:9870" # Namenode web UI
+      - 9870:9870
+    env_file:
+      - ./config/hadoop.cfg
+    environment:
+      ENSURE_NAMENODE_DIR: "/tmp/hadoop-root/dfs/name"
+    volumes:
+      - /mnt/c/Users/betha/Desktop/TrafficMonitoringArchitecture:/mnt/TrafficMonitoringArchitecture
     networks:
       - hadoop-network
 
   datanode:
-    image: bde2020/hadoop-datanode:latest
-    container_name: hadoop-datanode
-    environment:
-      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
-      - CORE_CONF_hadoop_http_staticuser_user=root
-      - HDFS_CONF_dfs_replication=1
-    volumes:
-      - datanode-data:/hadoop/dfs/data
-    depends_on:
-      - namenode
+    image: apache/hadoop:3.3.5
+    command: [ "hdfs", "datanode" ]
+    env_file:
+      - ./config/hadoop.cfg
+    networks:
+      - hadoop-network
+
+  resourcemanager:
+    image: apache/hadoop:3.3.5
+    hostname: resourcemanager
+    command: [ "yarn", "resourcemanager" ]
     ports:
-      - "9864:9864" # Datanode web UI
+      - 8088:8088
+    env_file:
+      - ./config/hadoop.cfg
+    volumes:
+      - ./test.sh:/opt/test.sh
+    networks:
+      - hadoop-network
+
+  nodemanager:
+    image: apache/hadoop:3.3.5
+    command: [ "yarn", "nodemanager" ]
+    env_file:
+      - ./config/hadoop.cfg
     networks:
       - hadoop-network
 
@@ -120,7 +135,7 @@ services:
     environment:
       - SPARK_MODE=master
     volumes:
-      - ./spark-data:/opt/spark/data
+      - /app/spark:/opt/spark/data
     depends_on:
       - namenode
     networks:
