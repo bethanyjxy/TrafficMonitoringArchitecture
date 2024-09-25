@@ -1,3 +1,4 @@
+#airflow dags trigger kafka_spark_dag
 from airflow import DAG
 from airflow.operators.bash_operator import BashOperator
 from datetime import datetime, timedelta
