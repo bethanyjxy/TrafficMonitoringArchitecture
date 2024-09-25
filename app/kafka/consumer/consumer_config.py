@@ -1,6 +1,6 @@
 # kafka_config.py
 from confluent_kafka import Consumer, KafkaError, KafkaException
-from typing import Dict, Optional
+from typing import Dict
 
 # Kafka broker configuration
 HOST: str = 'localhost'
