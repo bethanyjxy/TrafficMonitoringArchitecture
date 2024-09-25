@@ -40,3 +40,7 @@ spark-work/
 *.sql
 *.dump
 pgdata/
+
+
+#Airflow 
+**/airflow/logs/

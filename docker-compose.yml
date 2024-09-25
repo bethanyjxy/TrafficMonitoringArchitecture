@@ -1,3 +1,14 @@
+networks:
+  hadoop-network:
+    driver: bridge
+
+volumes:
+  kafka: {}
+  postgres_data: {}
+  namenode-data: {}
+  datanode-data: {}
+  postgres-airflow-data: {}
+
 x-airflow-common: &airflow-common
   image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.10.2}
   environment: &airflow-common-env
@@ -22,17 +33,6 @@ x-airflow-common: &airflow-common
       condition: service_healthy
     postgres-airflow:
       condition: service_healthy
-
-networks:
-  hadoop-network:
-    driver: bridge
-
-volumes:
-  kafka: {}
-  postgres_data: {}
-  namenode-data: {}
-  datanode-data: {}
-  postgres-airflow-data: {}
 
 services:
   flask-app:
@@ -84,6 +84,8 @@ services:
       retries: 5
       start_period: 5s
     restart: always
+    networks:
+      - hadoop-network
 
   redis:
     image: redis:7.2-bookworm
@@ -96,6 +98,8 @@ services:
       retries: 50
       start_period: 30s
     restart: always
+    networks:
+      - hadoop-network
 
   airflow-webserver:
     <<: *airflow-common
@@ -113,6 +117,8 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+    networks:
+      - hadoop-network
 
   airflow-scheduler:
     <<: *airflow-common
@@ -128,6 +134,8 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+    networks:
+      - hadoop-network
 
   airflow-worker:
     <<: *airflow-common
@@ -148,6 +156,8 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+    networks:
+      - hadoop-network
 
   airflow-triggerer:
     <<: *airflow-common
@@ -163,6 +173,8 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+    networks:
+      - hadoop-network
 
   airflow-init:
     <<: *airflow-common
@@ -182,6 +194,8 @@ services:
     user: "${AIRFLOW_UID:-50000}:0"
     volumes:
       - ./app/airflow:/sources
+    networks:
+      - hadoop-network
 
   airflow-cli:
     <<: *airflow-common
@@ -194,6 +208,8 @@ services:
       - bash
       - -c
       - airflow
+    networks:
+      - hadoop-network
 
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
