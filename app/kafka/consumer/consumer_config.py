@@ -1,16 +1,24 @@
 # kafka_config.py
 from confluent_kafka import Consumer, KafkaError, KafkaException
+from typing import Dict, Optional
+
+# Kafka broker configuration
+HOST: str = 'localhost'
+PORT: int = 9092
+TOPIC: str = 'my-topic'
+CONSUMER_GROUP: str = 'traffic_consumer_group'
 
 kafka_broker = 'localhost:9092'
-consumer_config = {
-    'bootstrap.servers': kafka_broker,
-    'group.id': 'traffic_consumer_group',
-    'auto.offset.reset': 'earliest',
+# Consumer configuration
+consumer_config: Dict[str, str] = {
+    'bootstrap.servers': f'{HOST}:{PORT}',
+    'group.id': CONSUMER_GROUP,
+    'auto.offset.reset': 'earliest',  # Start consuming from the earliest message
     'enable.auto.commit': True,  # Automatically commit offsets
     'auto.commit.interval.ms': 5000  # Commit offsets every 5 seconds
 }
 
-def initialize_consumer(topic):
+def initialize_consumer(topic: str) -> Consumer:
     """Initialize Kafka consumer for a specific topic."""
     consumer = Consumer(consumer_config)
     consumer.subscribe([topic])
@@ -24,12 +32,19 @@ def commit_offsets(consumer):
     except KafkaException as e:
         print(f"Error committing offsets: {e}")
 
-def handle_errors(msg):
+def handle_errors(msg) -> bool:
     """Handle Kafka message errors."""
     if msg.error():
         if msg.error().code() == KafkaError._PARTITION_EOF:
+            print('Reached end of partition.')
             return True
         else:
             print(f"Error: {msg.error()}")
             return False
     return True
+
+        
+def close_consumer(consumer: Consumer):
+    """Close Kafka Consumer connection."""
+    consumer.close()
+    print('Consumer connection closed.')

@@ -1,19 +1,26 @@
-#Send data to HDFS
 from hdfs import InsecureClient
 import json
 import os
+import socket
+from urllib3.util import connection
 
 # HDFS configuration
-hdfs_url = 'http://localhost:9870'  # Replace with your HDFS URL
-hdfs_user = 'hadoop'  # Replace with your HDFS user
-hdfs_directory = '/user/hadoop/traffic_data/'  # HDFS directory path
+NAMENODE_HOST = 'localhost'  # Update with your hostname
+NAMENODE_PORT = 9870         # Port number for WebHDFS
+HDFS_USER = 'hadoop'         # User for HDFS
+HDFS_DIRECTORY = '/user/hadoop/traffic_data/'  # Directory in HDFS
+
+# Build Namenode URL and HDFS WebHDFS endpoint
+NAMENODE_URL = f'http://{NAMENODE_HOST}:{NAMENODE_PORT}'
+HDFS_URL = f'{NAMENODE_URL}/webhdfs/v1/'
 
 # Initialize HDFS client
-hdfs_client = InsecureClient(hdfs_url, user=hdfs_user)
+hdfs_client = InsecureClient(NAMENODE_URL, user=HDFS_USER)
 
 def send_to_hdfs(topic, data):
-    """Send data to HDFS."""
-    file_path = os.path.join(hdfs_directory, f"{topic}.json")
+    """Send JSON data to HDFS."""
+    file_path = os.path.join(HDFS_DIRECTORY, f"{topic}.json")
+    
     try:
         # Check if HDFS is reachable
         hdfs_client.status('/')  # Check if HDFS is running
@@ -22,40 +29,42 @@ def send_to_hdfs(topic, data):
         # Check if the file exists, if not, create it
         if not hdfs_client.status(file_path, strict=False):
             print(f"File {file_path} not found, creating it...")
-            # Create the file if it does not exist
-            with hdfs_client.write(file_path, encoding='utf-8') as writer:
-                writer.write('')  # Create an empty file
+            # Create an empty file
+            hdfs_client.write(file_path, data='')
 
         # Append data to the file
         with hdfs_client.write(file_path, encoding='utf-8', append=True) as writer:
             writer.write(json.dumps(data) + "\n")
         print(f"Data sent to HDFS for topic '{topic}'")
-        
+
     except Exception as e:
         print(f"Error sending data to HDFS: {e}")
-        print(f"Check if HDFS is running and accessible at {hdfs_url}. Ensure the directory '{hdfs_directory}' exists and is writable.")
-        
-# Ensure you have the correct user and HDFS URL
-hdfs_directory = '/user/hadoop/traffic_data/'
-def createDirectory():
-    # Check if the traffic_data directory exists
+        print(f"Check if HDFS is running and accessible at {NAMENODE_URL}. Ensure the directory '{HDFS_DIRECTORY}' exists and is writable.")
+
+def create_directory():
+    """Ensure HDFS directory exists and has proper permissions."""
     try:
         # Check if the directory exists
-        if hdfs_client.status(hdfs_directory, strict=False):
-            print(f"Directory {hdfs_directory} already exists.")
+        if hdfs_client.status(HDFS_DIRECTORY, strict=False):
+            print(f"Directory {HDFS_DIRECTORY} already exists.")
         else:
-            # Create the traffic_data directory if it does not exist
-            hdfs_client.makedirs(hdfs_directory)
-            print(f"Directory {hdfs_directory} created successfully.")
+            # Create the traffic_data directory
+            hdfs_client.makedirs(HDFS_DIRECTORY)
+            print(f"Directory {HDFS_DIRECTORY} created successfully.")
 
-        # Change permissions for the directory
-        # Change '777' to your desired permission level
-        hdfs_client.set_permission(hdfs_directory, '777')  
-        print(f"Permissions for {hdfs_directory} set to 777.")
+        # Optionally, set permissions for the directory (e.g., 777 for wide access)
+        hdfs_client.set_permission(HDFS_DIRECTORY, '777')  
+        print(f"Permissions for {HDFS_DIRECTORY} set to 777.")
 
     except Exception as e:
         print(f"Error accessing or creating directory: {e}")
-        
+
 if __name__ == "__main__":
-    createDirectory()
+    # Create directory if not exists
+    create_directory()
+
+    # Example of sending data to HDFS
+    test_data = {"example": "This is test data"}
+    send_to_hdfs('traffic_test', test_data)
+
 
