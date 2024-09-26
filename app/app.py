@@ -10,7 +10,7 @@ from routes.liveTraffic_routes import live_traffic_blueprint
 server = Flask(__name__)
 
 # Initialize Dash app (Dash uses Flask under the hood)
-traffic_app = Dash(__name__, server=server, url_base_pathname='/map/', suppress_callback_exceptions=True)
+traffic_app = Dash(__name__, server=server, url_base_pathname='/map/',  external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 overview_app = Dash(__name__, server=server, url_base_pathname='/overview/',
                     external_stylesheets=[dbc.themes.BOOTSTRAP])  # Ensure Bootstrap is loaded
 

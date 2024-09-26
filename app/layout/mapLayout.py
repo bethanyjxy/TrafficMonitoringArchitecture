@@ -7,21 +7,23 @@ import numpy as np
 from dash import html,dcc,dash_table
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
+from dash import callback_context
+
 
 # Define the layout
 layout = html.Div([
     # Page Title
-    html.H3('Real-Time Live Traffic', className="text-center mb-4"),
+    html.H3('Real-Time Live Traffic', className="text-left mb-4"),
     
     # Dropdown to select the table
-    dbc.Row([
+     dbc.Row([
         dbc.Col(
             dcc.Dropdown(
                 id='table-selector',
                 style={"width": "70%"},
                 options=[
-                    {'label': 'Traffic Flow', 'value': 'speedbands_table'},
                     {'label': 'Traffic Incident', 'value': 'incident_table'},
+                    {'label': 'Traffic Flow', 'value': 'speedbands_table'},
                     {'label': 'Traffic Authorities Message', 'value': 'vms_table'},
                     {'label': 'Camera Location', 'value': 'image_table'}
                 ],
@@ -30,22 +32,26 @@ layout = html.Div([
             width=6,  # Dropdown takes half the width
             className="mb-4"  # Add some bottom margin for spacing
         )
-    ], justify="center"),  # Center the dropdown
+    ], justify="left"),  # Center the dropdown
     
-    # Div to display map and table
+    # Row for the map
     dbc.Row([
         # Column for the map
         dbc.Col(
             html.Div(id='map-output', style={'padding': '10px'}),
-            width=8,  # Map takes up more space
+            width=12,  # Use the full width for the map
             className="shadow-sm p-3 mb-4 bg-white rounded"  # Add some styling and spacing
-        ),
+        )
+    ], justify="center"),  # Center the map
+
+    # Row for the incident table below the map
+    dbc.Row([
         # Column for the incident table
         dbc.Col([
-            html.H4('Recent Incidents', className="text-center mb-4"),
+            html.H3('Recent Incidents', className="text-left mb-4"),
             html.Div(id='incident-table')
-        ], width=4, className="shadow-sm p-3 mb-4 bg-white rounded")  # Table takes up less space and has similar styling
-    ], justify="space-between", style={'padding': '0 15px'}),  # Ensure consistent padding
+        ], width=12, className="shadow-sm p-3 mb-4 bg-white rounded")  # Table takes up full width and has similar styling
+    ], justify="center"),  # Center the table
     
     # Auto-refresh every 2 seconds
     dcc.Interval(id='interval-component', interval=2*1000, n_intervals=0)
@@ -58,6 +64,8 @@ def register_callbacks(app):
         [Input('interval-component', 'n_intervals'), Input('table-selector', 'value')]
     )
     def update_map(n, selected_table):
+        data = fetch_data_from_table(selected_table) 
+            
         data = fetch_data_from_table(selected_table)
         df = pd.DataFrame(data)
 
