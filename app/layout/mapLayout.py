@@ -3,8 +3,10 @@ import dash_bootstrap_components as dbc
 from postgresql.db_functions import *
 import plotly.express as px
 import pandas as pd
+import numpy as np 
 from dash import html,dcc,dash_table
 from dash.dependencies import Input, Output
+import plotly.graph_objects as go
 
 # Define the layout
 layout = html.Div([
@@ -18,6 +20,7 @@ layout = html.Div([
                 id='table-selector',
                 style={"width": "70%"},
                 options=[
+                    {'label': 'Traffic Flow', 'value': 'speedbands_table'},
                     {'label': 'Traffic Incident', 'value': 'incident_table'},
                     {'label': 'Traffic Authorities Message', 'value': 'vms_table'},
                     {'label': 'Camera Location', 'value': 'image_table'}
@@ -151,3 +154,97 @@ def register_callbacks(app):
             fig.update_traces(marker=dict(sizemode="diameter", size=12, opacity=0.7))
 
             return dcc.Graph(figure=fig), None
+
+        elif selected_table == 'speedbands_table':
+            if df.empty:
+                    return html.P("No data available.")
+
+            # Create a heatmap trace
+            heat_data = []  # List to collect heatmap data
+
+            # Loop over each row in the dataframe to create route points
+            for i, row in df.iterrows():
+                start_lat = row['startlat']
+                start_lon = row['startlon']
+                end_lat = row['endlat']
+                end_lon = row['endlon']
+                
+                if start_lat and start_lon and end_lat and end_lon:
+                    # Generate intermediate points for the heatmap
+                    num_points = 10  # Adjust number of points for desired granularity
+                    latitudes = np.linspace(start_lat, end_lat, num_points)
+                    longitudes = np.linspace(start_lon, end_lon, num_points)
+                    heat_value = row['speedband']  # Get the congestion level (1 to 5)
+
+                    # Collect heatmap points
+            for lat, lon in zip(latitudes, longitudes):
+                # Check for congestion levels
+                if heat_value == 0:  # No congestion
+                    heat_data.append((lat, lon, 1))  # Assign a low intensity for no congestion (green)
+                elif heat_value >= 1 and heat_value <= 8:
+                    heat_data.append((lat, lon, heat_value))  # Append the congestion level directly
+
+            # Create a heatmap trace if there is data
+            if heat_data:
+                lat, lon, intensity = zip(*heat_data)  # Unzip heat_data into separate lists
+
+               # Define a custom colorscale for levels 1 to 5
+                custom_colorscale = [
+                    [0, 'darkred'],        # Level 1: 0 < 9 (no congestion)
+                    [0.125, 'red'], # Level 2: 10 < 19
+                    [0.25, 'orange'],     # Level 3: 20 < 29
+                    [0.375, 'orange'],    # Level 4: 30 < 39
+                    [0.5, 'yellow'],  # Level 5: 40 < 49
+                    [0.625, 'yellow'],       # Level 6: 50 < 59
+                    [0.75, 'green'],    # Level 7: 60 < 69
+                    [0.875, 'green'],  # Level 8: 70 or more
+                    [1, 'green']         # Optional: no congestion
+                ]
+
+                fig = go.Figure(data=go.Densitymapbox(
+                    lat=lat,
+                    lon=lon,
+                    z=intensity,  # Use congestion level as intensity
+                    colorscale=custom_colorscale,  # Use custom colorscale
+                    radius=10,  # Adjust for visualization
+                    zmin=1,  # Minimum congestion level
+                    zmax=8  # Maximum congestion level
+                ))
+
+                # Update the layout for the map visualization
+                fig.update_layout(
+                    mapbox_style="open-street-map",  # OpenStreetMap style
+                    mapbox=dict(center=dict(lat=np.mean(lat), lon=np.mean(lon)), zoom=11),  # Center the map
+                    height=600,
+                    width=1200,
+                )
+                
+
+                # Add annotations for congestion levels
+                traffic_conditions = {
+                    2: ("Heavy", 'red'),
+                    5: ("Moderate", 'orange'),
+                    8: ("Light", 'green')
+                }
+
+                for level in [2, 5, 8]:  # Only include levels 1, 5, 7, 8
+                    # Get the corresponding color for the level
+                    color = traffic_conditions[level][1]
+
+                    # Add annotation with a black text
+                    fig.add_annotation(
+                        xref='paper', yref='paper',
+                        x=1.04, y=(level - 1) * 0.125,  # Adjust position
+                        text=f"{traffic_conditions[level][0]}",
+                        showarrow=False,
+                        bgcolor=color,
+                        font=dict(color='black'),  # Set font color to black
+                        bordercolor='black',
+                        borderwidth=1,
+                        borderpad=3,
+                        xanchor='center',
+                    )
+
+                # Return the graph object (figure) to be rendered in Dash
+                return dcc.Graph(figure=fig), None
+

@@ -57,7 +57,7 @@ services:
       - hadoop-network
     restart: always
     healthcheck:
-      test: [ "CMD", "nc", "-z", "localhost", "5000" ]
+      test: [ "CMD", "curl", "--fail", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
