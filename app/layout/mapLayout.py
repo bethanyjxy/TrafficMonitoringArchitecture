@@ -177,12 +177,12 @@ def register_callbacks(app):
                     heat_value = row['speedband']  # Get the congestion level (1 to 5)
 
                     # Collect heatmap points
-            for lat, lon in zip(latitudes, longitudes):
-                # Check for congestion levels
-                if heat_value == 0:  # No congestion
-                    heat_data.append((lat, lon, 1))  # Assign a low intensity for no congestion (green)
-                elif heat_value >= 1 and heat_value <= 8:
-                    heat_data.append((lat, lon, heat_value))  # Append the congestion level directly
+                    for lat, lon in zip(latitudes, longitudes):
+                        # Check for congestion levels
+                        if heat_value == 0:  # No congestion
+                            heat_data.append((lat, lon, 1))  # Assign a low intensity for no congestion (green)
+                        elif heat_value >= 1 and heat_value <= 8:
+                            heat_data.append((lat, lon, heat_value))  # Append the congestion level directly
 
             # Create a heatmap trace if there is data
             if heat_data:
@@ -206,7 +206,7 @@ def register_callbacks(app):
                     lon=lon,
                     z=intensity,  # Use congestion level as intensity
                     colorscale=custom_colorscale,  # Use custom colorscale
-                    radius=10,  # Adjust for visualization
+                    radius=5,  # Adjust for visualization
                     zmin=1,  # Minimum congestion level
                     zmax=8  # Maximum congestion level
                 ))

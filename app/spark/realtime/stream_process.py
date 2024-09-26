@@ -116,7 +116,7 @@ def process_stream(kafka_stream):
         .add("Message", StringType())
 
     date_regex = r"\((\d{1,2}/\d{1,2})\)(\d{1,2}:\d{2})"
-    pattern_regex = r"\(\d{1,2}/\d{1,2}\)\d{2}:\d{2}"
+    pattern_regex = r"\(\d{1,2}/\d{1,2}\)\s*\d{1,2}:\d{2}\s*"
     time_regex = r"(\d{1,2}:\d{2})"
 
     # Split the stream based on topic
