@@ -1,9 +1,10 @@
-from consumer_config import initialize_consumer, commit_offsets, handle_errors
-from kafka_to_hdfs import send_to_hdfs
+
+from kafka.consumer.kafka_to_hdfs import send_to_hdfs
+from kafka.consumer.consumer_config import initialize_consumer, commit_offsets, handle_errors, close_consumer
 import json
 
+# Define the topic for traffic incident
 topic = 'traffic_incidents'
-consumer = initialize_consumer(topic)
 
 def handle_incidents_message(message):
     """Process traffic incidents messages."""
