@@ -245,8 +245,7 @@ services:
 
     ports:
       - 2181:2181
-    networks:
-      - hadoop-network
+
 
   kafka:
     image: bitnami/kafka:latest
@@ -258,8 +257,6 @@ services:
       - '9092:9092'
     depends_on:
       - zookeeper
-    ports:
-      - 9092:9092
     environment:
       - KAFKA_BROKER_ID=1
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
@@ -270,7 +267,7 @@ services:
 
     restart: always
     healthcheck:
-      test: [ "CMD", "nc", "-z", "localhost", "9092" ]
+      test: [ "CMD", "nc", "-z", "kafka", "9092" ]
       interval: 30s
       timeout: 10s
       retries: 3
