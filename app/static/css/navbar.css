@@ -4,9 +4,11 @@ body {
     padding: 0;
     display: flex;
     flex-direction: column;
-    z-index: 1; /* Ensure main content stays beneath the sidebar */
+    z-index: 1;
+    /* Ensure main content stays beneath the sidebar */
     position: relative;
 }
+
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
 
 
@@ -15,13 +17,15 @@ body {
     position: fixed;
     left: 0;
     top: 0;
-    width: 65px; /* Collapsed width showing only icons */
+    width: 3.5%;
+    /* Collapsed width showing only icons */
     height: 100vh;
-    background-color: #101c2e;
+    background-color: #192734;
     transition: width 0.3s ease;
     overflow-x: hidden;
     z-index: 999;
 }
+
 .sidebar-content {
     padding: 5px;
     color: white;
@@ -58,11 +62,13 @@ body {
 
 /* Expand sidebar on hover */
 .sidebar:hover {
-    width: 200px; /* Expanded width */
+    width: 200px;
+    /* Expanded width */
 }
 
 .sidebar:hover .menu-text {
-    display: inline-block; /* Show text when expanded */
+    display: inline-block;
+    /* Show text when expanded */
 }
 
 
@@ -71,13 +77,15 @@ body {
     position: fixed;
     left: 0;
     top: 0;
-    width: 10px; /* Small strip for hovering */
+    width: 10px;
+    /* Small strip for hovering */
     height: 100%;
-    z-index: 999; /* Make sure it's on top */
+    z-index: 999;
+    /* Make sure it's on top */
 }
 
 /* Hovering over the trigger zone reveals the sidebar */
-.trigger-zone:hover + .sidebar {
+.trigger-zone:hover+.sidebar {
     left: 0;
 }
 

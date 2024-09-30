@@ -380,4 +380,3 @@ services:
       - spark-master
     networks:
       - hadoop-network
-
