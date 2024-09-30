@@ -6,103 +6,53 @@ volumes:
   kafka: {}
   postgres_data: {}
   namenode-data: {}
-  datanode-data: {}
-  postgres-airflow-data: {}
+  datanode1-data: {}
+  datanode2-data: {}
 
 x-airflow-common: &airflow-common
-  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.10.2}
+  build:
+    context: ./app/airflow
+    dockerfile: Dockerfile
   environment: &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
-    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-airflow/airflow
-    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres-airflow/airflow
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://traffic_admin:traffic_pass@postgres:5432/airflow_db
+    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://traffic_admin:traffic_pass@postgres:5432/airflow_db
     AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
     AIRFLOW__CORE__FERNET_KEY: ''
-    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
-    AIRFLOW__CORE__LOAD_EXAMPLES: 'true'
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
-    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
+    AIRFLOW_CONN_HDFS_DEFAULT: hdfs://namenode:8020
+    PYTHONPATH: /opt/airflow/app:/opt/airflow/dags
+
+    # Kafka settings
+    AIRFLOW_CONN_KAFKA_DEFAULT: kafka://kafka:9092
+    KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    KAFKA_TOPIC_TRAFFIC_INCIDENTS: traffic_incidents
+    KAFKA_TOPIC_TRAFFIC_IMAGES: traffic_images
+    KAFKA_TOPIC_TRAFFIC_SPEEDBANDS: traffic_speedbands
+    KAFKA_TOPIC_TRAFFIC_VMS: traffic_vms
+    KAFKA_TOPIC_TRAFFIC_ERP: traffic_erp
   volumes:
     - ./app/airflow/dags:/opt/airflow/dags
     - ./app/airflow/logs:/opt/airflow/logs
     - ./app/airflow/config:/opt/airflow/config
     - ./app/airflow/plugins:/opt/airflow/plugins
+    - ./app:/opt/airflow/app
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on: &airflow-common-depends-on
     redis:
       condition: service_healthy
-    postgres-airflow:
+    postgres:
       condition: service_healthy
+    kafka:
+      condition: service_started
 
 services:
-  flask-app:
-    build: ./app
-    container_name: flaskapp
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./app:/app
-    environment:
-      FLASK_ENV: development
-      POSTGRES_DB: traffic_db
-      POSTGRES_USER: traffic_admin
-      POSTGRES_PASSWORD: traffic_pass
-      POSTGRES_HOST: postgres
-    depends_on:
-      - postgres
-      - kafka
-      - namenode
-      - datanode
-    networks:
-      - hadoop-network
-    restart: always
-    healthcheck:
-      test: [ "CMD", "curl", "--fail", "http://localhost:5000/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 15s
-
-  postgres:
-    image: postgis/postgis:16-3.4
-    container_name: postgres
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_DB: traffic_db
-      POSTGRES_USER: traffic_admin
-      POSTGRES_PASSWORD: traffic_pass
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - hadoop-network
-    restart: always
-    healthcheck:
-      test: [ "CMD", "pg_isready", "-U", "traffic_admin" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 15s
-
-  postgres-airflow:
-    image: postgres:13
-    environment:
-      POSTGRES_USER: airflow
-      POSTGRES_PASSWORD: airflow
-      POSTGRES_DB: airflow
-    volumes:
-      - postgres-airflow-data:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD", "pg_isready", "-U", "airflow" ]
-      interval: 10s
-      retries: 5
-      start_period: 5s
-    restart: always
-    networks:
-      - hadoop-network
-
   redis:
     image: redis:7.2-bookworm
+    container_name: redis
     expose:
       - 6379
     healthcheck:
@@ -118,6 +68,7 @@ services:
   airflow-webserver:
     <<: *airflow-common
     command: webserver
+    container_name: airflow-webserver
     ports:
       - "8080:8080"
     healthcheck:
@@ -137,6 +88,7 @@ services:
   airflow-scheduler:
     <<: *airflow-common
     command: scheduler
+    container_name: airflow-scheduler
     healthcheck:
       test: [ "CMD", "curl", "--fail", "http://localhost:8974/health" ]
       interval: 30s
@@ -154,6 +106,7 @@ services:
   airflow-worker:
     <<: *airflow-common
     command: celery worker
+    container_name: airflow-worker
     healthcheck:
       test:
         - "CMD-SHELL"
@@ -176,6 +129,7 @@ services:
   airflow-triggerer:
     <<: *airflow-common
     command: triggerer
+    container_name: airflow-triggerer
     healthcheck:
       test: [ "CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"' ]
       interval: 30s
@@ -193,6 +147,7 @@ services:
   airflow-init:
     <<: *airflow-common
     entrypoint: /bin/bash
+    container_name: airflow-init
     command:
       - -c
       - |
@@ -225,26 +180,76 @@ services:
     networks:
       - hadoop-network
 
-  zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    hostname: 'zookeeper'
+  flask-app:
+    build:
+      context: ./app 
+      dockerfile: Dockerfile  
+    container_name: flaskapp
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./app:/app
+    environment:
+      FLASK_ENV: development
+      POSTGRES_DB: traffic_db
+      POSTGRES_USER: traffic_admin
+      POSTGRES_PASSWORD: traffic_pass
+      POSTGRES_HOST: postgres
+    depends_on:
+      - postgres
+      - kafka
+      - namenode
+      - datanode1
+      - datanode2
     networks:
       - hadoop-network
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    ports:
-      - 2181:2181
     restart: always
     healthcheck:
-      test: [ "CMD", "nc", "-z", "localhost", "2181" ]
+      test: [ "CMD", "curl", "--fail", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 15s
 
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: traffic_db
+      POSTGRES_USER: traffic_admin
+      POSTGRES_PASSWORD: traffic_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - hadoop-network
+    restart: always
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "traffic_admin", "-d", "traffic_db" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    container_name: zookeeper
+    hostname: 'zookeeper'
+    networks:
+      - hadoop-network
+    environment:
+      - ZOO_PORT_NUMBER=2181
+      - ALLOW_ANONYMOUS_LOGIN=yes
+      - JUTE_MAXBUFFER=4194304
+
+    ports:
+      - 2181:2181
+
+
   kafka:
-    image: confluentinc/cp-kafka:latest
+    image: bitnami/kafka:latest
+    container_name: kafka
     hostname: 'kafka'
     networks:
       - hadoop-network
@@ -253,14 +258,16 @@ services:
     depends_on:
       - zookeeper
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - ALLOW_PLAINTEXT_LISTENER=yes
+
     restart: always
     healthcheck:
-      test: [ "CMD", "nc", "-z", "localhost", "9092" ]
+      test: [ "CMD", "nc", "-z", "kafka", "9092" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -273,11 +280,11 @@ services:
       - CLUSTER_NAME=test
       - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
       - CORE_CONF_hadoop_http_staticuser_user=root
-      - HDFS_CONF_dfs_replication=1
+      - HDFS_CONF_dfs_replication=2
     volumes:
       - namenode-data:/hadoop/dfs/name
     ports:
-      - "9870:9870" # Namenode web UI
+      - "9870:9870"  # Namenode web UI
     networks:
       - hadoop-network
     restart: always
@@ -287,49 +294,89 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
+  datanode1:
+      image: bde2020/hadoop-datanode:latest
+      container_name: hadoop-datanode1
+      environment:
+        - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+        - CORE_CONF_hadoop_http_staticuser_user=root
+        - HDFS_CONF_dfs_replication=2
+      volumes:
+        - datanode1-data:/hadoop/dfs/data
+      depends_on:
+        - namenode
+      ports:
+        - "9864:9864"  # Datanode1 web UI
+      networks:
+        - hadoop-network
+      restart: always
+      healthcheck:
+        test: ["CMD", "curl", "--fail", "http://localhost:9864"]
+        interval: 30s
+        timeout: 10s
+        retries: 3
+        start_period: 15s
 
-  datanode:
+  datanode2:
     image: bde2020/hadoop-datanode:latest
-    container_name: hadoop-datanode
+    container_name: hadoop-datanode2
     environment:
       - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
       - CORE_CONF_hadoop_http_staticuser_user=root
-      - HDFS_CONF_dfs_replication=1
+      - HDFS_CONF_dfs_replication=2
     volumes:
-      - datanode-data:/hadoop/dfs/data
+      - datanode2-data:/hadoop/dfs/data
     depends_on:
       - namenode
     ports:
-      - "9864:9864" # Datanode web UI
+      - "9865:9864"  # Datanode2 web UI
     networks:
       - hadoop-network
     restart: always
     healthcheck:
-      test: [ "CMD", "curl", "--fail", "http://localhost:9864" ]
+      test: ["CMD", "curl", "--fail", "http://localhost:9865"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 15s
 
-  spark:
-    container_name: spark
+
+  spark-master:
+    container_name: spark-master
     image: bitnami/spark:latest
     ports:
-      - "8082:8082" # Spark UI
-      - "7077:7077" # Spark master port
+      - "8082:8082"  # Spark UI
+      - "7077:7077"  # Spark master port
     environment:
       - SPARK_MODE=master
-      - SPARK_MASTER_PORT=8082
+      - SPARK_MASTER_PORT=7077
+      - SPARK_RPC_MESSAGE_MAXSIZE=1024
+      - SPARK_MASTER_WEBUI_PORT=8082
     volumes:
-      - /app/spark:/opt/spark/data
+      - ./app/spark:/opt/spark/data
     depends_on:
       - namenode
+      - kafka
+      - postgres
     networks:
       - hadoop-network
     restart: always
+
     healthcheck:
       test: [ "CMD", "curl", "--fail", "http://localhost:8082" ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 15s
+      
+  spark-worker:
+    container_name: spark-worker
+    image: bitnami/spark:latest
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_RPC_MESSAGE_MAXSIZE=1024
+    depends_on:
+      - spark-master
+    networks:
+      - hadoop-network

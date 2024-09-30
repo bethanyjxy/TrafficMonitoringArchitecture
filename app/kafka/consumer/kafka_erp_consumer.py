@@ -1,5 +1,5 @@
-from kafka_to_hdfs import send_to_hdfs
-from consumer_config import initialize_consumer, commit_offsets, handle_errors, close_consumer
+from kafka.consumer.kafka_to_hdfs import send_to_hdfs
+from kafka.consumer.consumer_config import initialize_consumer, commit_offsets, handle_errors, close_consumer
 import json
 
 topic = 'traffic_erp'
@@ -26,6 +26,7 @@ def consume_erp_messages(consumer):
             msg = consumer.poll(timeout=1.0)
 
             if msg is None:
+                print("No message received")
                 continue
 
             if not handle_errors(msg):
