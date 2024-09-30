@@ -17,6 +17,8 @@ ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 # Install Spark
 RUN curl -L https://archive.apache.org/dist/spark/spark-3.1.1/spark-3.1.1-bin-hadoop2.7.tgz | tar -xz -C /opt/ && \
     ln -s /opt/spark-3.1.1-bin-hadoop2.7 /opt/spark && \
+    ls -l /opt/spark/bin && \  
+    chmod +x /opt/spark/bin/spark-submit && \ 
     mkdir -p /opt/spark/jars && \
     wget https://jdbc.postgresql.org/download/postgresql-42.2.18.jar -P /opt/spark/jars/ && \
     rm -rf /var/lib/apt/lists/*
@@ -24,9 +26,7 @@ RUN curl -L https://archive.apache.org/dist/spark/spark-3.1.1/spark-3.1.1-bin-ha
 # Set SPARK_HOME and update the PATH
 ENV SPARK_HOME=/opt/spark
 ENV PATH=$SPARK_HOME/bin:$PATH
+RUN chmod +x /opt/spark-3.1.1-bin-hadoop2.7/bin/spark-class
 
-# Create the /opt/spark/jars directory for additional Spark jars
-RUN mkdir -p /opt/spark/jars
-
+# Switch to non-root user
 USER airflow
-
