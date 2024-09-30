@@ -4,7 +4,6 @@ from confluent_kafka.admin import AdminClient, NewTopic
 import json
 import time
 
-
 def fetch_and_produce_data(broker):
     """Fetch data from API and produce to Kafka, while creating topics if needed."""
 
