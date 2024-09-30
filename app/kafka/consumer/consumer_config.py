@@ -8,7 +8,7 @@ PORT: int = int(os.environ.get('KAFKA_PORT', 9092))
 CONSUMER_GROUP: str = os.environ.get('KAFKA_CONSUMER_GROUP', 'traffic_consumer_group')
 
 
-kafka_broker = 'localhost:9092'
+kafka_broker = 'kafka:9092'
 consumer_config = {
     'bootstrap.servers': kafka_broker,
     'group.id': 'traffic_consumer_group',

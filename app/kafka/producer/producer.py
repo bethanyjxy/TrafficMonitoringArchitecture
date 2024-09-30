@@ -24,7 +24,7 @@ def fetch_and_produce_data(broker):
         'images': 'traffic_images',
         'speedbands': 'traffic_speedbands',
         'vms': 'traffic_vms',
-        'erp': 'traffic_erp'
+        # 'erp': 'traffic_erp'
     }
 
     # API endpoints
@@ -33,7 +33,7 @@ def fetch_and_produce_data(broker):
         'images': "https://datamall2.mytransport.sg/ltaodataservice/Traffic-Imagesv2",
         'speedbands': "https://datamall2.mytransport.sg/ltaodataservice/v3/TrafficSpeedBands",
         'vms': "https://datamall2.mytransport.sg/ltaodataservice/VMS",
-        'erp': "https://datamall2.mytransport.sg/ltaodataservice/ERPRates"
+        # 'erp': "https://datamall2.mytransport.sg/ltaodataservice/ERPRates"
     }
 
     # Function to create Kafka topics if they don't exist

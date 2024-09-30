@@ -41,7 +41,7 @@ def start_kafka_consumer(consumer_script):
     subprocess.run(cmd, check=True)
 
 # Define tasks for each consumer
-consumers = ['kafka_vms_consumer.py', 'kafka_images_consumer.py', 'kafka_speedbands_consumer.py', 'kafka_incidents_consumer.py', 'kafka_erp_consumer.py']
+consumers = ['kafka_vms_consumer.py', 'kafka_images_consumer.py', 'kafka_speedbands_consumer.py', 'kafka_incidents_consumer.py']
 
 for consumer in consumers:
     task = PythonOperator(
