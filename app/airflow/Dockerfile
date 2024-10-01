@@ -5,15 +5,19 @@ RUN pip install --no-cache-dir Flask psycopg2-binary dash dash-bootstrap-compone
 
 USER root
 
-# Install Java (openjdk-17-jdk-headless)
+# Install Java 8
 RUN apt-get update && \
-    apt-get install -y openjdk-17-jdk-headless && \
     apt-get install -y wget && \
-    apt-get clean
+    mkdir -p /opt/java && \
+    wget -q https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u392-b08/OpenJDK8U-jdk_x64_linux_hotspot_8u392b08.tar.gz && \
+    tar -xzf OpenJDK8U-jdk_x64_linux_hotspot_8u392b08.tar.gz -C /opt/java && \
+    rm OpenJDK8U-jdk_x64_linux_hotspot_8u392b08.tar.gz && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set JAVA_HOME environment variable
-ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-
+ENV JAVA_HOME=/opt/java/jdk8u392-b08
+ENV PATH="$JAVA_HOME/bin:$PATH"
 # Install Spark
 RUN curl -L https://archive.apache.org/dist/spark/spark-3.1.1/spark-3.1.1-bin-hadoop2.7.tgz | tar -xz -C /opt/ && \
     ln -s /opt/spark-3.1.1-bin-hadoop2.7 /opt/spark && \

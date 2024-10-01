@@ -106,12 +106,7 @@ camera_location_mapping = {
     "9705": "SLE(TPE) - Beside Slip Road From Woodland Ave 2",
     "9706": "SLE(Woodlands) - Mandai Lake Flyover"
 }
-    # Create a UDF to map CameraID to Location
-def map_camera_id_to_location(camera_id):
-    return camera_location_mapping.get(camera_id, camera_id)  # Return camera_id if location is unknown
-        
-map_camera_id_udf = udf(map_camera_id_to_location, StringType())
-      
+
 def process_stream(kafka_stream):
     # Define schema for each topic's data
     incidents_schema = StructType() \
@@ -149,16 +144,24 @@ def process_stream(kafka_stream):
     
     speedbands_stream = kafka_stream.filter(col("topic") == "traffic_speedbands") \
         .withColumn("value", from_json(col("value"), speedbands_schema)) \
-        .select(col("value.*")) \
-        .withColumn("timestamp", date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss")) \
-        .dropDuplicates(["LinkID"]) \
+        .select(col("value.*"))\
+        .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") ) \
+        .dropDuplicates(["LinkID"])
+        
+    speedbands_stream = speedbands_stream \
         .withColumn("MinimumSpeed", col("MinimumSpeed").cast("int")) \
         .withColumn("MaximumSpeed", col("MaximumSpeed").cast("int")) \
         .withColumn("StartLon", col("StartLon").cast("double")) \
         .withColumn("StartLat", col("StartLat").cast("double")) \
         .withColumn("EndLon", col("EndLon").cast("double")) \
         .withColumn("EndLat", col("EndLat").cast("double"))
+        
+    # Create a UDF to map CameraID to Location
+    def map_camera_id_to_location(camera_id):
+        return camera_location_mapping.get(camera_id, camera_id)  # Return camera_id if location is unknown
 
+    map_camera_id_udf = udf(map_camera_id_to_location, StringType())
+      
         
     images_schema = StructType() \
         .add("CameraID", StringType()) \
@@ -190,31 +193,19 @@ def process_stream(kafka_stream):
         .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") ) \
         .dropDuplicates(["EquipmentID"])
 
-    # erp_schema = StructType() \
-    #     .add("VehicleType", StringType()) \
-    #     .add("DayType", StringType()) \
-    #     .add("StartTime", StringType()) \
-    #     .add("EndTime", StringType()) \
-    #     .add("ZoneID", StringType()) \
-    #     .add("ChargeAmount", DoubleType()) \
-    #     .add("EffectiveDate", StringType())
         
 
-    # # ERP rates stream processing
-    # erp_stream = kafka_stream.filter(col("topic") == "traffic_erp") \
-    #     .withColumn("value", from_json(col("value"), erp_schema)) \
-    #     .select(col("value.*"))\
-    #     .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") )
 
-    return incident_stream, speedbands_stream, image_stream, vms_stream  #erp_stream
+    return incident_stream, speedbands_stream, image_stream, vms_stream
 
-def process_and_write_to_console(df, epoch_id):
+def write_to_console(df, table_name):
+    # Output the dataframe to the console for testing purposes
     df.show(truncate=False)
 
 def main():
     # Kafka configurations
     kafka_broker = "kafka:9092"
-    kafka_topics = "traffic_incidents,traffic_images,traffic_speedbands,traffic_vms,traffic_erp"
+    kafka_topics = "traffic_incidents,traffic_images,traffic_speedbands,traffic_vms"
 
     # Create Spark session
     spark = create_spark_session()
@@ -228,35 +219,31 @@ def main():
     # For testing purposes, print the streams to the console
     incident_query = incident_stream.writeStream \
         .outputMode("append") \
-        .foreachBatch(lambda df, epochId: process_and_write_to_console(df, "incident_table")) \
+        .foreachBatch(lambda df, epochId: write_to_console(df, "incident_table")) \
         .start()
 
     speedbands_query = speedbands_stream.writeStream \
         .outputMode("append") \
-        .foreachBatch(lambda df, epochId: process_and_write_to_console(df, "speedbands_table")) \
+        .foreachBatch(lambda df, epochId: write_to_console(df, "speedbands_table")) \
         .start()
 
     image_query = image_stream.writeStream \
         .outputMode("append") \
-        .foreachBatch(lambda df, epochId: process_and_write_to_console(df, "image_table")) \
+        .foreachBatch(lambda df, epochId: write_to_console(df, "image_table")) \
         .start()
         
     vms_query = vms_stream.writeStream \
         .outputMode("append") \
-        .foreachBatch(lambda df, epochId: process_and_write_to_console(df, "vms_table")) \
+        .foreachBatch(lambda df, epochId: write_to_console(df, "vms_table")) \
         .start()
 
-    # erp_query = erp_stream.writeStream \
-    #     .outputMode("append") \
-    #     .foreachBatch(lambda df, epochId: process_and_write_to_console(df, "erp_table")) \
-    #     .start()
 
     # Wait for the termination of the queries
     incident_query.awaitTermination()
     speedbands_query.awaitTermination()
     image_query.awaitTermination()
     vms_query.awaitTermination()
-    #erp_query.awaitTermination()
+
 
 if __name__ == "__main__":
     main()

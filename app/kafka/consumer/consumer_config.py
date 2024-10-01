@@ -5,19 +5,20 @@ from typing import Dict
 # Kafka broker configuration
 HOST: str = os.environ.get('KAFKA_HOST', 'kafka')
 PORT: int = int(os.environ.get('KAFKA_PORT', 9092))
-CONSUMER_GROUP: str = os.environ.get('KAFKA_CONSUMER_GROUP', 'traffic_consumer_group')
 
 
-kafka_broker = 'kafka:9092'
-consumer_config = {
-    'bootstrap.servers': kafka_broker,
-    'group.id': 'traffic_consumer_group',
-    'auto.offset.reset': 'earliest',
-    'enable.auto.commit': True,  # Automatically commit offsets
-    'auto.commit.interval.ms': 5000, # Commit offsets every 5 seconds
-}
+
 
 def initialize_consumer(topic):
+    
+    kafka_broker = 'kafka:9092'
+    consumer_config = {
+        'bootstrap.servers': kafka_broker,
+        'group.id': f'{topic}_consumer_group',
+        'auto.offset.reset': 'earliest',
+        'enable.auto.commit': True,  # Automatically commit offsets
+        'auto.commit.interval.ms': 5000, # Commit offsets every 5 seconds
+    }
     """Initialize Kafka consumer for a specific topic."""
     consumer = Consumer(consumer_config)
     consumer.subscribe([topic])
