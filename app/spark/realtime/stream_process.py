@@ -116,7 +116,7 @@ def process_stream(kafka_stream):
         .add("Message", StringType())
 
     date_regex = r"\((\d{1,2}/\d{1,2})\)(\d{1,2}:\d{2})"
-    pattern_regex = r"\(\d{1,2}/\d{1,2}\)\s*\d{1,2}:\d{2}\s*"
+    pattern_regex = r"\(\d{1,2}/\d{1,2}\)\d{2}:\d{2}"
     time_regex = r"(\d{1,2}:\d{2})"
 
     # Split the stream based on topic
@@ -204,8 +204,8 @@ def write_to_console(df, table_name):
 
 def main():
     # Kafka configurations
-    kafka_broker = "kafka:9092"
-    kafka_topics = "traffic_incidents,traffic_images,traffic_speedbands,traffic_vms"
+    kafka_broker = "localhost:9092"
+    kafka_topics = "traffic_incidents,traffic_images,traffic_speedbands,traffic_vms,traffic_erp"
 
     # Create Spark session
     spark = create_spark_session()

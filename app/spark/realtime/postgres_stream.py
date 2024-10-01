@@ -16,7 +16,7 @@ def main():
 
 
     # PostgreSQL connection properties
-    postgres_url = "jdbc:postgresql://postgres:5432/traffic_db"
+    postgres_url = "jdbc:postgresql://localhost:5432/traffic_db"
     postgres_properties = {
         "user": "traffic_admin",
         "password": "traffic_pass",
