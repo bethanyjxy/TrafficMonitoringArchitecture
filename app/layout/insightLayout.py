@@ -5,7 +5,7 @@ from dash.dependencies import Input, Output
 
 from postgresql.db_functions import *
 
-# Traffic Overview Layout - Second Row: Correlation and Trend Charts
+# Traffic Insights Layout - Correlation and Trend Charts
 layout = html.Div([
     html.H3('Traffic Insights', className="text-center mb-5 mt-2"),
     dbc.Row([
