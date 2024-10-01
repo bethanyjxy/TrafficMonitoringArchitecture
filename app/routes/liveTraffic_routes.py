@@ -51,9 +51,7 @@ def live_traffic():
         zoom_start=20,
         max_zoom=24,
         prefer_canvas=True,  # Improves rendering performance when zooming
-        tiles='https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{z}/{x}/{y}?access_token=YOUR_MAPBOX_ACCESS_TOKEN',
-        attr='Mapbox',
-        tile_size=512
+        tiles="cartodb positron"
     )
 
     heat_data = [] 

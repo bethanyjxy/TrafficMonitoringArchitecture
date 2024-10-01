@@ -13,8 +13,8 @@ body {
 .logo i {
     font-size: 1.5rem;
     color: white;
-    margin-right: 15px;
-    margin-left: 3px;
+    margin-right: 25px;
+    margin-left: 5px;
 }
 
 /* Base styles for the sidebar */
@@ -22,7 +22,7 @@ body {
     position: absolute;
     left: 0;
     top: 45px;
-    width: 4%;
+    width: auto;
     height: calc(100vh - 45px);
     transition: width 0.3s ease;
     overflow-x: hidden;
