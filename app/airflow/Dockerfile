@@ -5,18 +5,24 @@ RUN pip install --no-cache-dir Flask psycopg2-binary dash dash-bootstrap-compone
 
 USER root
 
-# Install Java (openjdk-17-jdk-headless)
+# Install Java 8
 RUN apt-get update && \
-    apt-get install -y openjdk-17-jdk-headless && \
     apt-get install -y wget && \
-    apt-get clean
+    mkdir -p /opt/java && \
+    wget -q https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u392-b08/OpenJDK8U-jdk_x64_linux_hotspot_8u392b08.tar.gz && \
+    tar -xzf OpenJDK8U-jdk_x64_linux_hotspot_8u392b08.tar.gz -C /opt/java && \
+    rm OpenJDK8U-jdk_x64_linux_hotspot_8u392b08.tar.gz && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set JAVA_HOME environment variable
-ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-
+ENV JAVA_HOME=/opt/java/jdk8u392-b08
+ENV PATH="$JAVA_HOME/bin:$PATH"
 # Install Spark
 RUN curl -L https://archive.apache.org/dist/spark/spark-3.1.1/spark-3.1.1-bin-hadoop2.7.tgz | tar -xz -C /opt/ && \
     ln -s /opt/spark-3.1.1-bin-hadoop2.7 /opt/spark && \
+    ls -l /opt/spark/bin && \  
+    chmod +x /opt/spark/bin/spark-submit && \ 
     mkdir -p /opt/spark/jars && \
     wget https://jdbc.postgresql.org/download/postgresql-42.2.18.jar -P /opt/spark/jars/ && \
     rm -rf /var/lib/apt/lists/*
@@ -24,9 +30,7 @@ RUN curl -L https://archive.apache.org/dist/spark/spark-3.1.1/spark-3.1.1-bin-ha
 # Set SPARK_HOME and update the PATH
 ENV SPARK_HOME=/opt/spark
 ENV PATH=$SPARK_HOME/bin:$PATH
+RUN chmod +x /opt/spark-3.1.1-bin-hadoop2.7/bin/spark-class
 
-# Create the /opt/spark/jars directory for additional Spark jars
-RUN mkdir -p /opt/spark/jars
-
+# Switch to non-root user
 USER airflow
-

@@ -41,7 +41,7 @@ def start_kafka_consumer(consumer_script):
     subprocess.run(cmd, check=True)
 
 # Define tasks for each consumer
-consumers = ['kafka_vms_consumer.py', 'kafka_images_consumer.py', 'kafka_speedbands_consumer.py', 'kafka_incidents_consumer.py', 'kafka_erp_consumer.py']
+consumers = ['kafka_vms_consumer.py', 'kafka_images_consumer.py', 'kafka_speedbands_consumer.py', 'kafka_incidents_consumer.py']
 
 for consumer in consumers:
     task = PythonOperator(
@@ -59,8 +59,6 @@ start_spark_streaming = BashOperator(
     bash_command="""
         echo "Starting Kafka to Spark Streaming..."
         spark-submit \
-          --conf "spark.executor.extraJavaOptions=--add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED" \
-          --conf "spark.driver.extraJavaOptions=--add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED" \
           --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1 \
           --jars /opt/spark/jars/postgresql-42.2.18.jar \
           app/spark/realtime/postgres_stream.py

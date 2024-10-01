@@ -193,23 +193,10 @@ def process_stream(kafka_stream):
         .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") ) \
         .dropDuplicates(["EquipmentID"])
 
-    erp_schema = StructType() \
-        .add("VehicleType", StringType()) \
-        .add("DayType", StringType()) \
-        .add("StartTime", StringType()) \
-        .add("EndTime", StringType()) \
-        .add("ZoneID", StringType()) \
-        .add("ChargeAmount", DoubleType()) \
-        .add("EffectiveDate", StringType())
         
 
-    # ERP rates stream processing
-    erp_stream = kafka_stream.filter(col("topic") == "traffic_erp") \
-        .withColumn("value", from_json(col("value"), erp_schema)) \
-        .select(col("value.*"))\
-        .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") )
 
-    return incident_stream, speedbands_stream, image_stream, vms_stream, erp_stream
+    return incident_stream, speedbands_stream, image_stream, vms_stream
 
 def write_to_console(df, table_name):
     # Output the dataframe to the console for testing purposes
@@ -217,8 +204,8 @@ def write_to_console(df, table_name):
 
 def main():
     # Kafka configurations
-    kafka_broker = "localhost:9092"
-    kafka_topics = "traffic_incidents,traffic_images,traffic_speedbands,traffic_vms,traffic_erp"
+    kafka_broker = "kafka:9092"
+    kafka_topics = "traffic_incidents,traffic_images,traffic_speedbands,traffic_vms"
 
     # Create Spark session
     spark = create_spark_session()
@@ -227,7 +214,7 @@ def main():
     kafka_stream = read_kafka_stream(spark, kafka_broker, kafka_topics)
 
     # Process streams
-    incident_stream, speedbands_stream, image_stream, vms_stream, erp_stream = process_stream(kafka_stream)
+    incident_stream, speedbands_stream, image_stream, vms_stream = process_stream(kafka_stream)
 
     # For testing purposes, print the streams to the console
     incident_query = incident_stream.writeStream \
@@ -250,17 +237,13 @@ def main():
         .foreachBatch(lambda df, epochId: write_to_console(df, "vms_table")) \
         .start()
 
-    erp_query = erp_stream.writeStream \
-        .outputMode("append") \
-        .foreachBatch(lambda df, epochId: write_to_console(df, "erp_table")) \
-        .start()
 
     # Wait for the termination of the queries
     incident_query.awaitTermination()
     speedbands_query.awaitTermination()
     image_query.awaitTermination()
     vms_query.awaitTermination()
-    erp_query.awaitTermination()
+
 
 if __name__ == "__main__":
     main()
