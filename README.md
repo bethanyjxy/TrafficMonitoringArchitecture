@@ -1,22 +1,62 @@
 # TrafficMonitoringArchitecture
 
-run postgres and create db for airflow
 
+
+Up ONLY POSTGRES Container
+1. 
 docker-compose up -d postgres
 
+2. 
 docker exec -it postgres psql -U traffic_admin -d postgres -c "CREATE DATABASE airflow_db;"
 
-Hadoop
+
+
+Enter Hadoop Container to grant access 
+1. 
 docker exec -it hadoop-namenode bash
+2. 
 hdfs dfs -mkdir -p /user/hadoop/traffic_data
+3. 
 hdfs dfs -chown hadoop:supergroup /user/hadoop/traffic_data
-hdfs dfs -chmod 755 /user/hadoop/traffic_data
+4. 
+hdfs dfs -chmod 755 /user/hadoop/traffic_data (idk need or not)
 
 
-Spark semilink
-docker exec -it --user root <container_name> /bin/bash
-rm -rf /opt/spark
-ln -s /opt/spark-3.1.1-bin-hadoop2.7 /opt/spark
+
+Enter airflow
+1.  
+docker exec -it airflow-worker /bin/bash
+2. 
+python3 app/kafka/producer/producer.py
+
+3. 
+python3 app/kafka/consumer/kafka_incidents_consumer.py &
+python3 app/kafka/consumer/kafka_images_consumer.py &
+python3 app/kafka/consumer/kafka_speedbands_consumer.py &
+python3 app/kafka/consumer/kafka_vms_consumer.py 
+
+
+Add another terminal for spark
+
+Enter airflow container
+1.  
+docker exec -it airflow-worker /bin/bash
+2. 
+spark-submit \
+    --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1 \
+    --jars /opt/spark/jars/postgresql-42.2.18.jar \
+    app/spark/realtime/postgres_stream.py
+
+    
+
+Enter Postgre and Check data
+1. 
+docker exec -it postgres psql -U traffic_admin -d traffic_db
+
+
+
+( Nth much)
+Spark Checks
 
 ls -l /opt/spark
 ls /opt/spark/bin/
