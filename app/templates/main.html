@@ -5,16 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Traffic Monitoring Dashboard</title>
     <link rel="stylesheet" href="/static/css/main.css">
-    <!--<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">-->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <h1>Traffic Monitoring Dashboard</h1>
+    {% extends 'base.html' %}
+    {% block content %}
 
-    <div class="topnav">
-        <!--<a class="active" href="/">Main Page</a>-->
-        <a href="/traffic_overview">Traffic Overview</a>
-        <a href="/live_traffic">Live Traffic</a>
-        <a href="/traffic_prediction">Traffic Prediction</a>
-    </div>
+    {% endblock %}
 </body>
+
 </html>

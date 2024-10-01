@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        /* Disable scrolling for the body */
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;  /* Prevent horizontal scrolling */
+            overflow-y: hidden;  /* Prevent vertical scrolling */
+            height: 100%;
+        }
+
+        /* Ensure iframe takes the full available space */
+        iframe {
+            height: 80vh;  /* 100% of the viewport height */
+            border: none;
+            width: calc(100vw - 200px);  /* Adjust to account for the left margin */
+            margin-left: 200px; /* This margin can be adjusted if needed */
+            padding-right: 125px;
+        }
+    </style>
+</head>
+<body>
+    {% extends 'base.html' %}
+    {% block content %}
+    
+
+
+        <iframe src="/overview/" height="800px" ;"></iframe>  <!-- Embedding Dash app -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    {% endblock %}
+</body>
+</html>

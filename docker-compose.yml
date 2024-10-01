@@ -1,22 +1,71 @@
+networks:
+  hadoop-network:
+    driver: bridge
+
+volumes:
+  kafka: {}
+  postgres_data: {}
+  namenode-data: {}
+  datanode-data: {}
+  postgres-airflow-data: {}
+
+x-airflow-common: &airflow-common
+  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.10.2}
+  environment: &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-airflow/airflow
+    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres-airflow/airflow
+    AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
+    AIRFLOW__CORE__FERNET_KEY: ''
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'true'
+    AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
+    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
+  volumes:
+    - ./app/airflow/dags:/opt/airflow/dags
+    - ./app/airflow/logs:/opt/airflow/logs
+    - ./app/airflow/config:/opt/airflow/config
+    - ./app/airflow/plugins:/opt/airflow/plugins
+  user: "${AIRFLOW_UID:-50000}:0"
+  depends_on: &airflow-common-depends-on
+    redis:
+      condition: service_healthy
+    postgres-airflow:
+      condition: service_healthy
+
 services:
   flask-app:
-    build: ./app  # Assuming the Dockerfile is in the app folder
+    build: ./app
+    container_name: flaskapp
     ports:
       - "5000:5000"
     volumes:
-      - ./app:/app 
+      - ./app:/app
     environment:
       FLASK_ENV: development
       POSTGRES_DB: traffic_db
       POSTGRES_USER: traffic_admin
       POSTGRES_PASSWORD: traffic_pass
+      POSTGRES_HOST: postgres
     depends_on:
       - postgres
       - kafka
-  
+      - namenode
+      - datanode
+    networks:
+      - hadoop-network
+    restart: always
+    healthcheck:
+      test: [ "CMD", "curl", "--fail", "http://localhost:5000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   postgres:
     image: postgis/postgis:16-3.4
+    container_name: postgres
     ports:
       - "5432:5432"
     environment:
@@ -25,60 +74,262 @@ services:
       POSTGRES_PASSWORD: traffic_pass
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - hadoop-network
+    restart: always
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "traffic_admin" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
 
+  postgres-airflow:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-airflow-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "airflow" ]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: always
+    networks:
+      - hadoop-network
 
+  redis:
+    image: redis:7.2-bookworm
+    expose:
+      - 6379
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 30s
+      retries: 50
+      start_period: 30s
+    restart: always
+    networks:
+      - hadoop-network
+
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: [ "CMD", "curl", "--fail", "http://localhost:8080/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+    networks:
+      - hadoop-network
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    healthcheck:
+      test: [ "CMD", "curl", "--fail", "http://localhost:8974/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+    networks:
+      - hadoop-network
+
+  airflow-worker:
+    <<: *airflow-common
+    command: celery worker
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - 'celery --app airflow.providers.celery.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}" || celery --app airflow.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}"'
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    environment:
+      <<: *airflow-common-env
+      DUMB_INIT_SETSID: "0"
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+    networks:
+      - hadoop-network
+
+  airflow-triggerer:
+    <<: *airflow-common
+    command: triggerer
+    healthcheck:
+      test: [ "CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"' ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+    networks:
+      - hadoop-network
+
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        mkdir -p /sources/logs /sources/dags /sources/plugins
+        chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins}
+        exec /entrypoint airflow version
+    environment:
+      <<: *airflow-common-env
+      _AIRFLOW_DB_MIGRATE: 'true'
+      _AIRFLOW_WWW_USER_CREATE: 'true'
+      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
+      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
+    user: "${AIRFLOW_UID:-50000}:0"
+    volumes:
+      - ./app/airflow:/sources
+    networks:
+      - hadoop-network
+
+  airflow-cli:
+    <<: *airflow-common
+    profiles:
+      - debug
+    environment:
+      <<: *airflow-common-env
+      CONNECTION_CHECK_MAX_COUNT: "0"
+    command:
+      - bash
+      - -c
+      - airflow
+    networks:
+      - hadoop-network
 
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
+    hostname: 'zookeeper'
+    networks:
+      - hadoop-network
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - 2181:2181
-    
+    restart: always
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "2181" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
   kafka:
     image: confluentinc/cp-kafka:latest
+    hostname: 'kafka'
+    networks:
+      - hadoop-network
+    ports:
+      - '9092:9092'
     depends_on:
       - zookeeper
-    ports:
-      - 9092:9092
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    restart: always
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "9092" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
+  namenode:
+    image: bde2020/hadoop-namenode:latest
+    container_name: hadoop-namenode
+    environment:
+      - CLUSTER_NAME=test
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+      - CORE_CONF_hadoop_http_staticuser_user=root
+      - HDFS_CONF_dfs_replication=1
+    volumes:
+      - namenode-data:/hadoop/dfs/name
+    ports:
+      - "9870:9870" # Namenode web UI
+    networks:
+      - hadoop-network
+    restart: always
+    healthcheck:
+      test: [ "CMD", "curl", "--fail", "http://localhost:9870" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
+  datanode:
+    image: bde2020/hadoop-datanode:latest
+    container_name: hadoop-datanode
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+      - CORE_CONF_hadoop_http_staticuser_user=root
+      - HDFS_CONF_dfs_replication=1
+    volumes:
+      - datanode-data:/hadoop/dfs/data
+    depends_on:
+      - namenode
+    ports:
+      - "9864:9864" # Datanode web UI
+    networks:
+      - hadoop-network
+    restart: always
+    healthcheck:
+      test: [ "CMD", "curl", "--fail", "http://localhost:9864" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   spark:
+    container_name: spark
     image: bitnami/spark:latest
     ports:
-      - "8080:8080"  # Spark UI
-      - "7077:7077"  # Spark master port
+      - "8082:8082" # Spark UI
+      - "7077:7077" # Spark master port
     environment:
       - SPARK_MODE=master
+      - SPARK_MASTER_PORT=8082
     volumes:
-      - ./spark-data:/opt/spark/data
+      - /app/spark:/opt/spark/data
     depends_on:
-      - kafka
-
-  airflow:
-    image: apache/airflow:latest
-    ports:
-      - "8081:8081"
-    environment:
-      LOAD_EX: "y"
-      EXECUTOR: "LocalExecutor"
-    volumes:
-      - ./dags:/usr/local/airflow/dags
-      - ./logs:/usr/local/airflow/logs
-    depends_on:
-      - postgres
-
-networks:
-  kafka_network:
-    driver: bridge
-
-volumes:
-  postgres_data: {}
+      - namenode
+    networks:
+      - hadoop-network
+    restart: always
+    healthcheck:
+      test: [ "CMD", "curl", "--fail", "http://localhost:8082" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
