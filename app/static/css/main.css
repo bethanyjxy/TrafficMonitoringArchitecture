@@ -1,3 +1,49 @@
-body {
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body,
+html {
     overflow-x: hidden;
+    height: 100%;
+}
+
+.hero {
+    background-image: url('landingpage.jpeg');
+    background-size: cover;
+    background-position: center;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    text-align: center;
+}
+
+.content {
+    max-width: 600px;
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.8);
+    ;
+    border-radius: 10px;
+    opacity: 100%;
+}
+
+.btn {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 10px 20px;
+    /* Button padding */
+    color: white;
+    text-decoration: none;
+    /* Remove underline */
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.btn:hover {
+    background-color: #218838;
+    /* Darker button color on hover */
 }

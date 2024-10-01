@@ -237,6 +237,7 @@ def main():
         .foreachBatch(lambda df, epochId: write_to_console(df, "vms_table")) \
         .start()
 
+   
 
     # Wait for the termination of the queries
     incident_query.awaitTermination()

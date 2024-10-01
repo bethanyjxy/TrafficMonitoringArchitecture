@@ -23,7 +23,6 @@ live_traffic_blueprint = Blueprint('live_traffic_blueprint', __name__)
 
 @live_traffic_blueprint.route('/live_traffic')
 def live_traffic():
-    erp_data = fetch_data_from_table('erp_table')
 
     incidents_data = fetch_data_from_table('incident_table')
     """Display live traffic map with Folium based on selected filters."""
@@ -33,7 +32,6 @@ def live_traffic():
     # Map of filters to table names
     table_mapping = {
         'incidents': 'incident_table',
-        'erp': 'erp_table',
         'speedbands': 'speedbands_table',
         'images': 'image_table',
         'vms': 'vms_table'
@@ -42,14 +40,22 @@ def live_traffic():
     # Colors for different filter types
     filter_colors = {
         'incidents': 'red',
-        'erp': 'blue',
         'speedbands': 'green',
         'images': 'purple',
         'vms': 'orange'
     }
     
-    # Create a Folium map centered on Singapore
-    map_obj = folium.Map(location=[1.3521, 103.8198], zoom_start=12)
+    # Create a Folium map with smooth zooming behavior
+    map_obj = folium.Map(
+        location=[1.3521, 103.8198],
+        zoom_start=20,
+        max_zoom=24,
+        prefer_canvas=True,  # Improves rendering performance when zooming
+        tiles='https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{z}/{x}/{y}?access_token=YOUR_MAPBOX_ACCESS_TOKEN',
+        attr='Mapbox',
+        tile_size=512
+    )
+
     heat_data = [] 
 
     # Add markers dynamically from the selected data types
@@ -101,20 +107,21 @@ def live_traffic():
                             latitudes = np.linspace(start_lat, end_lat, num_points)
                             longitudes = np.linspace(start_lon, end_lon, num_points)
 
-                            # Collect heatmap points, using congestion level (1 to 5)
+                            # Collect heatmap points, using congestion level (1 to 8)
                             heat_value = row.get('speedband')  # Get the speedband as the congestion level
                             for lat, lon in zip(latitudes, longitudes):
                                 # Append to heat_data list with intensity based on congestion level
                                 heat_data.append([lat, lon, heat_value])  # Collect heatmap data
 
-                            # Optionally, add a line to represent the route as well
+                            locations=[(start_lat, start_lon), (end_lat, end_lon)],
+                            # Add a line representing the route with color based on congestion
                             folium.PolyLine(
-                                locations=[(start_lat, start_lon), (end_lat, end_lon)],
                                 color=get_color_from_congestion(heat_value),  # Color based on congestion level
                                 weight=5,  # Thickness of the line
-                                opacity=0.7  # Transparency of the line
-                            ).add_to(map_obj)  # Add line to the map
-                                             
+                                opacity=0.4  # Transparency of the line
+                            ).add_to(map_obj)  # Add the line to the map  
+                            # Use fit_bounds to adjust the map view to include the polyline
+                            map_obj.fit_bounds(locations)                    
             except Exception as e:
                 print(f"Error fetching data for {table_name}: {e}")
 
@@ -122,7 +129,7 @@ def live_traffic():
     map_html = map_obj._repr_html_()
 
     # Render the template with the map
-    return render_template('liveTraffic.html', map_html=map_html, erp_data=erp_data, incidents=incidents_data)
+    return render_template('liveTraffic.html', map_html=map_html, incidents=incidents_data)
 
 
 

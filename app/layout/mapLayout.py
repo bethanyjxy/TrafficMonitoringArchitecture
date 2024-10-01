@@ -134,125 +134,77 @@ def register_callbacks(app):
             fig.update_traces(marker=dict(sizemode="diameter", size=12, opacity=0.7))
             return dcc.Graph(figure=fig), None
 
-        elif selected_table == 'vms_table':
-            # Ensure the data is available
-            if df.empty:
-                return html.P("No data available.")
-            
-            # Scatter map with VMS locations as points
-            fig = px.scatter_mapbox(df, lat="latitude", lon="longitude", hover_name="message",
-                                    zoom=11, height=600,width=1200)
-
-            # Set map style and marker behavior on hover
-            fig.update_traces(marker=dict(size=10, sizemode='area'),  # Default marker size
-                            selector=dict(mode='markers'),
-                            hoverinfo='text',
-                            hoverlabel=dict(bgcolor="white", font_size=12))
-
-            # Use Mapbox open street map style
-            fig.update_layout(
-                mapbox_style="open-street-map",
-                mapbox=dict(
-                    center=dict(lat=1.3521, lon=103.8198),  # Singapore coordinates
-                    zoom=11
-                ),
-                margin={"r":0,"t":0,"l":0,"b":0},  # Remove margins
-                
-            )
-            fig.update_traces(marker=dict(sizemode="diameter", size=12, opacity=0.7))
-
-            return dcc.Graph(figure=fig), None
-
         elif selected_table == 'speedbands_table':
             if df.empty:
-                    return html.P("No data available.")
+                return html.P("No data available.")
 
-            # Create a heatmap trace
-            heat_data = []  # List to collect heatmap data
+            cog_data = []  # List to collect heatmap data
 
-            # Loop over each row in the dataframe to create route points
+            # Loop over each row in the dataframe
             for i, row in df.iterrows():
                 start_lat = row['startlat']
                 start_lon = row['startlon']
                 end_lat = row['endlat']
                 end_lon = row['endlon']
-                
+                cog_lvl = row['speedband']  # Get the congestion level
+
                 if start_lat and start_lon and end_lat and end_lon:
-                    # Generate intermediate points for the heatmap
-                    num_points = 10  # Adjust number of points for desired granularity
+                    num_points = 10
                     latitudes = np.linspace(start_lat, end_lat, num_points)
                     longitudes = np.linspace(start_lon, end_lon, num_points)
-                    heat_value = row['speedband']  # Get the congestion level (1 to 5)
 
                     # Collect heatmap points
                     for lat, lon in zip(latitudes, longitudes):
-                        # Check for congestion levels
-                        if heat_value == 0:  # No congestion
-                            heat_data.append((lat, lon, 1))  # Assign a low intensity for no congestion (green)
-                        elif heat_value >= 1 and heat_value <= 8:
-                            heat_data.append((lat, lon, heat_value))  # Append the congestion level directly
+                        if cog_lvl >= 1 and cog_lvl <= 8:
+                            cog_data.append((lat, lon, cog_lvl))
 
-            # Create a heatmap trace if there is data
-            if heat_data:
-                lat, lon, intensity = zip(*heat_data)  # Unzip heat_data into separate lists
+            if cog_data:
+                lat, lon, intensity = zip(*cog_data)
 
-               # Define a custom colorscale for levels 1 to 5
+                # Define custom colorscale for levels 1 to 8
                 custom_colorscale = [
-                    [0, 'darkred'],        # Level 1: 0 < 9 (no congestion)
-                    [0.125, 'red'], # Level 2: 10 < 19
-                    [0.25, 'orange'],     # Level 3: 20 < 29
-                    [0.375, 'orange'],    # Level 4: 30 < 39
-                    [0.5, 'yellow'],  # Level 5: 40 < 49
-                    [0.625, 'yellow'],       # Level 6: 50 < 59
-                    [0.75, 'green'],    # Level 7: 60 < 69
-                    [0.875, 'green'],  # Level 8: 70 or more
-                    [1, 'green']         # Optional: no congestion
+                    [0, 'red'],     # 0 < 9
+                    [0.125, 'red'],     # 10 < 19
+                    [0.25, 'red'],   # 20 < 29
+                    [0.375, 'orange'],  # 30 < 39
+                    [0.5, 'orange'],    # 40 < 49
+                    [0.625, 'orange'],  # 50 < 59
+                    [0.75, 'green'],    # 60 < 69
+                    [0.875, 'green'],   # 70 or more
+                    [1, 'green']
                 ]
 
                 fig = go.Figure(data=go.Densitymapbox(
                     lat=lat,
                     lon=lon,
-                    z=intensity,  # Use congestion level as intensity
-                    colorscale=custom_colorscale,  # Use custom colorscale
-                    radius=5,  # Adjust for visualization
-                    zmin=1,  # Minimum congestion level
-                    zmax=8  # Maximum congestion level
+                    z=intensity,
+                    colorscale=custom_colorscale,
+                    radius=5,
+                    zmin=1,
+                    zmax=8
                 ))
 
-                # Update the layout for the map visualization
                 fig.update_layout(
-                    mapbox_style="open-street-map",  # OpenStreetMap style
-                    mapbox=dict(center=dict(lat=np.mean(lat), lon=np.mean(lon)), zoom=11),  # Center the map
+                    mapbox_style="open-street-map",
+                    mapbox=dict(center=dict(lat=np.mean(lat), lon=np.mean(lon)), zoom=11),
                     height=600,
                     width=1200,
                 )
-                
 
                 # Add annotations for congestion levels
-                traffic_conditions = {
-                    2: ("Heavy", 'red'),
-                    5: ("Moderate", 'orange'),
-                    8: ("Light", 'green')
-                }
-
-                for level in [2, 5, 8]:  # Only include levels 1, 5, 7, 8
-                    # Get the corresponding color for the level
-                    color = traffic_conditions[level][1]
-
-                    # Add annotation with a black text
+                traffic_conditions = {2: ("Heavy", 'red'), 5: ("Moderate", 'orange'), 8: ("Light", 'green')}
+                for level in [2, 5, 8]:
                     fig.add_annotation(
                         xref='paper', yref='paper',
-                        x=1.04, y=(level - 1) * 0.125,  # Adjust position
+                        x=1.04, y=(level - 1) * 0.125,
                         text=f"{traffic_conditions[level][0]}",
                         showarrow=False,
-                        bgcolor=color,
-                        font=dict(color='black'),  # Set font color to black
+                        bgcolor=traffic_conditions[level][1],
+                        font=dict(color='black'),
                         bordercolor='black',
                         borderwidth=1,
                         borderpad=3,
                         xanchor='center',
                     )
 
-                # Return the graph object (figure) to be rendered in Dash
                 return dcc.Graph(figure=fig), None
-

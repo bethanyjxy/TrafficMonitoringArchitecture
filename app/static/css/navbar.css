@@ -5,29 +5,33 @@ body {
     display: flex;
     flex-direction: column;
     z-index: 1;
-    /* Ensure main content stays beneath the sidebar */
-    position: relative;
 }
 
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
 
 
+.logo i {
+    font-size: 1.5rem;
+    color: white;
+    margin-right: 15px;
+    margin-left: 3px;
+}
+
 /* Base styles for the sidebar */
 .sidebar {
-    position: fixed;
+    position: absolute;
     left: 0;
-    top: 0;
-    width: 3.5%;
-    /* Collapsed width showing only icons */
-    height: 100vh;
-    background-color: #192734;
+    top: 45px;
+    width: 4%;
+    height: calc(100vh - 45px);
     transition: width 0.3s ease;
     overflow-x: hidden;
-    z-index: 999;
+    margin-top: 0;
 }
 
 .sidebar-content {
-    padding: 5px;
+    margin-top: 0;
+    margin-left: 0;
     color: white;
     font-family: 'Montserrat', sans-serif;
 }
@@ -50,7 +54,6 @@ body {
 }
 
 .sidebar ul li a i {
-
     margin-right: 10px;
 }
 
@@ -63,25 +66,21 @@ body {
 /* Expand sidebar on hover */
 .sidebar:hover {
     width: 200px;
-    /* Expanded width */
+
 }
 
 .sidebar:hover .menu-text {
     display: inline-block;
-    /* Show text when expanded */
 }
-
 
 /* The hidden trigger zone for hover detection */
 .trigger-zone {
-    position: fixed;
+    position: absolute;
     left: 0;
     top: 0;
     width: 10px;
-    /* Small strip for hovering */
     height: 100%;
     z-index: 999;
-    /* Make sure it's on top */
 }
 
 /* Hovering over the trigger zone reveals the sidebar */
