@@ -1,19 +1,22 @@
-#Send data to HDFS
+import os
 from hdfs import InsecureClient
 import json
-import os
 
 # HDFS configuration
-hdfs_url = 'http://localhost:9870'  # Replace with your HDFS URL
-hdfs_user = 'hadoop'  # Replace with your HDFS user
-hdfs_directory = '/user/hadoop/traffic_data/'  # HDFS directory path
+NAMENODE_HOST = os.environ.get('HDFS_NAMENODE_HOST', 'namenode')
+NAMENODE_PORT = int(os.environ.get('HDFS_NAMENODE_PORT', 9870))
+HDFS_USER = os.environ.get('HDFS_USER', 'hadoop')
+HDFS_DIRECTORY = os.environ.get('HDFS_DIRECTORY', '/user/hadoop/traffic_data/')
+
+# Construct HDFS URL
+hdfs_url = f"http://{NAMENODE_HOST}:{NAMENODE_PORT}"
 
 # Initialize HDFS client
-hdfs_client = InsecureClient(hdfs_url, user=hdfs_user)
+hdfs_client = InsecureClient(hdfs_url, user=HDFS_USER)
 
 def send_to_hdfs(topic, data):
     """Send data to HDFS."""
-    file_path = os.path.join(hdfs_directory, f"{topic}.json")
+    file_path = os.path.join(HDFS_DIRECTORY, f"{topic}.json")
     try:
         # Check if HDFS is reachable
         hdfs_client.status('/')  # Check if HDFS is running
@@ -33,4 +36,22 @@ def send_to_hdfs(topic, data):
         
     except Exception as e:
         print(f"Error sending data to HDFS: {e}")
-        print(f"Check if HDFS is running and accessible at {hdfs_url}. Ensure the directory '{hdfs_directory}' exists and is writable.")
+        print(f"Check if HDFS is running and accessible at {NAMENODE_HOST}:{NAMENODE_PORT}. Ensure the directory '{HDFS_DIRECTORY}' exists and is writable.")
+
+def create_directory(directory_path):
+    """Ensure HDFS directory exists and has proper permissions."""
+    try:
+        # Check if the directory exists
+        if hdfs_client.status(directory_path, strict=False):
+            print(f"Directory {directory_path} already exists.")
+        else:
+            # Create the directory
+            hdfs_client.makedirs(directory_path)
+            print(f"Directory {directory_path} created successfully.")
+
+        # Set permissions for the directory (use a more secure permission setting)
+        hdfs_client.set_permission(directory_path, '755')
+        print(f"Permissions for {directory_path} set to 755.")
+
+    except Exception as e:
+        print(f"Error accessing or creating directory: {e}")
