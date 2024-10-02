@@ -13,10 +13,6 @@ layout = html.Div([
         # First Row: Metrics Card and Pie Chart
         dbc.Row([
             dbc.Col(
-                dcc.Graph(id='pie-chart', className="rounded shadow p-3 mb-4"),
-                width=6
-            ),
-            dbc.Col(
                 dbc.Card([
                     dbc.CardBody([
                         html.Span("Incidents Today: ", className="card-title", style={'font-size': '24px', 'font-weight': 'bold'}),
@@ -30,7 +26,7 @@ layout = html.Div([
         # Second Row: Correlation and Trend Charts
         dbc.Row([
             dbc.Col(
-                dcc.Graph(id='correlation-chart', className="rounded shadow p-3 mb-4"),
+                dcc.Graph(id='pie-chart', className="rounded shadow p-3 mb-4"),
                 width=6
             ),
             dbc.Col(
@@ -81,33 +77,7 @@ def register_callbacks(app):
         )
         return fig
 
-    @app.callback(
-        Output('correlation-chart', 'figure'),
-        Input('interval-component-overview', 'n_intervals')
-    )
-    def update_correlation_chart(n):
-        df = fetch_vms_incident_correlation()
-        fig = px.scatter(
-        df, 
-        x="incident_count", 
-        y="vms_message", 
-        size="incident_count", 
-        title="Correlation Between VMS Messages and Incidents",
-        labels={"incident_count": "Total Incidents", "vms_message": "VMS Message"},
-        hover_data={"incident_count": False, "vms_message": False}
-        )
-        fig.update_traces(
-            hovertemplate="<b>%{y}</b><br>Total Incidents: %{x}<extra></extra>"
-        )
-        fig.update_layout(
-            margin={"r":0,"t":50,"l":0,"b":0},
-            title={'x':0.5, 'xanchor': 'center'},
-            xaxis_title="Number of Incidents",
-            yaxis_title="VMS Message",
-            template="plotly_white",
-            hovermode="closest"
-        )
-        return fig
+
 
     @app.callback(
         Output('pie-chart', 'figure'),

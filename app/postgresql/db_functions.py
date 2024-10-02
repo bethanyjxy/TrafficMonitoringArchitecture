@@ -130,29 +130,6 @@ def fetch_vehicle_type_incidents():
     return df
 
 
-# Fetch ERP charges over time by vehicle type
-def fetch_erp_charges_over_time():
-    """Fetch ERP charges over time grouped by vehicle type."""
-    query = """
-    SELECT "StartTime", "EndTime", "VehicleType", SUM("ChargeAmount") AS total_charge
-    FROM erp_table
-    WHERE "EffectiveDate" = CURRENT_DATE
-    GROUP BY "StartTime", "EndTime", "VehicleType"
-    ORDER BY "StartTime";
-    """
-    conn = connect_db()
-    if not conn:
-        return pd.DataFrame()
-
-    with conn.cursor() as cursor:
-        cursor.execute(query)
-        result = cursor.fetchall()
-
-    conn.close()
-
-    # Convert result to pandas DataFrame
-    df = pd.DataFrame(result, columns=["StartTime", "EndTime", "VehicleType", "total_charge"])
-    return df
 
 def fetch_vms_incident_correlation():
     """Fetch the correlation between VMS messages and incident occurrences."""
