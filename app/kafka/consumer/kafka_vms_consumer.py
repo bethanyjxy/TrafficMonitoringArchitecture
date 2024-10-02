@@ -1,28 +1,52 @@
+
 from kafka_to_hdfs import send_to_hdfs
-from consumer_config import initialize_consumer, commit_offsets, handle_errors
+from consumer_config import initialize_consumer, commit_offsets, handle_errors, close_consumer
 import json
 
+# Define the topic for traffic vms
 topic = 'traffic_vms'
-consumer = initialize_consumer(topic)
 
 def handle_vms_message(message):
-    """Process VMS (Variable Message Sign) messages."""
-    data = json.loads(message.value().decode('utf-8'))
-    print(f"Received VMS: {data}")
-    send_to_hdfs(topic, data)
+    """Process traffic vms messages."""
+    try:
+        # Decode and load the message as JSON
+        data = json.loads(message.value().decode('utf-8'))
+        print(f"Received vms: {data}")
 
-if __name__ == "__main__":
-    print(f"Listening to {topic} topic...")
+        # Send the parsed data to HDFS
+        send_to_hdfs(topic, data)
+        
+    except json.JSONDecodeError as e:
+        print(f"Failed to decode message: {e}")
+    except Exception as e:
+        print(f"Unexpected error handling message: {e}")
+
+def consume_vms_messages(consumer):
+    """Consume traffic vms messages and handle them."""
     try:
         while True:
+            # Poll for messages from Kafka
             msg = consumer.poll(timeout=1.0)
+
             if msg is None:
                 continue
+
             if not handle_errors(msg):
                 continue
+
+            # Process the traffic image message
             handle_vms_message(msg)
+
+            # Commit the offset after processing the message
             commit_offsets(consumer)
+
     except KeyboardInterrupt:
-        pass
+        print("Consumer interrupted. Exiting...")
+
+if __name__ == "__main__":
+    consumer = initialize_consumer(topic)
+
+    try:
+        consume_vms_messages(consumer)
     finally:
-        consumer.close()
+        close_consumer(consumer)
