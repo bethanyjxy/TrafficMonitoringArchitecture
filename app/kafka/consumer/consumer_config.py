@@ -47,4 +47,3 @@ def close_consumer(consumer: Consumer):
     """Close Kafka Consumer connection."""
     consumer.close()
     print('Consumer connection closed.')
-
