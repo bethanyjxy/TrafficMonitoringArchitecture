@@ -25,3 +25,8 @@ def redirect_to_dashboard():
 def traffic_overview():
 
     return render_template('trafficOverview.html')
+
+@templates_blueprint.route('/traffic_insight')
+def traffic_insight():
+
+    return render_template('trafficInsight.html')
