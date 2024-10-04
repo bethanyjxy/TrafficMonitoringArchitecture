@@ -8,7 +8,7 @@ from datetime import datetime
 import time
 
 SPARK_POSTGRES = {
-    'url': 'jdbc:postgresql://localhost:5432/traffic_db',
+    'url': "jdbc:postgresql://postgres:5432/traffic_db",
     'properties': {
         'user': 'traffic_admin',
         'password': 'traffic_pass',
