@@ -1,24 +1,24 @@
-# kafka_config.py
+import os
 from confluent_kafka import Consumer, KafkaError, KafkaException
 from typing import Dict
 
 # Kafka broker configuration
-HOST: str = 'localhost'
-PORT: int = 9092
-TOPIC: str = 'my-topic'
-CONSUMER_GROUP: str = 'traffic_consumer_group'
+HOST: str = os.environ.get('KAFKA_HOST', 'kafka')
+PORT: int = int(os.environ.get('KAFKA_PORT', 9092))
 
-kafka_broker = 'localhost:9092'
-# Consumer configuration
-consumer_config: Dict[str, str] = {
-    'bootstrap.servers': f'{HOST}:{PORT}',
-    'group.id': CONSUMER_GROUP,
-    'auto.offset.reset': 'earliest',  # Start consuming from the earliest message
-    'enable.auto.commit': True,  # Automatically commit offsets
-    'auto.commit.interval.ms': 5000  # Commit offsets every 5 seconds
-}
 
-def initialize_consumer(topic: str) -> Consumer:
+
+
+def initialize_consumer(topic):
+    
+    kafka_broker = 'kafka:9092'
+    consumer_config = {
+        'bootstrap.servers': kafka_broker,
+        'group.id': f'{topic}_consumer_group',
+        'auto.offset.reset': 'earliest',
+        'enable.auto.commit': True,  # Automatically commit offsets
+        'auto.commit.interval.ms': 5000, # Commit offsets every 5 seconds
+    }
     """Initialize Kafka consumer for a specific topic."""
     consumer = Consumer(consumer_config)
     consumer.subscribe([topic])
@@ -32,11 +32,10 @@ def commit_offsets(consumer):
     except KafkaException as e:
         print(f"Error committing offsets: {e}")
 
-def handle_errors(msg) -> bool:
+def handle_errors(msg):
     """Handle Kafka message errors."""
     if msg.error():
         if msg.error().code() == KafkaError._PARTITION_EOF:
-            print('Reached end of partition.')
             return True
         else:
             print(f"Error: {msg.error()}")
