@@ -2,12 +2,12 @@ import dash_bootstrap_components as dbc
 import plotly.express as px
 from dash import html, dcc
 from dash.dependencies import Input, Output
-
 from postgresql.db_functions import *
 
-# Traffic Insights Layout - Correlation and Trend Charts
 layout = html.Div([
     html.H3('Traffic Insights', className="text-center mb-5 mt-2"),
+    
+    # Row for correlation and trend charts
     dbc.Row([
         dbc.Col(
             dcc.Graph(id='correlation-chart', className="rounded shadow p-3 mb-4"),
@@ -18,7 +18,65 @@ layout = html.Div([
             width=6
         )
     ], className="mb-4", style={'flex-wrap': 'wrap', 'justify-content': 'space-between'}),
-    dcc.Interval(id='interval-component-insights', interval=2*1000, n_intervals=0)
+    
+    # Interval for updating insights
+    dcc.Interval(id='interval-component-insights', interval=2*1000, n_intervals=0),
+    
+    # New row for 2 table insights
+    html.Div([
+        dbc.Row([
+        dbc.Col(
+            html.H3('Traffic Condition', className="text-center mb-4"),
+            width=6,  
+        ),
+        dbc.Col(
+            html.H3('Annual Traffic Lights', className="text-center mb-4"),
+            width=6,  
+        )
+    ], justify="between", className="mb-4"),  # Justify the titles between columns
+
+    # Row for two tables
+    dbc.Row([
+        dbc.Col(
+           dcc.Graph(id='speed-graph', className="rounded shadow p-3 mb-4"),
+           width=6,
+        ),
+        dbc.Col(
+            dcc.Graph(id='trafficlights-graph', className="rounded shadow p-3 mb-4"),
+            width=6,
+        )
+    ],  justify="between", className="mb-4"),
+    ]),
+    
+    # New row for car population graph
+    html.Div([
+        html.H3('Car Population Insights', className="text-center mb-4"),
+        dbc.Row([
+            dbc.Col(
+                dcc.Dropdown(
+                    id='filter-dropdown',
+                    options=[
+                        {'label': 'By Car Make', 'value': 'make'},
+                        {'label': 'By Car CC', 'value': 'cc'}
+                    ],
+                    value='make',  # Default selection
+                    clearable=False
+                ),
+                width=6
+            ),
+            dbc.Col(
+                dcc.Dropdown(
+                    id='year-dropdown',
+                    options=[],  # Initially empty, will be populated in callback
+                    value=None,  # Will be set to the max year later
+                    clearable=False
+                ),
+                width=6
+            )
+        ], className="mb-4"),
+        
+        dcc.Graph(id='population-graph', className="rounded shadow p-3 mb-4")
+    ])
 ])
 
 # Define callbacks

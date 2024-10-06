@@ -57,7 +57,6 @@ def read_cars_data(spark):
     make_schema = StructType([
         StructField("year", IntegerType(), True),
         StructField("make", StringType(), True),
-        StructField("fuel_type", StringType(), True),
         StructField("number", IntegerType(), True)
     ])
     
@@ -78,7 +77,6 @@ def read_motorcycles_data(spark):
     make_schema = StructType([
         StructField("year", IntegerType(), True),
         StructField("make", StringType(), True),
-        StructField("fuel_type", StringType(), True),
         StructField("number", IntegerType(), True)
     ])
     
@@ -91,16 +89,15 @@ def read_motorcycles_data(spark):
     make_df = read_csv_from_hdfs(spark, "MC_by_make.csv", make_schema)
     cc_df = read_csv_from_hdfs(spark, "MC_by_cc.csv", cc_schema)
 
-    write_to_postgres(make_df, "motorcycles_make")
-    write_to_postgres(cc_df, "motorcycles_cc")
+    write_to_postgres(make_df, "mc_make")
+    write_to_postgres(cc_df, "mc_cc")
 
 def read_speed_data(spark):
     """Reads and processes road speed data."""
     speed_schema = StructType([
         StructField("year", IntegerType(), True),
         StructField("ave_speed_expressway", FloatType(), True),
-        StructField("ave_speed_arterial_roads", FloatType(), True),
-        StructField("ave_daily_traffic_volume_entering_city", IntegerType(), True)
+        StructField("ave_speed_arterial_roads", FloatType(), True)
     ])
     
     speed_df = read_csv_from_hdfs(spark, "road_traffic_condition.csv", speed_schema)
