@@ -21,12 +21,12 @@ layout = html.Div([
                 id='table-selector',
                 style={"width": "70%"},
                 options=[  
-                    {'label': 'Traffic Flow', 'value': 'speedbands_table'},
                     {'label': 'Traffic Incident', 'value': 'incident_table'},
+                    {'label': 'Traffic Flow', 'value': 'speedbands_table'},
                     {'label': 'Traffic Authorities Message', 'value': 'vms_table'},
                     {'label': 'Camera Location', 'value': 'image_table'}
                 ],
-                value='speedbands_table'  # Default table
+                value='incident_table'  # Default table
             ),
             width=6, 
             className="mb-4"  
