@@ -1,5 +1,6 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, FloatType
+from pyspark.sql.functions import col, when
 import logging
 
 # Initialize logging
@@ -43,7 +44,7 @@ def write_to_postgres(df, table_name):
         df.write.jdbc(
             url=postgres_properties["url"], 
             table=table_name, 
-            mode="append", 
+            mode="overwrite", 
             properties=postgres_properties["properties"]
         )
     except Exception as e:
@@ -57,6 +58,7 @@ def read_cars_data(spark):
     make_schema = StructType([
         StructField("year", IntegerType(), True),
         StructField("make", StringType(), True),
+        StructField("fuel_type", StringType(), True),
         StructField("number", IntegerType(), True)
     ])
     
@@ -68,6 +70,12 @@ def read_cars_data(spark):
     
     make_df = read_csv_from_hdfs(spark, "Cars_by_make.csv", make_schema)
     cc_df = read_csv_from_hdfs(spark, "Cars_by_cc.csv", cc_schema)
+    
+    # Replace empty strings in fuel_type with null
+    make_df = make_df.withColumn("fuel_type", when(col("fuel_type") == "", None).otherwise(col("fuel_type")))
+
+    # Process make_df: Drop fuel_type column
+    make_df = make_df.drop("fuel_type")
 
     write_to_postgres(make_df, "cars_make")
     write_to_postgres(cc_df, "cars_cc")
@@ -77,6 +85,7 @@ def read_motorcycles_data(spark):
     make_schema = StructType([
         StructField("year", IntegerType(), True),
         StructField("make", StringType(), True),
+        StructField("fuel_type", StringType(), True),
         StructField("number", IntegerType(), True)
     ])
     
@@ -88,6 +97,12 @@ def read_motorcycles_data(spark):
 
     make_df = read_csv_from_hdfs(spark, "MC_by_make.csv", make_schema)
     cc_df = read_csv_from_hdfs(spark, "MC_by_cc.csv", cc_schema)
+    
+     # Replace empty strings in fuel_type with null
+    make_df = make_df.withColumn("fuel_type", when(col("fuel_type") == "", None).otherwise(col("fuel_type")))
+
+    # Process make_df: Drop fuel_type column
+    make_df = make_df.drop("fuel_type")
 
     write_to_postgres(make_df, "mc_make")
     write_to_postgres(cc_df, "mc_cc")

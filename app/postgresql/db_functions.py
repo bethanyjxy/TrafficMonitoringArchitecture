@@ -58,10 +58,10 @@ def fetch_data_from_table(table_name):
     return data_dicts
 
 
-def fetch_population_make_table(type):
+def fetch_population_make_table(type, selected):
     conn = connect_db()
     if not conn:
-        return []
+        return pd.DataFrame()  # Return an empty DataFrame
 
     # Use context manager for cursor
     with conn.cursor() as cursor:
@@ -70,65 +70,113 @@ def fetch_population_make_table(type):
         elif type == 'motorcycles':
             dt = 'mc_make'
         else:
-            return []  # Return empty list if type is not recognized
+            return pd.DataFrame()  # Return an empty DataFrame if type is not recognized
         
-        # Prepare the SQL query
-        query = sql.SQL("SELECT year, make, number FROM {}").format(sql.Identifier(dt))
-        cursor.execute(query)
+        # Prepare the SQL query with parameterized selection
+        query = sql.SQL("SELECT year,SUM(number) AS total_number FROM {} WHERE make = %s GROUP BY YEAR").format(sql.Identifier(dt))
+        cursor.execute(query, (selected,))  # Execute with the selected parameter
 
-        # Fetch all rows and column names
+        # Fetch all rows
         data = cursor.fetchall()
         
         conn.close()
-    return data
 
-def fetch_population_cc_table(type):
+    # Convert fetched data to a DataFrame
+    df = pd.DataFrame(data, columns=['year', 'total_number'])
+    return df  # Return the DataFrame
+
+def fetch_population_cc_table(type, selected):
     conn = connect_db()
     if not conn:
-        return []
+        return pd.DataFrame()  # Return an empty DataFrame
 
-    cursor = conn.cursor()
-    
-    if type == 'cars' :
-        dt = 'car_cc'
-    elif type == 'motorcycles' : 
-        dt = 'mc_cc'
-    else:
-            return []
+    # Use context manager for cursor
+    with conn.cursor() as cursor:
+        if type == 'cars':
+            dt = 'cars_cc'
+        elif type == 'motorcycles':
+            dt = 'mc_cc'
+        else:
+            return pd.DataFrame()  # Return an empty DataFrame if type is not recognized
         
-    query = sql.SQL("SELECT year, cc, number FROM {}").format(sql.Identifier(dt))
-    cursor.execute(query)
+        # Prepare the SQL query with parameterized selection
+        query = sql.SQL("SELECT year, SUM(number) AS total_number FROM {} WHERE cc_rating = %s GROUP BY YEAR").format(sql.Identifier(dt))
+        cursor.execute(query, (selected,))  # Execute with the selected parameter
 
-    # Fetch all rows and column names
-    data = cursor.fetchall()
-    conn.close()
-    return data
+        # Fetch all rows
+        data = cursor.fetchall()
+        
+        conn.close()
     
+    # Convert fetched data to a DataFrame
+    df = pd.DataFrame(data, columns=['year', 'total_number'])
+    return df  # Return the DataFrame
+
+
 def fetch_population_year_table(type, filtertype):
+    conn = connect_db()
+    if not conn:
+        return pd.DataFrame()  # Return an empty DataFrame
+
+    # Use context manager for cursor
+    with conn.cursor() as cursor:
+        if type == 'cars' and filtertype == 'make':
+            dt = 'cars_make'
+        elif type == 'cars' and filtertype == 'cc':
+            dt = 'cars_cc'
+        elif type == 'motorcycles' and filtertype == 'make':
+            dt = 'mc_make'
+        elif type == 'motorcycles' and filtertype == 'cc':
+            dt = 'mc_cc'
+        else:
+            return pd.DataFrame()  # Return an empty DataFrame
+
+        query = sql.SQL("SELECT CAST(year AS INTEGER) AS year, SUM(number) as total_number FROM {} GROUP BY year").format(sql.Identifier(dt))
+        cursor.execute(query)
+
+        # Fetch all rows
+        data = cursor.fetchall()
+    
+    conn.close()  # Close connection
+
+    # Convert fetched data to a DataFrame
+    df = pd.DataFrame(data, columns=['year', 'total_number'])
+    return df  # Return the DataFrame
+
+def fetch_unique_type_table(type, filtertype):
     conn = connect_db()
     if not conn:
         return []
 
     # Use context manager for cursor
     with conn.cursor() as cursor:
-        if type == 'cars':
+        if type == 'cars' and filtertype == 'make':
             dt = 'cars_make'
-        elif type == 'motorcycles':
+        elif type == 'cars' and filtertype == 'cc':
+            dt = 'cars_cc'
+        elif type == 'motorcycles'and filtertype == 'make':
             dt = 'mc_make'
+        elif type == 'motorcycles' and filtertype == 'cc':
+            dt = 'mc_cc'
         else:
             return []  # Return empty list if type is not recognized
         
         if filtertype == 'make':
-            query = sql.SQL("SELECT year, make, SUM(number) as total_number FROM {} GROUP BY year, make").format(sql.Identifier(dt))
+            query = sql.SQL("SELECT make FROM {} GROUP BY  make").format(sql.Identifier(dt))
             cursor.execute(query)
         elif filtertype == 'cc':
-            query = sql.SQL("SELECT year, cc, SUM(number) as total_number FROM {} GROUP BY year, cc").format(sql.Identifier(dt))
+            query = sql.SQL("SELECT cc_rating FROM {} GROUP BY cc_rating").format(sql.Identifier(dt))
             cursor.execute(query)
 
         # Fetch all rows and column names
         data = cursor.fetchall()
+        # Flatten the list of tuples into a list of strings (or numbers)
+        if filtertype == 'make':
+            return [make[0] for make in data]  # Extract first element from each tuple
+        elif filtertype == 'cc':
+            return [cc[0] for cc in data]  # Extract first element from each tuple
     conn.close()  # Close connection
-    return data  # Return list of dictionaries
+
 
 
 # Fetch the count of incidents for today
