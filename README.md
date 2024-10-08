@@ -60,3 +60,16 @@ Spark Checks
 
 ls -l /opt/spark
 ls /opt/spark/bin/
+
+
+##### For Hadoop to Spark
+1. Copy to container
+docker cp app/historical_data hadoop-namenode:historical
+
+2. Create directory and put in hdfs
+docker exec -it hadoop-namenode bash
+hdfs dfs -mkdir -p /user/hadoop/historical
+hdfs dfs -put /historical/*.csv /user/hadoop/historical/
+hdfs dfs -ls /user/hadoop/historical/ 
+
+docker cp app/spark/batch/hist_process.py spark-master:/opt/spark/hist_process.py 

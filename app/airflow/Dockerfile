@@ -1,7 +1,7 @@
 FROM apache/airflow:2.10.2
 
 # Install Python packages
-RUN pip install --no-cache-dir Flask psycopg2-binary dash dash-bootstrap-components plotly kafka-python kafka confluent-kafka folium pyspark==3.1.1 hdfs pandas apache-airflow requests numpy jsons
+RUN pip install --no-cache-dir Flask psycopg2-binary dash dash-bootstrap-components plotly kafka-python kafka confluent-kafka folium pyspark==3.1.1 hdfs pandas apache-airflow requests numpy jsons apache-airflow-providers-postgres apache-airflow-providers-apache-spark
 
 USER root
 

@@ -54,8 +54,130 @@ def fetch_data_from_table(table_name):
     # Convert each row to a dictionary mapping column names to values
     data_dicts = [dict(zip(column_names, row)) for row in data]
 
-    cursor.close()
+    conn.close()
     return data_dicts
+
+
+def fetch_population_make_table(type, selected):
+    conn = connect_db()
+    if not conn:
+        return pd.DataFrame()  # Return an empty DataFrame
+
+    # Use context manager for cursor
+    with conn.cursor() as cursor:
+        if type == 'cars':
+            dt = 'cars_make'
+        elif type == 'motorcycles':
+            dt = 'mc_make'
+        else:
+            return pd.DataFrame()  # Return an empty DataFrame if type is not recognized
+        
+        # Prepare the SQL query with parameterized selection
+        query = sql.SQL("SELECT year,SUM(number) AS total_number FROM {} WHERE make = %s GROUP BY YEAR").format(sql.Identifier(dt))
+        cursor.execute(query, (selected,))  # Execute with the selected parameter
+
+        # Fetch all rows
+        data = cursor.fetchall()
+        
+        conn.close()
+
+    # Convert fetched data to a DataFrame
+    df = pd.DataFrame(data, columns=['year', 'total_number'])
+    return df  # Return the DataFrame
+
+def fetch_population_cc_table(type, selected):
+    conn = connect_db()
+    if not conn:
+        return pd.DataFrame()  # Return an empty DataFrame
+
+    # Use context manager for cursor
+    with conn.cursor() as cursor:
+        if type == 'cars':
+            dt = 'cars_cc'
+        elif type == 'motorcycles':
+            dt = 'mc_cc'
+        else:
+            return pd.DataFrame()  # Return an empty DataFrame if type is not recognized
+        
+        # Prepare the SQL query with parameterized selection
+        query = sql.SQL("SELECT year, SUM(number) AS total_number FROM {} WHERE cc_rating = %s GROUP BY YEAR").format(sql.Identifier(dt))
+        cursor.execute(query, (selected,))  # Execute with the selected parameter
+
+        # Fetch all rows
+        data = cursor.fetchall()
+        
+        conn.close()
+    
+    # Convert fetched data to a DataFrame
+    df = pd.DataFrame(data, columns=['year', 'total_number'])
+    return df  # Return the DataFrame
+
+
+def fetch_population_year_table(type, filtertype):
+    conn = connect_db()
+    if not conn:
+        return pd.DataFrame()  # Return an empty DataFrame
+
+    # Use context manager for cursor
+    with conn.cursor() as cursor:
+        if type == 'cars' and filtertype == 'make':
+            dt = 'cars_make'
+        elif type == 'cars' and filtertype == 'cc':
+            dt = 'cars_cc'
+        elif type == 'motorcycles' and filtertype == 'make':
+            dt = 'mc_make'
+        elif type == 'motorcycles' and filtertype == 'cc':
+            dt = 'mc_cc'
+        else:
+            return pd.DataFrame()  # Return an empty DataFrame
+
+        query = sql.SQL("SELECT CAST(year AS INTEGER) AS year, SUM(number) as total_number FROM {} GROUP BY year").format(sql.Identifier(dt))
+        cursor.execute(query)
+
+        # Fetch all rows
+        data = cursor.fetchall()
+    
+    conn.close()  # Close connection
+
+    # Convert fetched data to a DataFrame
+    df = pd.DataFrame(data, columns=['year', 'total_number'])
+    return df  # Return the DataFrame
+
+def fetch_unique_type_table(type, filtertype):
+    conn = connect_db()
+    if not conn:
+        return []
+
+    # Use context manager for cursor
+    with conn.cursor() as cursor:
+        if type == 'cars' and filtertype == 'make':
+            dt = 'cars_make'
+        elif type == 'cars' and filtertype == 'cc':
+            dt = 'cars_cc'
+        elif type == 'motorcycles'and filtertype == 'make':
+            dt = 'mc_make'
+        elif type == 'motorcycles' and filtertype == 'cc':
+            dt = 'mc_cc'
+        else:
+            return []  # Return empty list if type is not recognized
+        
+        if filtertype == 'make':
+            query = sql.SQL("SELECT make FROM {} GROUP BY  make").format(sql.Identifier(dt))
+            cursor.execute(query)
+        elif filtertype == 'cc':
+            query = sql.SQL("SELECT cc_rating FROM {} GROUP BY cc_rating").format(sql.Identifier(dt))
+            cursor.execute(query)
+
+        # Fetch all rows and column names
+        data = cursor.fetchall()
+        # Flatten the list of tuples into a list of strings (or numbers)
+        if filtertype == 'make':
+            return [make[0] for make in data]  # Extract first element from each tuple
+        elif filtertype == 'cc':
+            return [cc[0] for cc in data]  # Extract first element from each tuple
+    conn.close()  # Close connection
+
+
 
 # Fetch the count of incidents for today
 def fetch_incident_count_today():
@@ -160,8 +282,62 @@ def fetch_vms_incident_correlation():
     
     return df
 
+def fetch_speedband_location(location):
+    conn = connect_db()
+    if not conn:
+        return pd.DataFrame()  # Return an empty DataFrame if the connection fails
 
+    cursor = conn.cursor()
+    
+    # Construct the SQL query based on whether a location is provided
+    if location == "":
+        query = '''
+        SELECT DISTINCT ON ("LinkID") * 
+        FROM speedbands_table 
+        ORDER BY "LinkID", timestamp DESC;
+        '''
+        cursor.execute(query)  # No parameters needed for this query
+    else:
+        query = '''
+        SELECT DISTINCT ON ("LinkID") * 
+        FROM speedbands_table 
+        WHERE "RoadName" = %s
+        ORDER BY "LinkID", timestamp DESC;
+        '''
+        cursor.execute(query, (location,))  # Pass the location as a tuple
 
+    # Fetch all rows and column names
+    data = cursor.fetchall()
+    column_names = [desc[0].lower() for desc in cursor.description]  # Get column names from cursor description
+
+    # Close the database connection
+    conn.close()
+    
+    # Create a DataFrame from the fetched data
+    df = pd.DataFrame(data, columns=column_names)
+    return df  # Return the DataFrame
+
+def fetch_unique_location():
+    conn = connect_db()
+    if not conn:
+        return []
+
+    cursor = conn.cursor()
+
+    # Use sql.Identifier for safe table name injection
+    query = sql.SQL('SELECT DISTINCT "RoadName" FROM "speedbands_table" ORDER BY "RoadName" ASC')
+    cursor.execute(query)
+    
+    # Fetch all rows and column names
+    data = cursor.fetchall()
+
+    conn.close()
+    # Format data for the dropdown
+    return [{'label': row[0], 'value': row[0]} for row in data]
+    
+
+    
+##########################################################
 def fetch_recent_images():
     """Fetch images from the image_table where the timestamp is within the last 5 minutes."""
     conn = connect_db()
