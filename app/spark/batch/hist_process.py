@@ -1,6 +1,7 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, FloatType
 from pyspark.sql.functions import col, when
+from postgresql.postgres_config import SPARK_POSTGRES
 import logging
 
 # Initialize logging
@@ -28,11 +29,11 @@ def read_csv_from_hdfs(spark, file_name, schema):
 def get_postgres_properties():
     """Returns PostgreSQL connection properties."""
     return {
-        "url": "jdbc:postgresql://postgres:5432/traffic_db",
+        "url": SPARK_POSTGRES['url'],
         "properties": {
-            "user": "traffic_admin",
-            "password": "traffic_pass",
-            "driver": "org.postgresql.Driver"
+            "user": SPARK_POSTGRES['user'],
+            "password": SPARK_POSTGRES['password'],
+            "driver": SPARK_POSTGRES['driver']
         }
     }
 
