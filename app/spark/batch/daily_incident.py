@@ -42,7 +42,12 @@ def write_to_postgres(df, table_name):
 def create_spark_session(app_name):
     """Creates a Spark session."""
     logging.info(f"Creating Spark session for {app_name}")
-    return SparkSession.builder.appName(app_name).getOrCreate()
+    return (
+        SparkSession.builder
+        .appName(app_name)
+        .config("spark.sql.legacy.timeParserPolicy", "LEGACY")
+        .getOrCreate()
+    )
 
 def read_json_from_hdfs(spark, file_name):
     """Reads a JSON file from HDFS and returns a DataFrame."""
@@ -56,21 +61,20 @@ def read_json_from_hdfs(spark, file_name):
     
 def generate_id():
     return str(int(time.time() * 1000))  # Current time in milliseconds
-
 def main():
     spark = create_spark_session("DailyIncident_BatchReport")
 
     # Read JSON data
     df = read_json_from_hdfs(spark, "traffic_incidents.json")
 
-    # Extract date from Message
+    # Extract date from Message and convert it to 'dd/MM' format
     df = df.withColumn("IncidentDate", regexp_extract(col("Message"), r"\((\d{1,2}/\d{1,2})\)", 1))
-    df = df.withColumn("IncidentDate", to_date(col("IncidentDate"), "MM/dd"))
+    df = df.withColumn("IncidentDate", to_date(col("IncidentDate"), "dd/MM"))  # Adjusted format to 'dd/MM'
 
     # Filter incidents within the current date 
     today_incident = df.filter((col("IncidentDate") == current_date()))
 
-    # Calculate total count of incident
+    # Calculate total count of incidents
     try:
         total_count = today_incident.count() if not today_incident.rdd.isEmpty() else 0
     except Exception as e:
@@ -85,9 +89,12 @@ def main():
 
     # Create a DataFrame with the ID, Name, Result, and Date columns
     report_name = f"Incident Report {current_date_str}"
-    
-    # Include the current timestamp in the data tuple
-    data = [(unique_id, report_name, total_count, datetime.now())]
+
+    # Convert current datetime to a format Spark can serialize
+    current_timestamp = datetime.now()
+
+    # Data to be added to DataFrame
+    data = [(unique_id, report_name, total_count, current_timestamp)]
     schema = StructType([
         StructField("ID", StringType(), False),
         StructField("Name", StringType(), False),
@@ -95,14 +102,16 @@ def main():
         StructField("Date", TimestampType(), False)  # Ensure the Date column is included in schema
     ])
 
-    incidents_summary = spark.createDataFrame(data, schema=schema)
+    logging.info("Creating DataFrame from data...")
+    
+    try:
+        incidents_summary = spark.createDataFrame(data, schema=schema)
+        logging.info("DataFrame created successfully.")
+    except Exception as e:
+        logging.error(f"Error creating DataFrame: {e}")
 
     # Write batch results to PostgreSQL
     write_to_postgres(incidents_summary, "report_incident")
 
 if __name__ == "__main__":
     main()
-
-
-
-
