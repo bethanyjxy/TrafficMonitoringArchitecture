@@ -1,10 +1,10 @@
+import logging
+import psycopg2
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, to_date, regexp_extract, current_timestamp, current_date
-from pyspark.sql.types import StructType, StructField, StringType, IntegerType
-from postgresql.postgres_config import SPARK_POSTGRES
+from pyspark.sql.functions import col, to_date, regexp_extract, current_date
 from datetime import datetime
 import time
-import logging
+from postgresql.postgres_config import SPARK_POSTGRES, POSTGRES_DB
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO)
@@ -12,30 +12,71 @@ logging.basicConfig(level=logging.INFO)
 # Global variables for hostname and directory
 hostname = "hdfs://namenode:8020"
 directory = "/user/hadoop/traffic_data/"
-    
 
-def get_postgres_properties():
-    """Returns PostgreSQL connection properties."""
-    return {
-        "url": SPARK_POSTGRES['url'], 
-        "properties": SPARK_POSTGRES['properties']  # Get the properties (user, password, driver)
-    }
-    
-def write_to_postgres(df, table_name):
-    """Writes the DataFrame to PostgreSQL."""
-    postgres_properties = get_postgres_properties()
+def get_postgres_connection():
+    """Returns a connection to PostgreSQL."""
     try:
-        logging.info(f"Writing DataFrame to PostgreSQL table: {table_name}")
-        df.write.jdbc(
-            url=postgres_properties["url"], 
-            table=table_name, 
-            mode="append", 
-            properties=postgres_properties["properties"]
+        conn = psycopg2.connect(
+            dbname=POSTGRES_DB['dbname'],
+            user=POSTGRES_DB['user'],
+            password=POSTGRES_DB['password'],
+            host=POSTGRES_DB['host'],
+            port=POSTGRES_DB['port']
         )
+        return conn
     except Exception as e:
-        logging.error(f"Error writing to PostgreSQL: {e}")
+        logging.error(f"Error connecting to PostgreSQL: {e}")
         raise
-    
+
+def create_report_incident_table():
+    """Creates the report_incident table if it does not exist."""
+    create_table_query = """
+    CREATE TABLE IF NOT EXISTS report_incident (
+        ID VARCHAR(255) PRIMARY KEY,
+        Name VARCHAR(255),
+        Result INTEGER,
+        Date DATE
+    );
+    """
+    conn = None
+    try:
+        conn = get_postgres_connection()
+        cursor = conn.cursor()
+        cursor.execute(create_table_query)
+        conn.commit()
+        cursor.close()
+        logging.info("Table 'report_incident' created or already exists.")
+    except Exception as e:
+        logging.error(f"Error creating table in PostgreSQL: {e}")
+        if conn:
+            conn.rollback()
+    finally:
+        if conn:
+            conn.close()
+            
+def insert_into_postgres(data):
+    """Inserts data into PostgreSQL."""
+    insert_query = """
+        INSERT INTO report_incident (ID, Name, Result, Date)
+        VALUES (%s, %s, %s, %s)
+    """
+    conn = None
+    try:
+        conn = get_postgres_connection()
+        cursor = conn.cursor()
+        logging.info("Inserting data into PostgreSQL...")
+        cursor.execute(insert_query, data)
+        conn.commit()
+        cursor.close()
+        logging.info("Data inserted successfully.")
+    except Exception as e:
+        logging.error(f"Error inserting data into PostgreSQL: {e}")
+        if conn:
+            conn.rollback()
+    finally:
+        if conn:
+            conn.close()
+
 def create_spark_session(app_name):
     """Creates a Spark session."""
     logging.info(f"Creating Spark session for {app_name}")
@@ -55,20 +96,21 @@ def read_json_from_hdfs(spark, file_name):
     except Exception as e:
         logging.error(f"Error reading JSON file: {e}")
         raise
-    
+
 def generate_id():
     return str(int(time.time() * 1000))  # Current time in milliseconds
 
-
 def main():
     spark = create_spark_session("DailyIncident_BatchReport")
+    # Create the report_incident table if it does not exist
+    create_report_incident_table()
 
     # Read JSON data
     df = read_json_from_hdfs(spark, "traffic_incidents.json")
 
     # Extract date from Message and convert it to 'dd/MM' format
     df = df.withColumn("IncidentDate", regexp_extract(col("Message"), r"\((\d{1,2}/\d{1,2})\)", 1))
-    df = df.withColumn("IncidentDate", to_date(col("IncidentDate"), "dd/MM"))  # Adjusted format to 'dd/MM'
+    df = df.withColumn("IncidentDate", to_date(col("IncidentDate"), "dd/MM")) 
 
     # Filter incidents within the current date 
     today_incident = df.filter((col("IncidentDate") == current_date()))
@@ -83,43 +125,21 @@ def main():
 
     # Get current date in MMDDYY format
     current_date_str = datetime.now().strftime("%m%d%y")
-    logging.info(f"Current date in MMDDYY format: {current_date_str}")
 
     # Generate a unique ID
     unique_id = generate_id()
-    logging.info(f"Generated unique ID: {unique_id}")
 
-    # Create a DataFrame with the ID, Name, Result, and Date columns
+    # Prepare data to insert
     report_name = f"Incident Report {current_date_str}"
-    logging.info(f"Creating report with name: {report_name}")
 
     # Convert current datetime to a string
     current_timestamp_str = datetime.now().strftime("%Y-%m-%d")
 
-    # Data as a list of tuples
-    data = [(unique_id, report_name, total_count, current_timestamp_str)]
-    logging.info(f"Data to be added to DataFrame: {data}")
+    # Data as a tuple
+    data = (unique_id, report_name, total_count, current_timestamp_str)
 
-    schema = StructType([
-        StructField("ID", StringType(), False),
-        StructField("Name", StringType(), False),
-        StructField("Result", IntegerType(), False),
-        StructField("Date", StringType(), False)  
-    ])
-
-    logging.info("Creating DataFrame from data...")
-
-
-    data = [{
-         "ID": unique_id,
-         "Name": report_name,
-         "Result": total_count,
-         "Date": current_timestamp_str
-     }]
-    incidents_summary = spark.createDataFrame(data, schema = schema)
-
-    # Write batch results to PostgreSQL
-    write_to_postgres(incidents_summary, "report_incident")
+    # Insert data into PostgreSQL
+    insert_into_postgres(data)
 
 if __name__ == "__main__":
     main()
