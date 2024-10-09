@@ -4,7 +4,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, to_date, regexp_extract, current_date
 from datetime import datetime
 import time
-from postgresql.postgres_config import SPARK_POSTGRES, POSTGRES_DB
+from postgresql.postgres_config import POSTGRES_DB
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO)
