@@ -13,15 +13,12 @@ logging.basicConfig(level=logging.INFO)
 hostname = "hdfs://namenode:8020"
 directory = "/user/hadoop/traffic_data/"
     
+
 def get_postgres_properties():
     """Returns PostgreSQL connection properties."""
     return {
-        "url": SPARK_POSTGRES['url'],
-        "properties": {
-            "user": SPARK_POSTGRES['user'],
-            "password": SPARK_POSTGRES['password'],
-            "driver": SPARK_POSTGRES['driver']
-        }
+        "url": SPARK_POSTGRES['url'], 
+        "properties": SPARK_POSTGRES['properties']  # Get the properties (user, password, driver)
     }
     
 def write_to_postgres(df, table_name):
