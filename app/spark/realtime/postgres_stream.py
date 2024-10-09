@@ -1,9 +1,10 @@
 from pyspark.sql import SparkSession
+from postgresql.postgres_config import SPARK_POSTGRES
 from stream_process import create_spark_session, read_kafka_stream, process_stream
 
 def write_to_postgres(df, table_name, postgres_url, postgres_properties):
     try:
-        df.write.jdbc(url=postgres_url, table=table_name, mode="append", properties=postgres_properties)
+        df.write.jdbc(url=postgres_url['url'], table=table_name, mode="append", properties=postgres_properties)
     except Exception as e:
         print(f"Error writing to PostgreSQL table {table_name}: {e}")
         raise
@@ -16,12 +17,8 @@ def main():
 
 
     # PostgreSQL connection properties
-    postgres_url = "jdbc:postgresql://postgres:5432/traffic_db"
-    postgres_properties = {
-        "user": "traffic_admin",
-        "password": "traffic_pass",
-        "driver": "org.postgresql.Driver"
-    }
+    postgres_url = {"url" : SPARK_POSTGRES['url']}
+    postgres_properties = SPARK_POSTGRES['properties']
 
     # Create Spark session
     spark = create_spark_session()

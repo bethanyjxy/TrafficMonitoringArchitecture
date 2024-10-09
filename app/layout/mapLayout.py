@@ -15,11 +15,10 @@ layout = html.Div([
     html.H3('Real-Time Live Traffic', className="text-left mb-4"),
     
     # Dropdown to select the table
-     dbc.Row([
+    dbc.Row([
         dbc.Col(
             dcc.Dropdown(
                 id='table-selector',
-                style={"width": "70%"},
                 options=[  
                     {'label': 'Traffic Incident', 'value': 'incident_table'},
                     {'label': 'Traffic Flow', 'value': 'speedbands_table'},
@@ -28,17 +27,29 @@ layout = html.Div([
                 ],
                 value='incident_table'  # Default table
             ),
-            width=6, 
+            width=3, 
             className="mb-4"  
         )
     ], justify="left"), 
+    # Row for the location dropdown
+    dbc.Row([
+        dbc.Col(
+            dcc.Dropdown(
+                id='location-dropdown',  # This dropdown appears only when speedbands_table is selected
+                placeholder="Select a location",
+                options=[],  # Will be populated dynamically
+                value=None,
+            ),
+            width=3
+        )
+    ], id='location-row', style={'display': 'none'}),  # Hide initially
     
     # Row for the map
     dbc.Row([
         dbc.Col(
             html.Div(id='map-output', style={'padding': '10px'}),
-            width=12,  # Use the full width for the map
-            className="shadow-sm p-3 mb-4 bg-white rounded"  # Add some styling and spacing
+            width=12,  
+            className="shadow-sm p-3 mb-4 bg-white rounded" 
         )
     ], justify="center"),  # Center the map
 
@@ -50,6 +61,7 @@ layout = html.Div([
         ], width=12, className="shadow-sm p-3 mb-4 bg-white rounded")  
     ], justify="center"), 
     
+    
     # Auto-refresh every min
     dcc.Interval(id='interval-component', interval=60*1000, n_intervals=0)
 ], style={'max-width': '100%', 'margin': '0 auto', 'padding': '20px', 'overflow-x': 'hidden'})
@@ -57,16 +69,68 @@ layout = html.Div([
 # Define callback registration as a separate function
 def register_callbacks(app):
     @app.callback(
-        [Output('map-output', 'children'), Output('incident-table', 'children')],
-        [Input('interval-component', 'n_intervals'), Input('table-selector', 'value')]
+        Output('location-row', 'style'),
+        Input('table-selector', 'value')
     )
-    def update_map(n, selected_table):
-        data = fetch_data_from_table(selected_table) 
-            
+    def toggle_location_dropdown(selected_table):
+        if selected_table == 'speedbands_table':
+            return {'display': 'block'}  # Show the dropdown
+        else:
+            return {'display': 'none'}  # Hide the dropdown
+    
+    @app.callback(
+    #Update Location dropdown selection 
+    Output('location-dropdown', 'options'),
+    Output('location-dropdown', 'value'), 
+    Input('location-row', 'id')  
+        )
+    def update_location_options(_):
+        option = fetch_unique_location()
+        default_value = option[0] if option else None
+        return option, default_value
+
+    # Update Notification Table
+    @app.callback(
+        Output('incident-table', 'children'),
+        Input('interval-component', 'n_intervals')
+    )
+    def update_table(n):
+        data = fetch_data_from_table('incident_table')
+        df = pd.DataFrame(data)
+        
+        if df.empty:
+                return html.P("No data available."), None
+        df = df.sort_values(by=['incident_date', 'incident_time'], ascending=[False, False])
+        
+        # Create incident table to display recent incidents
+        incident_table_component = dash_table.DataTable(
+        id='incident-table',
+        columns=[
+                {"name": "Date", "id": "incident_date"},
+                {"name": "Time", "id": "incident_time"},
+                {"name": "Incident", "id": "incident_message"}
+            ],
+        data=[],  # Initially set to empty to force re-render
+        style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'},
+        style_cell={'textAlign': 'left', 'fontSize': 12, 'font-family': 'Arial', 'padding': '5px'},
+        page_size=10
+        )
+        incident_table_component.data = df[["incident_date", "incident_time", "incident_message"]].to_dict('records')
+
+        return incident_table_component
+    
+    # Update Map   
+    @app.callback(
+        Output('map-output', 'children'),
+        [Input('interval-component', 'n_intervals'), Input('table-selector', 'value'), Input('location-dropdown', 'value')]
+    )
+    def update_map(n, selected_table, location):
+
         data = fetch_data_from_table(selected_table)
         df = pd.DataFrame(data)
 
         if selected_table == 'incident_table':
+            # Ensure data is available
             if df.empty:
                 return html.P("No data available."), None
 
@@ -88,30 +152,12 @@ def register_callbacks(app):
                 margin={"r": 0, "t": 0, "l": 0, "b": 0} # Remove margins
             )
 
-            df = df.sort_values(by=['incident_date', 'incident_time'], ascending=[False, False])
-
             fig.update_traces(marker=dict(sizemode="diameter", size=12, opacity=0.7))
-            # Create incident table to display recent incidents
-            incident_table_component = dash_table.DataTable(
-            id='incident-table',
-            columns=[
-                {"name": "Date", "id": "incident_date"},
-                {"name": "Time", "id": "incident_time"},
-                {"name": "Incident", "id": "incident_message"}
-            ],
-            data=[],  # Initially set to empty to force re-render
-            style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'},
-            style_cell={'textAlign': 'left', 'fontSize': 12, 'font-family': 'Arial', 'padding': '5px'},
-            page_size=10
-            )
-            incident_table_component.data = df[["incident_date", "incident_time", "incident_message"]].to_dict('records')
-
-            return dcc.Graph(figure=fig), incident_table_component
+            
+            return dcc.Graph(figure=fig)
 
 
         elif selected_table == 'image_table':
-            #traffic_images = fetch_recent_images()
-            #img_df = pd.DataFrame(traffic_images)
             fig = px.scatter_mapbox(df, lat="latitude", lon="longitude", hover_name="location", zoom=11, height=600, width=1200)
             fig.update_traces(marker=dict(size=12, sizemode='area'),  # Default marker size
                     selector=dict(mode='markers'),
@@ -132,9 +178,9 @@ def register_callbacks(app):
             return dcc.Graph(figure=fig), None
         
         elif selected_table == 'vms_table':
-            # Ensure the data is available
+            # Ensure data is available
             if df.empty:
-                return html.P("No data available.")
+                return html.P("No data available."), None
             
             # Scatter map with VMS locations as points
             fig = px.scatter_mapbox(df, lat="latitude", lon="longitude", hover_name="message",
@@ -161,20 +207,24 @@ def register_callbacks(app):
             return dcc.Graph(figure=fig), None
         
         elif selected_table == 'speedbands_table':
-            if df.empty:
-                return html.P("No data available.")
+            if location is None:
+                speed_df = fetch_speedband_location("")  # Fetch all data
+            else:
+                speed_df = fetch_speedband_location(location) # Fetch data at selected location
 
-            polylines = []  # List to collect polyline data
+            # Prepare to collect polyline data
+            polylines = []
 
-            # Loop over each row in the dataframe
-            for i, row in df.iterrows():
+            # Loop over each row in the fetched data
+            for i, row in speed_df.iterrows():
                 start_lat = row['startlat']
                 start_lon = row['startlon']
                 end_lat = row['endlat']
                 end_lon = row['endlon']
                 cog_lvl = row['speedband']  # Get the congestion level
 
-                if start_lat and start_lon and end_lat and end_lon:
+                # Check for valid coordinates
+                if pd.notna(start_lat) and pd.notna(start_lon) and pd.notna(end_lat) and pd.notna(end_lon):
                     # Determine polyline color and traffic label based on congestion level (speedband)
                     if cog_lvl <= 2:
                         line_color = 'red'
@@ -194,33 +244,46 @@ def register_callbacks(app):
                         "traffic_label": traffic_label  # Label for the traffic condition
                     })
 
+            if not polylines:
+                # If no polylines were created, handle accordingly
+                return html.P("Please Select a Location")
+
+            # Create a Plotly figure
             fig = go.Figure()
 
-            # Add polylines to the map, colored by congestion level with appropriate traffic labels
+            # Add polylines to the map
             for polyline in polylines:
                 fig.add_trace(go.Scattermapbox(
                     lat=polyline["lat"],
                     lon=polyline["lon"],
                     mode='lines',
-                    line=dict(width=3, color=polyline['color']),  # Line color based on congestion level
+                    line=dict(width=8, color=polyline['color']),  # Line color based on congestion level
                     name=polyline['traffic_label'],  # Dynamic label based on traffic condition
                     hoverinfo='text',  # Show custom hover text
                     hovertext=polyline['traffic_label'],  # Full display of traffic label
                     showlegend=False
                 ))
 
+            # Update layout of the figure , Higher zoom for specific location, lower for overall map
+            zoom_level = 16 if location else 13  
+
+            # Calculate center for the map
+            if polylines:
+                lat_center = np.mean([p["lat"][0] for p in polylines])
+                lon_center = np.mean([p["lon"][0] for p in polylines])
+            else:
+                # Default center coordinates if polylines is empty
+                lat_center, lon_center = 0, 0  
+
             fig.update_layout(
                 mapbox_style="open-street-map",
                 mapbox=dict(
-                    center=dict(lat=np.mean([p["lat"][0] for p in polylines]), lon=np.mean([p["lon"][0] for p in polylines])),
-                    zoom=15,
+                    center=dict(lat=lat_center, lon=lon_center),
+                    zoom=zoom_level,  # Set the zoom level based on location selection
                 ),
-                height=600,  
-                width=1200, 
+                height=600,
+                width=1200,
                 margin={"r": 0, "t": 0, "l": 0, "b": 0}  # Remove margins
             )
 
-            return dcc.Graph(figure=fig), None
-
-
-
+            return dcc.Graph(figure=fig)  # Return the figure to be displayed in the output Div
