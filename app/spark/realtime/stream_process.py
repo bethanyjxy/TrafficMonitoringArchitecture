@@ -204,7 +204,7 @@ def write_to_console(df, table_name):
 
 def main():
     # Kafka configurations
-    kafka_broker = "localhost:9092"
+    kafka_broker = "kafka:9092"
     kafka_topics = "traffic_incidents,traffic_images,traffic_speedbands,traffic_vms,traffic_erp"
 
     # Create Spark session

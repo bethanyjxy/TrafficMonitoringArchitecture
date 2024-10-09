@@ -47,5 +47,19 @@ run_vms_consumer = BashOperator(
     dag=dag,
 )
 
+# Task to run the Spark streaming job
+run_spark_postgres_stream = BashOperator(
+    task_id='run_spark_postgres_stream',
+    bash_command='''
+        spark-submit \
+        --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1 \
+        --jars /opt/spark/jars/postgresql-42.2.18.jar \
+        /opt/airflow/app/spark/realtime/postgres_stream.py \
+        2>&1
+    ''',
+    dag=dag,
+)
+
+
 # Set dependencies, consumers run in parallel
-[run_incidents_consumer, run_images_consumer, run_speedbands_consumer, run_vms_consumer]
+[run_incidents_consumer, run_images_consumer, run_speedbands_consumer, run_vms_consumer] >> run_spark_postgres_stream
