@@ -109,25 +109,16 @@ def main():
     # Read JSON data
     df = read_json_from_hdfs(spark, "traffic_incidents.json")
 
-
-    # Extract date from Message
-    df = df.withColumn("IncidentDate", regexp_extract(col("Message"), r"\((\d{1,2}/\d{1,2})\)", 1))
+    df.printSchema()
 
     # Get the current year
     current_year = datetime.now().year
     
-    # Create full date strings in the format "yyyy-MM-dd"
-    df = df.withColumn("IncidentDate",
-                    F.concat_ws("-", F.lit(current_year), 
-                                F.split(col("IncidentDate"), "/")[1],  # Day
-                                F.split(col("IncidentDate"), "/")[0]))  # Month
-
-    # Convert to date type
-    df = df.withColumn("IncidentDate", to_date(col("IncidentDate"), "yyyy-MM-dd"))
-
-    # Filter incidents for today (excluding year)
-    today_incident = df.filter((col("IncidentDate") == current_date()))
-
+    # Extract timestamp from JSON data
+    df = df.withColumn("timestamp", col("timestamp"))  
+    
+    # Filter incidents for today 
+    today_incident = df.filter(to_date(col("timestamp")) == current_date())
 
     # Calculate total count of incidents
     try:

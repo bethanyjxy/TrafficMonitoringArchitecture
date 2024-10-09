@@ -1,6 +1,9 @@
 import os
 from hdfs import InsecureClient
 import json
+import time
+from datetime import datetime
+
 
 # HDFS configuration
 NAMENODE_HOST = os.environ.get('HDFS_NAMENODE_HOST', 'namenode')
@@ -28,11 +31,18 @@ def send_to_hdfs(topic, data):
             # Create the file if it does not exist
             with hdfs_client.write(file_path, encoding='utf-8') as writer:
                 writer.write('')  # Create an empty file
+                
+        # Prepare data with a timestamp
+        timestamp = datetime.now().isoformat()  # Use ISO 8601 format for timestamp
+        data_timestamp = {
+            "timestamp": timestamp,
+            **data  # Unpack the existing data into the new dictionary
+        }
 
         # Append data to the file
         with hdfs_client.write(file_path, encoding='utf-8', append=True) as writer:
-            writer.write(json.dumps(data) + "\n")
-        print(f"Data sent to HDFS for topic '{topic}'")
+            writer.write(json.dumps(data_timestamp) + "\n")
+        print(f"Data sent to HDFS for topic '{topic}' with timestamp '{timestamp}'")
         
     except Exception as e:
         print(f"Error sending data to HDFS: {e}")
