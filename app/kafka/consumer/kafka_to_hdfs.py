@@ -33,7 +33,7 @@ def send_to_hdfs(topic, data):
                 writer.write('')  # Create an empty file
                 
         # Prepare data with a timestamp
-        timestamp = datetime.now().isoformat()  # Use ISO 8601 format for timestamp
+        timestamp = datetime.now().isoformat() 
         data_timestamp = {
             "timestamp": timestamp,
             **data  # Unpack the existing data into the new dictionary
