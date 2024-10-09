@@ -4,7 +4,8 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, to_date, regexp_extract, current_date
 from datetime import datetime
 import time
-from postgresql.postgres_config import SPARK_POSTGRES, POSTGRES_DB
+from postgresql.postgres_config import POSTGRES_DB
+from pyspark.sql import functions as F
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO)
@@ -108,23 +109,36 @@ def main():
     # Read JSON data
     df = read_json_from_hdfs(spark, "traffic_incidents.json")
 
-    # Extract date from Message and convert it to 'dd/MM' format
-    df = df.withColumn("IncidentDate", regexp_extract(col("Message"), r"\((\d{1,2}/\d{1,2})\)", 1))
-    df = df.withColumn("IncidentDate", to_date(col("IncidentDate"), "dd/MM")) 
 
-    # Filter incidents within the current date 
+    # Extract date from Message
+    df = df.withColumn("IncidentDate", regexp_extract(col("Message"), r"\((\d{1,2}/\d{1,2})\)", 1))
+
+    # Get the current year
+    current_year = datetime.now().year
+    
+    # Create full date strings in the format "yyyy-MM-dd"
+    df = df.withColumn("IncidentDate",
+                    F.concat_ws("-", F.lit(current_year), 
+                                F.split(col("IncidentDate"), "/")[1],  # Day
+                                F.split(col("IncidentDate"), "/")[0]))  # Month
+
+    # Convert to date type
+    df = df.withColumn("IncidentDate", to_date(col("IncidentDate"), "yyyy-MM-dd"))
+
+    # Filter incidents for today (excluding year)
     today_incident = df.filter((col("IncidentDate") == current_date()))
+
 
     # Calculate total count of incidents
     try:
-        total_count = today_incident.count() if not today_incident.rdd.isEmpty() else 0
+        total_count = today_incident.count()
         logging.info(f"Total count of today's incidents: {total_count}")
     except Exception as e:
         logging.error(f"Error counting today_incident: {e}")
         total_count = 0  # Default to 0 if an error occurs
 
     # Get current date in MMDDYY format
-    current_date_str = datetime.now().strftime("%m%d%y")
+    current_date_str = datetime.now().strftime("%d%m%y")
 
     # Generate a unique ID
     unique_id = generate_id()
