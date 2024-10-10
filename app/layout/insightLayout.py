@@ -4,6 +4,8 @@ import plotly.express as px
 from dash import html, dcc, callback_context
 from dash.dependencies import Input, Output
 from postgresql.db_functions import *
+from datetime import datetime
+
 
 layout = html.Div([
     html.H3('Traffic Insights', className="text-center mb-5 mt-2"),
@@ -27,6 +29,26 @@ layout = html.Div([
     html.Div([
     dbc.Row([
         dbc.Col(
+            dcc.Dropdown(
+                id='road-name-dropdown',
+                clearable=False,
+                className="mb-4"
+            ),
+            width=12,
+        )
+    ]),
+    dbc.Row([
+        dbc.Col(
+            dcc.Graph(id='average-speed-graph', className="rounded shadow p-3 mb-4"),
+            width=12,
+        )
+    ], justify="between", className="mb-4"),
+    ]),
+
+    # 3rd row
+    html.Div([
+    dbc.Row([
+        dbc.Col(
            dcc.Graph(id='speed-graph', className="rounded shadow p-3 mb-4"),
            width=6,
         ),
@@ -37,7 +59,7 @@ layout = html.Div([
     ],  justify="between", className="mb-4"),
     ]),
     
-    # 3rd row
+    # 4th row
     html.Div([
     html.H3('Vehicle Population', className="text-center mb-4"),
     
@@ -321,5 +343,49 @@ def register_callbacks(app):
             return 'secondary', 'primary'  # Motorcycles button selected
         else:
             return 'primary', 'secondary'  # Default to Cars
-    
-    
+
+# Callback to update the graph based on the selected road name for average speedband
+    @app.callback(
+    Output('road-name-dropdown', 'options'),
+    Input('road-name-dropdown', 'id')
+    )
+    def update_dropdown_options(_):
+        road_names_list = fetch_unique_location()
+        return road_names_list
+
+    def update_average_speed_graph(selected_road_name):
+        df = fetch_average_speedband(selected_road_name)
+        
+        # Check if the DataFrame is empty
+        if df.empty:
+            logging.warning("The fetched DataFrame is empty. No data to display.")
+            return dash.no_update  # Prevent the chart from updating if there's no data
+        
+        # Check if 'hour' is a column in the DataFrame
+        if 'hour' in df.columns:
+            df['hour'] = pd.to_datetime(df['hour'])  # Ensure it's in datetime format
+            df['hour'] = df['hour'].dt.hour  # Extract hour
+        else:
+            logging.error("The DataFrame does not contain the 'hour' column.")
+            return dash.no_update
+        
+        # Create the line chart
+        fig = px.line(
+            df,
+            x='hour',
+            y='average_speedband',
+            title=f"Average Speedband for {selected_road_name}",
+            labels={"hour": "Hour of the Day", "average_speedband": "Average Speed (km/h)"}
+        )
+
+        # Update layout settings
+        fig.update_layout(
+            margin={"r": 0, "t": 50, "l": 0, "b": 0},
+            title={'x': 0.5, 'xanchor': 'center'},
+            xaxis_title="Hour of the Day",
+            yaxis_title="Average Speed (km/h)",
+            template="plotly_white",
+            hovermode="x unified"
+        )
+
+        return fig

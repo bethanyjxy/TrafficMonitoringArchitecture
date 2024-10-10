@@ -365,3 +365,23 @@ def fetch_recent_images():
     cursor.close()
     conn.close()  # Always close the connection when done
     return data_dicts
+
+def fetch_average_speedband(road_name):
+    conn = connect_db()
+    if not conn:
+        return pd.DataFrame()
+
+    with conn.cursor() as cursor:
+        query = """
+        SELECT hour, AVG(average_speedband) as average_speedband
+        FROM traffic_speedband_prediction
+        WHERE road_name = %s
+        GROUP BY hour
+        ORDER BY hour;
+        """
+        cursor.execute(query, (road_name,))
+        data = cursor.fetchall()
+        column_names = ['hour', 'average_speedband']
+
+    conn.close() 
+    return pd.DataFrame(data, columns=column_names)

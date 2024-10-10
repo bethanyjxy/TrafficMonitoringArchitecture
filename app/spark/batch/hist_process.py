@@ -29,11 +29,11 @@ def read_csv_from_hdfs(spark, file_name, schema):
 def get_postgres_properties():
     """Returns PostgreSQL connection properties."""
     return {
-        "url": SPARK_POSTGRES['url'],
+        "url": "jdbc:postgresql://postgres:5432/traffic_db",
         "properties": {
-            "user": SPARK_POSTGRES['user'],
-            "password": SPARK_POSTGRES['password'],
-            "driver": SPARK_POSTGRES['driver']
+            "user": "traffic_admin",
+            "password": "traffic_pass",
+            "driver": "org.postgresql.Driver"
         }
     }
 

@@ -1,54 +1,14 @@
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, to_date, regexp_extract, current_timestamp, current_date
-from pyspark.sql.types import StructType, StructField, StringType, IntegerType, TimestampType
-from postgresql.postgres_config import SPARK_POSTGRES
-from datetime import datetime
-import time
+# daily_incident.py
 import logging
+from datetime import datetime
+from pyspark.sql.functions import col, to_date, current_date
+from batch_config import create_spark_session, send_to_hdfs, get_postgres_connection, create_table, insert_table, generate_id
 
-# Initialize logging
-logging.basicConfig(level=logging.INFO)
 
 # Global variables for hostname and directory
 hostname = "hdfs://namenode:8020"
 directory = "/user/hadoop/traffic_data/"
-    
-def get_postgres_properties():
-    """Returns PostgreSQL connection properties."""
-    return {
-        "url": SPARK_POSTGRES['url'],
-        "properties": {
-            "user": SPARK_POSTGRES['user'],
-            "password": SPARK_POSTGRES['password'],
-            "driver": SPARK_POSTGRES['driver']
-        }
-    }
-    
-def write_to_postgres(df, table_name):
-    """Writes the DataFrame to PostgreSQL."""
-    postgres_properties = get_postgres_properties()
-    try:
-        logging.info(f"Writing DataFrame to PostgreSQL table: {table_name}")
-        df.write.jdbc(
-            url=postgres_properties["url"], 
-            table=table_name, 
-            mode="overwrite", 
-            properties=postgres_properties["properties"]
-        )
-    except Exception as e:
-        logging.error(f"Error writing to PostgreSQL: {e}")
-        raise
-    
-def create_spark_session(app_name):
-    """Creates a Spark session."""
-    logging.info(f"Creating Spark session for {app_name}")
-    return (
-        SparkSession.builder
-        .appName(app_name)
-        .config("spark.sql.legacy.timeParserPolicy", "LEGACY")
-        .getOrCreate()
-    )
-
+          
 def read_json_from_hdfs(spark, file_name):
     """Reads a JSON file from HDFS and returns a DataFrame."""
     path = f"{hostname}{directory}{file_name}"
@@ -58,60 +18,81 @@ def read_json_from_hdfs(spark, file_name):
     except Exception as e:
         logging.error(f"Error reading JSON file: {e}")
         raise
-    
-def generate_id():
-    return str(int(time.time() * 1000))  # Current time in milliseconds
+
 def main():
     spark = create_spark_session("DailyIncident_BatchReport")
 
     # Read JSON data
     df = read_json_from_hdfs(spark, "traffic_incidents.json")
-
-    # Extract date from Message and convert it to 'dd/MM' format
-    df = df.withColumn("IncidentDate", regexp_extract(col("Message"), r"\((\d{1,2}/\d{1,2})\)", 1))
-    df = df.withColumn("IncidentDate", to_date(col("IncidentDate"), "dd/MM"))  # Adjusted format to 'dd/MM'
-
-    # Filter incidents within the current date 
-    today_incident = df.filter((col("IncidentDate") == current_date()))
+    
+    # Extract timestamp from JSON data
+    df = df.withColumn("timestamp", col("timestamp"))  
+    
+    # Filter incidents for today 
+    today_incident = df.filter(to_date(col("timestamp")) == current_date())
 
     # Calculate total count of incidents
     try:
-        total_count = today_incident.count() if not today_incident.rdd.isEmpty() else 0
+        total_count = today_incident.count()
+        logging.info(f"Total count of today's incidents: {total_count}")
     except Exception as e:
         logging.error(f"Error counting today_incident: {e}")
         total_count = 0  # Default to 0 if an error occurs
 
     # Get current date in MMDDYY format
-    current_date_str = datetime.now().strftime("%m%d%y")
+    current_date_str = datetime.now().strftime("%d%m%y")
 
     # Generate a unique ID
     unique_id = generate_id()
 
-    # Create a DataFrame with the ID, Name, Result, and Date columns
+    # Prepare data to insert
     report_name = f"Incident Report {current_date_str}"
 
-    # Convert current datetime to a format Spark can serialize
-    current_timestamp = datetime.now()
+    # Convert current datetime to a string
+    current_timestamp_str = datetime.now().strftime("%Y-%m-%d")
 
-    # Data to be added to DataFrame
-    data = [(unique_id, report_name, total_count, current_timestamp)]
-    schema = StructType([
-        StructField("ID", StringType(), False),
-        StructField("Name", StringType(), False),
-        StructField("Result", IntegerType(), False),
-        StructField("Date", TimestampType(), False)  # Ensure the Date column is included in schema
-    ])
+    
+    ####### Sending report to POSTGRESQL #######
+    
+    # Initialize PostgreSQL connection
+    conn = get_postgres_connection()
+    
+    # Prepare data to insert
+    data = (unique_id, report_name, total_count, current_timestamp_str)  # Data as a tuple
 
-    logging.info("Creating DataFrame from data...")
+    # SQL queries
+    create_table_query = """
+    CREATE TABLE IF NOT EXISTS report_incident (
+        ID VARCHAR(255) PRIMARY KEY,
+        Name VARCHAR(255),
+        Result INTEGER,
+        Date DATE
+    );
+    """
+    
+    insert_query = """
+        INSERT INTO report_incident (ID, Name, Result, Date)
+        VALUES (%s, %s, %s, %s)
+    """
     
     try:
-        incidents_summary = spark.createDataFrame(data, schema=schema)
-        logging.info("DataFrame created successfully.")
-    except Exception as e:
-        logging.error(f"Error creating DataFrame: {e}")
+        # Create the report_incident table if it does not exist
+        create_table(create_table_query, conn)
 
-    # Write batch results to PostgreSQL
-    write_to_postgres(incidents_summary, "report_incident")
+        # Insert data into PostgreSQL
+        insert_table(data, insert_query, conn)
+    finally:
+        if conn:
+            conn.close()  # Ensure the connection is closed after operations
+
+    ####### Send report to HDFS #######
+    historical_data = {
+        "ID": unique_id,
+        "Name": report_name,
+        "Result": total_count,
+        "Date": current_timestamp_str
+    }
+    send_to_hdfs("historical_incidents", historical_data)
 
 if __name__ == "__main__":
     main()
