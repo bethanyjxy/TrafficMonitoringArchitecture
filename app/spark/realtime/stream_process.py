@@ -1,7 +1,6 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import udf, when, col, from_json,  regexp_extract, concat, lit, current_timestamp, regexp_replace, date_format, trim, to_timestamp
 from pyspark.sql.types import StructType, StringType, DoubleType, IntegerType
-from pyspark.sql import functions as F
 
 def create_spark_session():
     # Initialize Spark session with Kafka support
@@ -116,7 +115,8 @@ def process_stream(kafka_stream):
         .add("Message", StringType())
 
     date_regex = r"\((\d{1,2}/\d{1,2})\)(\d{1,2}:\d{2})"
-    pattern_regex = r"\(\d{1,2}/\d{1,2}\)\d{2}:\d{2}"
+    #pattern_regex = r"\(\d{1,2}/\d{1,2}\)\d{2}:\d{2}"
+    pattern_regex = r"\(\d{1,2}/\d{1,2}\)\s*\d{1,2}:\d{2}\s*"
     time_regex = r"(\d{1,2}:\d{2})"
 
     # Split the stream based on topic
@@ -141,7 +141,7 @@ def process_stream(kafka_stream):
         .add("StartLat", StringType()) \
         .add("EndLon", StringType()) \
         .add("EndLat", StringType())  
-    
+            
     speedbands_stream = kafka_stream.filter(col("topic") == "traffic_speedbands") \
         .withColumn("value", from_json(col("value"), speedbands_schema)) \
         .select(col("value.*"))\

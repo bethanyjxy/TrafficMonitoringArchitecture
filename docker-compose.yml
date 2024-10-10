@@ -181,8 +181,8 @@ services:
 
   flask-app:
     build:
-      context: ./app 
-      dockerfile: Dockerfile  
+      context: ./app
+      dockerfile: Dockerfile
     container_name: flaskapp
     ports:
       - "5000:5000"
@@ -245,7 +245,6 @@ services:
     ports:
       - 2181:2181
 
-
   kafka:
     image: bitnami/kafka:latest
     container_name: kafka
@@ -283,7 +282,7 @@ services:
     volumes:
       - namenode-data:/hadoop/dfs/name
     ports:
-      - "9870:9870"  # Namenode web UI
+      - "9870:9870" # Namenode web UI
     networks:
       - hadoop-network
     restart: always
@@ -294,27 +293,27 @@ services:
       retries: 3
       start_period: 15s
   datanode1:
-      image: bde2020/hadoop-datanode:latest
-      container_name: hadoop-datanode1
-      environment:
-        - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
-        - CORE_CONF_hadoop_http_staticuser_user=root
-        - HDFS_CONF_dfs_replication=2
-      volumes:
-        - datanode1-data:/hadoop/dfs/data
-      depends_on:
-        - namenode
-      ports:
-        - "9864:9864"  # Datanode1 web UI
-      networks:
-        - hadoop-network
-      restart: always
-      healthcheck:
-        test: ["CMD", "curl", "--fail", "http://localhost:9864"]
-        interval: 30s
-        timeout: 10s
-        retries: 3
-        start_period: 15s
+    image: bde2020/hadoop-datanode:latest
+    container_name: hadoop-datanode1
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+      - CORE_CONF_hadoop_http_staticuser_user=root
+      - HDFS_CONF_dfs_replication=2
+    volumes:
+      - datanode1-data:/hadoop/dfs/data
+    depends_on:
+      - namenode
+    ports:
+      - "9864:9864" # Datanode1 web UI
+    networks:
+      - hadoop-network
+    restart: always
+    healthcheck:
+      test: [ "CMD", "curl", "--fail", "http://localhost:9864" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   datanode2:
     image: bde2020/hadoop-datanode:latest
@@ -328,24 +327,23 @@ services:
     depends_on:
       - namenode
     ports:
-      - "9865:9864"  # Datanode2 web UI
+      - "9865:9864" # Datanode2 web UI
     networks:
       - hadoop-network
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:9865"]
+      test: [ "CMD", "curl", "--fail", "http://localhost:9865" ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 15s
 
-
   spark-master:
     container_name: spark-master
     image: bitnami/spark:latest
     ports:
-      - "8082:8082"  # Spark UI
-      - "7077:7077"  # Spark master port
+      - "8082:8082" # Spark UI
+      - "7077:7077" # Spark master port
     environment:
       - SPARK_MODE=master
       - SPARK_MASTER_PORT=7077
@@ -367,7 +365,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
-      
+
   spark-worker:
     container_name: spark-worker
     image: bitnami/spark:latest
@@ -379,3 +377,46 @@ services:
       - spark-master
     networks:
       - hadoop-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - 9090:9090
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - cadvisor
+  cadvisor:
+    image: google/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - 8081:8080
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+  pushgateway:
+    image: prom/pushgateway
+    container_name: pushgateway
+    ports:
+      - 9091:9091
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    expose:
+      - 9100
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - 3000:3000
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=password
+    depends_on:
+      - prometheus
+      - cadvisor

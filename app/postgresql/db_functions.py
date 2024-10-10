@@ -282,7 +282,61 @@ def fetch_vms_incident_correlation():
     
     return df
 
+def fetch_speedband_location(location):
+    conn = connect_db()
+    if not conn:
+        return pd.DataFrame()  # Return an empty DataFrame if the connection fails
 
+    cursor = conn.cursor()
+    
+    # Construct the SQL query based on whether a location is provided
+    if location == "":
+        query = '''
+        SELECT DISTINCT ON ("LinkID") * 
+        FROM speedbands_table 
+        ORDER BY "LinkID", timestamp DESC;
+        '''
+        cursor.execute(query)  # No parameters needed for this query
+    else:
+        query = '''
+        SELECT DISTINCT ON ("LinkID") * 
+        FROM speedbands_table 
+        WHERE "RoadName" = %s
+        ORDER BY "LinkID", timestamp DESC;
+        '''
+        cursor.execute(query, (location,))  # Pass the location as a tuple
+
+    # Fetch all rows and column names
+    data = cursor.fetchall()
+    column_names = [desc[0].lower() for desc in cursor.description]  # Get column names from cursor description
+
+    # Close the database connection
+    conn.close()
+    
+    # Create a DataFrame from the fetched data
+    df = pd.DataFrame(data, columns=column_names)
+    return df  # Return the DataFrame
+
+def fetch_unique_location():
+    conn = connect_db()
+    if not conn:
+        return []
+
+    cursor = conn.cursor()
+
+    # Use sql.Identifier for safe table name injection
+    query = sql.SQL('SELECT DISTINCT "RoadName" FROM "speedbands_table" ORDER BY "RoadName" ASC')
+    cursor.execute(query)
+    
+    # Fetch all rows and column names
+    data = cursor.fetchall()
+
+    conn.close()
+    # Format data for the dropdown
+    return [{'label': row[0], 'value': row[0]} for row in data]
+    
+
+    
 ##########################################################
 def fetch_recent_images():
     """Fetch images from the image_table where the timestamp is within the last 5 minutes."""
