@@ -2,14 +2,17 @@ scrape_configs:
   - job_name: prometheus
     scrape_interval: 5s
     static_configs:
-    - targets:
-      - prometheus:9090
-      - node-exporter:9100
-      - pushgateway:9091
-      - cadvisor:8081
+      - targets:
+          - prometheus:9090
+          - node-exporter:9100
+          - pushgateway:9091
+          - cadvisor:8080
 
-  - job_name: docker
-    scrape_interval: 5s
-    static_configs:
-    - targets:
-      - <PRIVATE_IP_ADDRESS>:9323
+# cant get docker to listen at port 9323
+  #- job_name: docker
+  #  scrape_interval: 5s
+ #   static_configs:
+  #    - targets:
+   #     - host.docker.internal:9323
+
+        

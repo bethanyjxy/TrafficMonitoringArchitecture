@@ -69,7 +69,7 @@ services:
     command: webserver
     container_name: airflow-webserver
     ports:
-      - "8080:8080"
+      - "8081:8080"
     healthcheck:
       test: [ "CMD", "curl", "--fail", "http://localhost:8080/health" ]
       interval: 30s
@@ -389,27 +389,42 @@ services:
       - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     depends_on:
       - cadvisor
+    networks:
+      - hadoop-network
+
   cadvisor:
     image: google/cadvisor:latest
     container_name: cadvisor
     ports:
-      - 8081:8080
+      - 8080:8080
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:rw
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - hadoop-network
+    depends_on:
+      - redis
+
   pushgateway:
     image: prom/pushgateway
     container_name: pushgateway
     ports:
       - 9091:9091
+    networks:
+      - hadoop-network
+
   node-exporter:
     image: prom/node-exporter:latest
     container_name: node-exporter
     restart: unless-stopped
     expose:
       - 9100
+    networks:
+      - hadoop-network
+
   grafana:
     image: grafana/grafana
     container_name: grafana
@@ -420,3 +435,5 @@ services:
     depends_on:
       - prometheus
       - cadvisor
+    networks:
+      - hadoop-network
