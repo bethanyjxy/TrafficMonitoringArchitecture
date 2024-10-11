@@ -47,5 +47,7 @@ run_vms_consumer = BashOperator(
     dag=dag,
 )
 
+
+
 # Set dependencies, consumers run in parallel
-[run_incidents_consumer, run_images_consumer, run_speedbands_consumer, run_vms_consumer]
+[run_incidents_consumer, run_images_consumer, run_speedbands_consumer, run_vms_consumer] 

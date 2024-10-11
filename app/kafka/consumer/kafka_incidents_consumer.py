@@ -6,10 +6,14 @@ topic = 'traffic_incidents'
 consumer = initialize_consumer(topic)
 
 def handle_incidents_message(message):
-    """Process traffic incidents messages."""
-    data = json.loads(message.value().decode('utf-8'))
-    print(f"Received incident: {data}")
-    send_to_hdfs(topic, data)
+    try:
+        data = json.loads(message.value().decode('utf-8'))
+        print(f"Received incident: {data}")
+        send_to_hdfs(topic, data)
+    except json.JSONDecodeError as e:
+        print(f"Failed to decode JSON: {e}")
+    except Exception as e:
+        print(f"Error processing message: {e}")
 
 if __name__ == "__main__":
     print(f"Listening to {topic} topic...")
