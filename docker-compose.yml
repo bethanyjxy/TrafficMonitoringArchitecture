@@ -8,6 +8,8 @@ volumes:
   namenode-data: {}
   datanode1-data: {}
   datanode2-data: {}
+  prometheus_data: {}
+  grafana_data: {}
 
 x-airflow-common: &airflow-common
   build:
@@ -19,13 +21,16 @@ x-airflow-common: &airflow-common
     AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://traffic_admin:traffic_pass@postgres:5432/airflow_db
     AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
     AIRFLOW__CORE__FERNET_KEY: ''
+    AIRFLOW_UID: '50000'
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
     AIRFLOW_CONN_HDFS_DEFAULT: hdfs://namenode:8020
     PYTHONPATH: /opt/airflow/app:/opt/airflow/dags
-
+    
+    # Additional configuration for enabling Prometheus metrics
+    AIRFLOW__METRICS__PROMETHEUS__ENABLE: 'True'  # Enable Prometheus metrics
     # Kafka settings
     AIRFLOW_CONN_KAFKA_DEFAULT: kafka://kafka:9092
     KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -70,6 +75,7 @@ services:
     container_name: airflow-webserver
     ports:
       - "8080:8080"
+      - "8793:8793"
     healthcheck:
       test: [ "CMD", "curl", "--fail", "http://localhost:8080/health" ]
       interval: 30s
@@ -279,6 +285,7 @@ services:
       - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
       - CORE_CONF_hadoop_http_staticuser_user=root
       - HDFS_CONF_dfs_replication=2
+      - HADOOP_JMX_OPTS=-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.port=9070  # Enable JMX
     volumes:
       - namenode-data:/hadoop/dfs/name
     ports:
@@ -299,6 +306,7 @@ services:
       - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
       - CORE_CONF_hadoop_http_staticuser_user=root
       - HDFS_CONF_dfs_replication=2
+      - HADOOP_JMX_OPTS=-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.port=9071 
     volumes:
       - datanode1-data:/hadoop/dfs/data
     depends_on:
@@ -322,6 +330,7 @@ services:
       - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
       - CORE_CONF_hadoop_http_staticuser_user=root
       - HDFS_CONF_dfs_replication=2
+      - HADOOP_JMX_OPTS=-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.port=9072 
     volumes:
       - datanode2-data:/hadoop/dfs/data
     depends_on:
@@ -389,30 +398,27 @@ services:
       - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     depends_on:
       - cadvisor
+    networks:
+      - hadoop-network
+
   cadvisor:
     image: google/cadvisor:latest
     container_name: cadvisor
     ports:
       - 8081:8080
     volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:rw
+      - /var/run:/var/run:ro
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
-  pushgateway:
-    image: prom/pushgateway
-    container_name: pushgateway
-    ports:
-      - 9091:9091
-  node-exporter:
-    image: prom/node-exporter:latest
-    container_name: node-exporter
-    restart: unless-stopped
-    expose:
-      - 9100
+    networks:
+      - hadoop-network
+
+
   grafana:
     image: grafana/grafana
     container_name: grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
     ports:
       - 3000:3000
     environment:
@@ -420,3 +426,77 @@ services:
     depends_on:
       - prometheus
       - cadvisor
+    networks:
+      - hadoop-network  
+      
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    expose:
+      - 9100
+
+  # Add PostgreSQL Exporter
+  postgres-exporter:
+    image: bitnami/postgres-exporter:latest
+    container_name: postgres-exporter
+    environment:
+      - DATA_SOURCE_NAME=postgresql://traffic_admin:traffic_pass@postgres:5432/traffic_db?sslmode=disable
+    ports:
+      - "9187:9187"
+    command:
+      - --web.listen-address=:9187
+      - --no-collector.stat_activity_autovacuum
+    depends_on:
+      - postgres
+    networks:
+      - hadoop-network
+    restart: always
+
+
+  # Add Kafka Exporter for Kafka metrics
+  kafka-exporter:
+    image: danielqsj/kafka-exporter
+    container_name: kafka-exporter
+    ports:
+      - "9308:9308"  # Kafka Exporter default port
+    environment:
+      - KAFKA_SERVER=kafka:9092
+    depends_on:
+      - kafka
+    networks:
+      - hadoop-network
+    restart: always
+
+  # Add Hadoop Exporter for Hadoop metrics
+  hadoop-exporter:
+    image: bitnami/jmx-exporter:latest
+    container_name: hadoop-exporter
+    environment:
+      - JMX_EXPORTER_PORT=9070
+      - JMX_EXPORTER_CONFIG=/etc/jmx_exporter/jmx_config.yaml
+    volumes:
+      - ./app/config/jmx_config.yml:/etc/jmx_exporter/jmx_config.yaml   # Configuration file for JMX exporter
+    depends_on:
+      - namenode
+    networks:
+      - hadoop-network
+    ports:
+      - "9070:9070"  # Expose port for Prometheus to scrape
+    restart: always
+
+  # Add Spark Exporter for Spark metrics
+  spark-exporter:
+    image: bitnami/jmx-exporter:latest
+    container_name: spark-exporter
+    ports:
+      - "4040:4040"
+    environment:
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - JMX_PORT=4040
+    depends_on:
+      - spark-master
+    networks:
+      - hadoop-network
+    restart: always
+

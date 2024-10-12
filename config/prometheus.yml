@@ -1,15 +1,48 @@
 scrape_configs:
+  # Scrape Prometheus itself
   - job_name: prometheus
     scrape_interval: 5s
     static_configs:
-    - targets:
-      - prometheus:9090
-      - node-exporter:9100
-      - pushgateway:9091
-      - cadvisor:8081
+      - targets:
+          - prometheus:9090
+          - node-exporter:9100
+          - cadvisor:8081  # Docker container metrics via cAdvisor
 
+  # Scrape Docker Daemon metrics (optional, depending on setup)
   - job_name: docker
     scrape_interval: 5s
     static_configs:
-    - targets:
-      - <PRIVATE_IP_ADDRESS>:9323
+      - targets:
+          - <PRIVATE_IP_ADDRESS>:9323  # Update with your Docker daemon exporter if you use it
+
+  # Scrape PostgreSQL exporter
+  - job_name: postgres
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - postgres-exporter:9187  # PostgreSQL exporter running on port 9187
+
+  # Scrape Kafka exporter
+  - job_name: kafka
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - kafka-exporter:9308  # Kafka exporter running on port 9308
+
+  # Scrape Hadoop exporter
+  - job_name: hadoop
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - hadoop-exporter:9070  # Hadoop exporter running on port 9070
+
+  # Scrape Spark exporter
+  - job_name: spark
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - spark-exporter:4040  # Spark exporter running on port 4040
+          
+  - job_name: 'airflow'
+    static_configs:
+      - targets: ['airflow-webserver:8793']
