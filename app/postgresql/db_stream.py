@@ -75,9 +75,9 @@ def fetch_speedband_location(location):
     # Construct the SQL query based on whether a location is provided
     if location == "":
         query = '''
-        SELECT DISTINCT ON ("LinkID") * 
+        SELECT DISTINCT ON ("RoadName") * 
         FROM speedbands_table 
-        ORDER BY "LinkID", timestamp DESC;
+        ORDER BY "RoadName", timestamp DESC;
         '''
         cursor.execute(query)  # No parameters needed for this query
     else:

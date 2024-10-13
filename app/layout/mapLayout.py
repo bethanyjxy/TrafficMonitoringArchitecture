@@ -208,82 +208,115 @@ def register_callbacks(app):
         
         elif selected_table == 'speedbands_table':
             if location is None:
-                speed_df = fetch_speedband_location("")  # Fetch all data
+                # Fetch Road name if no location is selected
+                speed_df = fetch_speedband_location("") 
+
+                # Create a Plotly figure for displaying road names
+                fig = px.scatter_mapbox(
+                    speed_df, 
+                    lat="startlat", 
+                    lon="startlon", 
+                    hover_name="roadname",  
+                    zoom=11, 
+                    height=600, 
+                    width=1200
+                )
+
+                # Set map style and marker behavior on hover
+                fig.update_traces(
+                    marker=dict(size=10, sizemode='area'),  # Default marker size
+                    selector=dict(mode='markers'),
+                    hoverinfo='text',
+                    hoverlabel=dict(bgcolor="white", font_size=12),
+                    hovertext=speed_df['roadname'],
+                )
+
+                # Use Mapbox open street map style
+                fig.update_layout(
+                    mapbox_style="open-street-map",
+                    mapbox=dict(
+                        center=dict(lat=1.3521, lon=103.8198),  # Singapore coordinates
+                        zoom=11
+                    ),
+                    margin={"r": 0, "t": 0, "l": 0, "b": 0},  # Remove margins
+                )
+
+                fig.update_traces(marker=dict(sizemode="diameter", size=12, opacity=0.7))
+
+                return dcc.Graph(figure=fig), None
+
             else:
-                speed_df = fetch_speedband_location(location) # Fetch data at selected location
+                # If a specific location is selected, fetch the location-based polylines
+                speed_df = fetch_speedband_location(location)  
+                polylines = []  # To collect polyline data
 
-            # Prepare to collect polyline data
-            polylines = []
+                # Loop over each row in the fetched data
+                for i, row in speed_df.iterrows():
+                    start_lat = row['startlat']
+                    start_lon = row['startlon']
+                    end_lat = row['endlat']
+                    end_lon = row['endlon']
+                    cog_lvl = row['speedband']  # Get the congestion level
 
-            # Loop over each row in the fetched data
-            for i, row in speed_df.iterrows():
-                start_lat = row['startlat']
-                start_lon = row['startlon']
-                end_lat = row['endlat']
-                end_lon = row['endlon']
-                cog_lvl = row['speedband']  # Get the congestion level
+                    # Check for valid coordinates
+                    if pd.notna(start_lat) and pd.notna(start_lon) and pd.notna(end_lat) and pd.notna(end_lon):
+                        # Determine polyline color and traffic label based on congestion level (speedband)
+                        if cog_lvl <= 2:
+                            line_color = 'red'
+                            traffic_label = "Heavy Traffic"
+                        elif 3 <= cog_lvl <= 5:
+                            line_color = 'orange'
+                            traffic_label = "Moderate Traffic"
+                        else:
+                            line_color = 'green'
+                            traffic_label = "Light Traffic"
 
-                # Check for valid coordinates
-                if pd.notna(start_lat) and pd.notna(start_lon) and pd.notna(end_lat) and pd.notna(end_lon):
-                    # Determine polyline color and traffic label based on congestion level (speedband)
-                    if cog_lvl <= 2:
-                        line_color = 'red'
-                        traffic_label = "Heavy Traffic"
-                    elif 3 <= cog_lvl <= 5:
-                        line_color = 'orange'
-                        traffic_label = "Moderate Traffic"
-                    else:
-                        line_color = 'green'
-                        traffic_label = "Light Traffic"
+                        # Create polyline segments
+                        polylines.append({
+                            "lat": [start_lat, end_lat],
+                            "lon": [start_lon, end_lon],
+                            "color": line_color,
+                            "traffic_label": traffic_label  # Label for the traffic condition
+                        })
 
-                    # Create polyline segments
-                    polylines.append({
-                        "lat": [start_lat, end_lat],
-                        "lon": [start_lon, end_lon],
-                        "color": line_color,
-                        "traffic_label": traffic_label  # Label for the traffic condition
-                    })
+                if not polylines:
+                    # If no polylines were created, handle accordingly
+                    return html.P("No Speedband Data Available for this Location")
 
-            if not polylines:
-                # If no polylines were created, handle accordingly
-                return html.P("Please Select a Location")
+                # Create a Plotly figure for displaying polylines
+                fig = go.Figure()
 
-            # Create a Plotly figure
-            fig = go.Figure()
+                # Add polylines to the map
+                for polyline in polylines:
+                    fig.add_trace(go.Scattermapbox(
+                        lat=polyline["lat"],
+                        lon=polyline["lon"],
+                        mode='lines',
+                        line=dict(width=8, color=polyline['color']),  # Line color based on congestion level
+                        name=polyline['traffic_label'],  # Dynamic label based on traffic condition
+                        hoverinfo='text',  # Show custom hover text
+                        hovertext=polyline['traffic_label'],  # Full display of traffic label
+                        showlegend=False
+                    ))
 
-            # Add polylines to the map
-            for polyline in polylines:
-                fig.add_trace(go.Scattermapbox(
-                    lat=polyline["lat"],
-                    lon=polyline["lon"],
-                    mode='lines',
-                    line=dict(width=8, color=polyline['color']),  # Line color based on congestion level
-                    name=polyline['traffic_label'],  # Dynamic label based on traffic condition
-                    hoverinfo='text',  # Show custom hover text
-                    hovertext=polyline['traffic_label'],  # Full display of traffic label
-                    showlegend=False
-                ))
+                # Set map zoom level and center
+                zoom_level = 16 if location else 13  # Higher zoom for specific location, lower for overall map
 
-            # Update layout of the figure , Higher zoom for specific location, lower for overall map
-            zoom_level = 16 if location else 13  
+                if polylines:
+                    lat_center = np.mean([p["lat"][0] for p in polylines])
+                    lon_center = np.mean([p["lon"][0] for p in polylines])
+                else:
+                    lat_center, lon_center = 0, 0  # Fallback center if no polylines exist
 
-            # Calculate center for the map
-            if polylines:
-                lat_center = np.mean([p["lat"][0] for p in polylines])
-                lon_center = np.mean([p["lon"][0] for p in polylines])
-            else:
-                # Default center coordinates if polylines is empty
-                lat_center, lon_center = 0, 0  
+                fig.update_layout(
+                    mapbox_style="open-street-map",
+                    mapbox=dict(
+                        center=dict(lat=lat_center, lon=lon_center),
+                        zoom=zoom_level,  # Set the zoom level based on location selection
+                    ),
+                    height=600,
+                    width=1200,
+                    margin={"r": 0, "t": 0, "l": 0, "b": 0},  # Remove margins
+                )
 
-            fig.update_layout(
-                mapbox_style="open-street-map",
-                mapbox=dict(
-                    center=dict(lat=lat_center, lon=lon_center),
-                    zoom=zoom_level,  # Set the zoom level based on location selection
-                ),
-                height=600,
-                width=1200,
-                margin={"r": 0, "t": 0, "l": 0, "b": 0}  # Remove margins
-            )
-
-            return dcc.Graph(figure=fig)  # Return the figure to be displayed in the output Div
+                return dcc.Graph(figure=fig)  # Return the figure to be displayed in the output Div
