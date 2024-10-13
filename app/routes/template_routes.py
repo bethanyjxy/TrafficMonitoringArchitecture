@@ -1,8 +1,6 @@
 from flask import Blueprint, render_template, send_from_directory
 from dash import Dash
 
-from postgresql.db_functions import *
-
 # Create a Blueprint for template-related routes
 templates_blueprint = Blueprint('templates_blueprint', __name__)
 

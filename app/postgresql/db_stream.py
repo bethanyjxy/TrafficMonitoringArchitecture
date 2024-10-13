@@ -34,29 +34,6 @@ def check_db_connection():
         if connection:
             connection.close()
 
-
-def fetch_data_from_table(table_name):
-    """Fetch all data from the specified table."""
-    conn = connect_db()
-    if not conn:
-        return []
-
-    cursor = conn.cursor()
-
-    # Use sql.Identifier for safe table name injection
-    query = sql.SQL("SELECT * FROM {} LIMIT 500").format(sql.Identifier(table_name))
-    cursor.execute(query)
-    
-    # Fetch all rows and column names
-    data = cursor.fetchall()
-    column_names = [desc[0].lower() for desc in cursor.description]  # Convert column names to lowercase
-    
-    # Convert each row to a dictionary mapping column names to values
-    data_dicts = [dict(zip(column_names, row)) for row in data]
-
-    conn.close()
-    return data_dicts
-
 def fetch_stream_table(table_name):
     """Fetch data from the specified table where the timestamp is within the last 2 days."""
     conn = connect_db()
@@ -66,7 +43,7 @@ def fetch_stream_table(table_name):
     cursor = conn.cursor()
 
     # Calculate the timestamp for 1 days ago
-    one_days_ago = datetime.now() - timedelta(days=1)
+    days_ago = datetime.now() - timedelta(days=1)
 
     # Use sql.Identifier for safe table name injection
     query = sql.SQL("""
@@ -76,7 +53,7 @@ def fetch_stream_table(table_name):
     """).format(sql.Identifier(table_name))
     
     # Execute the query with the timestamp as a parameter
-    cursor.execute(query, (one_days_ago,))
+    cursor.execute(query, (days_ago,))
     
     # Fetch all rows and column names
     data = cursor.fetchall()
