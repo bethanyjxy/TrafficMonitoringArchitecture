@@ -1,6 +1,6 @@
 # mapLayout.py
 import dash_bootstrap_components as dbc
-from postgresql.db_functions import *
+from postgresql.db_stream import *
 import plotly.express as px
 import pandas as pd
 import numpy as np 
@@ -95,7 +95,7 @@ def register_callbacks(app):
         Input('interval-component', 'n_intervals')
     )
     def update_table(n):
-        data = fetch_data_from_table('incident_table')
+        data = fetch_stream_table('incident_table')
         df = pd.DataFrame(data)
         
         if df.empty:
@@ -126,7 +126,7 @@ def register_callbacks(app):
     )
     def update_map(n, selected_table, location):
 
-        data = fetch_data_from_table(selected_table)
+        data = fetch_stream_table(selected_table)
         df = pd.DataFrame(data)
 
         if selected_table == 'incident_table':
