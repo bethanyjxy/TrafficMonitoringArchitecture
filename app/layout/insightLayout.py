@@ -376,16 +376,23 @@ def register_callbacks(app):
             x='hour',
             y='average_speedband',
             title=f"Average Speedband for {selected_road_name}",
-            labels={"hour": "Hour", "average_speedband": "Average Speed"}
+            labels={"hour": "Time", "average_speedband": "Average Speed (km/h)"},
+            markers=True
         )
+
+        fig.update_traces(line=dict(width=4, color='blue'))
+
+         # Format the Y-axis for two decimal places and improve label visibility
+        fig.update_yaxes(
+            tickformat=".2f"
+        )
+
 
         fig.update_layout(
             margin={"r": 0, "t": 50, "l": 0, "b": 0},
             title={'x': 0.5, 'xanchor': 'center'},
             xaxis_title="Hour of the Day",
-            yaxis_title="Average Speed (km/h)",
-            template="plotly_white",
-            hovermode="x unified"
+            yaxis_title="Average Speed)",
         )
 
         return road_names_list, fig
