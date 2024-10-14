@@ -373,11 +373,17 @@ def fetch_average_speedband(road_name):
 
     with conn.cursor() as cursor:
         query = """
-        SELECT hour, AVG(average_speedband) as average_speedband
-        FROM traffic_speedband_prediction
-        WHERE road_name = %s
-        GROUP BY hour
-        ORDER BY hour;
+        SELECT 
+            DATE_TRUNC('hour', "recorded_at") AS hour,
+            AVG("average_speedband") AS average_speedband
+        FROM 
+            traffic_speedband_predictions
+        WHERE 
+            "RoadName" = %s
+        GROUP BY 
+            hour
+        ORDER BY 
+            hour;
         """
         cursor.execute(query, (road_name,))
         data = cursor.fetchall()

@@ -31,6 +31,8 @@ layout = html.Div([
         dbc.Col(
             dcc.Dropdown(
                 id='road-name-dropdown',
+                options=[],
+                placeholder="Select a road name",
                 clearable=False,
                 className="mb-4"
             ),
@@ -344,41 +346,39 @@ def register_callbacks(app):
         else:
             return 'primary', 'secondary'  # Default to Cars
 
-# Callback to update the graph based on the selected road name for average speedband
+# Combined callback to populate the dropdown and update the graph
     @app.callback(
-    Output('road-name-dropdown', 'options'),
-    Input('road-name-dropdown', 'id')
+        [Output('road-name-dropdown', 'options'),
+        Output('average-speed-graph', 'figure')],
+        Input('road-name-dropdown', 'value') 
     )
-    def update_dropdown_options(_):
+    def update_dropdown_and_graph(selected_road_name):
+        """Fetch unique road names for the dropdown and update the graph."""
+        # Fetch unique road names for the dropdown
         road_names_list = fetch_unique_location()
-        return road_names_list
 
-    def update_average_speed_graph(selected_road_name):
+        # If no road name is selected, return the options and an empty figure
+        if selected_road_name is None:
+            return road_names_list, px.line() 
+
+        # Fetch average speedband data based on the selected road name
         df = fetch_average_speedband(selected_road_name)
-        
-        # Check if the DataFrame is empty
-        if df.empty:
-            logging.warning("The fetched DataFrame is empty. No data to display.")
-            return dash.no_update  # Prevent the chart from updating if there's no data
-        
-        # Check if 'hour' is a column in the DataFrame
-        if 'hour' in df.columns:
-            df['hour'] = pd.to_datetime(df['hour'])  # Ensure it's in datetime format
-            df['hour'] = df['hour'].dt.hour  # Extract hour
+
+        # Ensure 'hour' is in datetime format and extract the hour component
+        if not df.empty:
+            df['hour'] = pd.to_datetime(df['hour']).dt.hour
         else:
-            logging.error("The DataFrame does not contain the 'hour' column.")
-            return dash.no_update
-        
-        # Create the line chart
+            return road_names_list, px.line()
+
+        # Create the figure
         fig = px.line(
             df,
             x='hour',
             y='average_speedband',
             title=f"Average Speedband for {selected_road_name}",
-            labels={"hour": "Hour of the Day", "average_speedband": "Average Speed (km/h)"}
+            labels={"hour": "Hour", "average_speedband": "Average Speed"}
         )
 
-        # Update layout settings
         fig.update_layout(
             margin={"r": 0, "t": 50, "l": 0, "b": 0},
             title={'x': 0.5, 'xanchor': 'center'},
@@ -388,4 +388,4 @@ def register_callbacks(app):
             hovermode="x unified"
         )
 
-        return fig
+        return road_names_list, fig
