@@ -158,12 +158,16 @@ def register_callbacks(app):
 
 
         elif selected_table == 'image_table':
-            fig = px.scatter_mapbox(df, lat="latitude", lon="longitude", hover_name="location", zoom=11, height=600, width=1200)
-            fig.update_traces(marker=dict(size=12, sizemode='area'),  # Default marker size
+            image_df = fetch_recent_images()
+            
+            fig = px.scatter_mapbox(image_df, lat="latitude", lon="longitude", hover_name="cameraid",zoom=11, height=600, width=1200)
+            fig.update_traces(
+                    marker=dict(size=12, sizemode='area'),
                     selector=dict(mode='markers'),
-                    hoverinfo='text',
-                    hoverlabel=dict(bgcolor="white", font_size=16))
-
+                    hoverinfo='text',  # Set the hover info
+                    hoverlabel=dict(bgcolor="white", font_size=16),
+                    #hovertemplate="<b>CameraID:</b> %{customdata[0]}<br><b>Image Link:</b> <a href='%{customdata[1]}' target='_blank'>Open Image</a><br><img src='%{customdata[1]}' width='200'><br>"
+                )
             # Use Mapbox open street map style
             fig.update_layout(
                 mapbox_style="open-street-map",

@@ -194,11 +194,6 @@ def fetch_vehicle_type_incidents():
     return df
 
 
-
-
-
-    
-##########################################################
 def fetch_recent_images():
     """Fetch images from the image_table where the timestamp is within the last 5 minutes."""
     conn = connect_db()
@@ -223,6 +218,5 @@ def fetch_recent_images():
     # Convert each row to a dictionary mapping column names to values
     data_dicts = [dict(zip(column_names, row)) for row in data]
 
-    cursor.close()
     conn.close()  # Always close the connection when done
     return data_dicts
