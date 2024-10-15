@@ -1,9 +1,8 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, avg, hour, current_timestamp, date_format
+from pyspark.sql.functions import col, avg, hour, current_timestamp
 from pyspark.sql.types import FloatType
 import logging
-from batch_config import create_spark_session, get_postgres_connection, create_table, insert_table
-
+from batch_config import create_spark_session, get_postgres_connection
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO)
@@ -32,10 +31,14 @@ def process_speedband_data(df):
     columns_to_drop = ["StartLon", "StartLat", "EndLon", "EndLat"]
     df = df.drop(*[column for column in columns_to_drop if column in df.columns])
 
-    # Calculate average speedband per hour, grouped by RoadName and hour of the day
-    avg_speedband_df = df.groupBy("RoadName", hour(col("timestamp")).alias("hour_of_day")) \
-                         .agg(avg("SpeedBand").alias("average_speedband"))
-
+    # Ensure 'timestamp' is a valid column and calculate the average speedband per hour
+    if "timestamp" in df.columns:
+        avg_speedband_df = df.groupBy("RoadName", hour(col("timestamp")).alias("hour_of_day")) \
+                             .agg(avg("SpeedBand").alias("average_speedband"))
+    else:
+        logging.error("The 'timestamp' column is missing from the data.")
+        raise ValueError("The 'timestamp' column is required to calculate hourly average speedbands.")
+    
     logging.info("Calculated average speedband per hour.")
     return avg_speedband_df
 
@@ -47,7 +50,7 @@ def write_to_postgres(df, table_name):
         df.write.jdbc(
             url=postgres_properties["url"], 
             table=table_name, 
-            mode="overwrite", 
+            mode="append", 
             properties=postgres_properties["properties"]
         )
         logging.info("Data successfully written to PostgreSQL.")
@@ -61,7 +64,7 @@ def main():
 
     try:
         # Read the speedband data from HDFS
-        speedband_df = read_json_from_hdfs(spark, "speedband_table.json")
+        speedband_df = read_json_from_hdfs(spark, "traffic_speedbands.json")
 
         # Process the speedband data
         avg_speedband_df = process_speedband_data(speedband_df)
