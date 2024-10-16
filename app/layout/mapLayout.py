@@ -131,6 +131,7 @@ def register_callbacks(app):
         if df.empty:
                 return html.P("No data available."), None
 
+
         # Sort data by 'incident_date' and 'incident_time' in descending order
         df = df.sort_values(by=['incident_date', 'incident_time'], ascending=[False, False])
             
@@ -197,13 +198,13 @@ def register_callbacks(app):
             mapbox_style="open-street-map",
             mapbox=dict(center=dict(lat=1.3521, lon=103.8198), zoom=11),
             height=600,  
-            width=1200, 
+            width=1000, 
             margin={"r":0,"t":0,"l":0,"b":0},
         )
 
         # Default image content when no camera is clicked
         image_content = html.Div([
-            html.H2(f"Select a camera on the map", style={"color": "darkblue"}),
+            html.H3(f"Select a camera on the map", style={"color": "darkblue"}),
         ])
 
         # Check if there is click data
@@ -217,8 +218,8 @@ def register_callbacks(app):
             
             # Create image content to show in the container
             image_content = html.Div([
-                html.Img(src=image_src, style={"width": "100%"}),
-                html.H2(f"View from {rd_name}", style={"color": "darkblue"}),
+                html.Img(src=image_src, style={"width": "85%"}),
+                html.H4(f"View from {rd_name}", style={"color": "darkblue"}),
             ], style={ 'white-space': 'normal', 'margin-right': '30px'})
 
         return fig, image_content  # Return both the updated figure and the image container 
