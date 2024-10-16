@@ -7,7 +7,57 @@ import numpy as np
 from dash import html,dcc,dash_table
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
+import requests
 
+# Function to fetch image data from the API and return a DataFrame
+def fetch_image():
+    url = "https://api.data.gov.sg/v1/transport/traffic-images"
+    response = requests.get(url)
+    
+    if response.status_code == 200:
+        data = response.json()
+        
+        # Check if 'items' exists and is not empty
+        if 'items' in data and len(data['items']) > 0:
+            camera_data = []
+            
+            # Iterate over the 'items' to extract camera information
+            for item in data['items']:
+                for camera in item.get('cameras', []):
+                    camera_id = camera.get('camera_id')
+                    image_url = camera.get('image')
+                    latitude = camera['location']['latitude']
+                    longitude = camera['location']['longitude']
+                    
+                    # Append camera details to the list
+                    camera_data.append({
+                        'camera_id': camera_id,
+                        'image_url': image_url,
+                        'latitude': latitude,
+                        'longitude': longitude
+                    })
+            
+            # Convert to DataFrame
+            camera_df = pd.DataFrame(camera_data)
+            return camera_df
+    return None
+
+def fetch_image_data(camera_id):
+    url = "https://api.data.gov.sg/v1/transport/traffic-images"
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+
+        if 'items' in data and len(data['items']) > 0:
+            # Iterate through the "items" to find the "cameras" list
+            for item in data['items']:
+                # Iterate through each camera in the cameras list
+                for camera in item.get('cameras', []):
+                    # If the camera_id matches, return the image URL
+                    if camera.get('camera_id') == str(camera_id):
+                        return camera['image']
+    
+    return None
 
 # Define the layout
 layout = html.Div([
@@ -31,13 +81,14 @@ layout = html.Div([
             className="mb-4"  
         )
     ], justify="left"), 
+    
     # Row for the location dropdown
     dbc.Row([
         dbc.Col(
             dcc.Dropdown(
                 id='location-dropdown',  # This dropdown appears only when speedbands_table is selected
                 placeholder="Select a location",
-                options=[],  # Will be populated dynamically
+                options=[],  # Populated dynamically
                 value=None,
             ),
             width=3
@@ -49,9 +100,32 @@ layout = html.Div([
         dbc.Col(
             html.Div(id='map-output', style={'padding': '10px'}),
             width=12,  
-            className="shadow-sm p-3 mb-4 bg-white rounded" 
+            className="shadow-sm p-3 mb-4 bg-white rounded" ,
+            id = "general-map-row",
         )
-    ], justify="center"),  # Center the map
+    ], justify="center"),  
+    
+    # Row for the map and image container
+    dbc.Row([  
+        dbc.Col(
+            html.Div([
+                dcc.Graph(id='camera-map'),
+            ]),
+            width=7,  
+            className="shadow-sm p-3 mb-4 bg-white rounded",
+            id = "camera-map-row",
+            style={'display':'none'},
+        ),
+        dbc.Col(
+            html.Div(id='image-container', style={'marginTop': '20px', 'textAlign': 'center'}),
+            width=5, 
+            className="shadow-sm p-3 mb-4 bg-white rounded",
+            id = "image-container-row",
+            style={'display':'none'}
+            
+        ),
+    ], justify="center") , 
+    
 
     # Row for the incident table below the map
     dbc.Row([
@@ -66,8 +140,13 @@ layout = html.Div([
     dcc.Interval(id='interval-component', interval=60*1000, n_intervals=0)
 ], style={'max-width': '100%', 'margin': '0 auto', 'padding': '20px', 'overflow-x': 'hidden'})
 
-# Define callback registration as a separate function
+
+
+
+# Define callback registration 
 def register_callbacks(app):
+    
+    #Function to toggle location drop down when speedbands_table is selected 
     @app.callback(
         Output('location-row', 'style'),
         Input('table-selector', 'value')
@@ -77,9 +156,9 @@ def register_callbacks(app):
             return {'display': 'block'}  # Show the dropdown
         else:
             return {'display': 'none'}  # Hide the dropdown
-    
+        
+    # Update Location dropdown selection    
     @app.callback(
-    #Update Location dropdown selection 
     Output('location-dropdown', 'options'),
     Output('location-dropdown', 'value'), 
     Input('location-row', 'id')  
@@ -119,7 +198,80 @@ def register_callbacks(app):
 
         return incident_table_component
     
-    # Update Map   
+    # Function to change from general map to Camera Map 
+    @app.callback(
+        [
+            Output('general-map-row', 'style'),     # Hide the general map
+            Output('camera-map-row', 'style'),      # Show the camera map
+            Output('image-container-row', 'style')  # Show the image container
+        ],
+        Input('table-selector', 'value')            # Get the selected table value
+    )
+    def toggle_maps(selected_table):
+        if selected_table == 'image_table':
+            #Show the camera map & image container
+            return {'display': 'none'}, {'display': 'block'}, {'display': 'block'}
+        else:
+            #Show the general map , hide the camera map & image container
+            return {'display': 'block'}, {'display': 'none'}, {'display': 'none'}
+        
+    # Function to display Camera Image Map
+    @app.callback(
+        [Output('camera-map', 'figure'),        # Update the figure of the graph
+        Output('image-container', 'children')],  # Update the image container
+        [Input('table-selector', 'value'),      # Input to fetch data based on selected table
+        Input('camera-map', 'clickData')]       # Listen for click events on the map
+    )
+    def update_camera_map(selected_table, click_data):
+        # Fetch image table
+        #image_df = fetch_images_table()
+        # Fetch image
+        camera_df = fetch_image()  
+        
+        #df = pd.merge(image_df, camera_df[['camera_id', 'image_url']], left_on='cameraid', right_on='camera_id', how='left')
+
+        # Create the figure
+        fig = go.Figure(go.Scattermapbox(
+            lat=camera_df['latitude'],
+            lon=camera_df['longitude'],
+            mode='markers',
+            marker=dict(size=12,sizemode='diameter'),
+            hoverinfo='text',
+            text=camera_df['camera_id'],  # Show camera ID on hover
+        ))
+
+        # Set the map style
+        fig.update_layout(
+            mapbox_style="open-street-map",
+            mapbox=dict(center=dict(lat=1.3521, lon=103.8198), zoom=11),
+            height=600,  
+            width=1200, 
+            margin={"r":0,"t":0,"l":0,"b":0},
+        )
+
+        # Default image content when no camera is clicked
+        image_content = html.Div([
+            html.H2(f"Select a camera on the map", style={"color": "darkblue"}),
+        ])
+
+        # Check if there is click data
+        if click_data is not None:
+            # Extract the camera ID based on the clickData
+            point_number = click_data['points'][0]['pointNumber']
+            selected_camera = camera_df.iloc[point_number]
+            
+            camera_id = selected_camera['camera_id']
+            image_src = selected_camera['image_url']
+            
+            # Create image content to show in the container
+            image_content = html.Div([
+                html.Img(src=image_src, style={"width": "100%"}),
+                html.H2(f"Camera ID: {camera_id}", style={"color": "darkblue"}),
+            ], style={ 'white-space': 'normal', 'margin-right': '30px'})
+
+        return fig, image_content  # Return both the updated figure and the image container 
+        
+    # Function to update General Map   
     @app.callback(
         Output('map-output', 'children'),
         [Input('interval-component', 'n_intervals'), Input('table-selector', 'value'), Input('location-dropdown', 'value')]
@@ -138,7 +290,7 @@ def register_callbacks(app):
                                     color="type", zoom=11, height=600, width=1385)
 
             # Set map style and marker behavior on hover
-            fig.update_traces(marker=dict(size=14, sizemode='area'),  # Default marker size
+            fig.update_traces(marker=dict(size=14, sizemode='area'), 
                           selector=dict(mode='markers'),
                           hoverinfo='text',
                           hoverlabel=dict(bgcolor="white", font_size=12, font_family="Arial"))
@@ -155,31 +307,6 @@ def register_callbacks(app):
             fig.update_traces(marker=dict(sizemode="diameter", size=12, opacity=0.7))
             
             return dcc.Graph(figure=fig)
-
-
-        elif selected_table == 'image_table':
-            image_df = fetch_recent_images()
-            
-            fig = px.scatter_mapbox(image_df, lat="latitude", lon="longitude", hover_name="cameraid",zoom=11, height=600, width=1200)
-            fig.update_traces(
-                    marker=dict(size=12, sizemode='area'),
-                    selector=dict(mode='markers'),
-                    hoverinfo='text',  # Set the hover info
-                    hoverlabel=dict(bgcolor="white", font_size=16),
-                    #hovertemplate="<b>CameraID:</b> %{customdata[0]}<br><b>Image Link:</b> <a href='%{customdata[1]}' target='_blank'>Open Image</a><br><img src='%{customdata[1]}' width='200'><br>"
-                )
-            # Use Mapbox open street map style
-            fig.update_layout(
-                mapbox_style="open-street-map",
-                mapbox=dict(
-                    center=dict(lat=1.3521, lon=103.8198),  # Singapore coordinates
-                    zoom=11
-                ),
-                margin={"r":0,"t":0,"l":0,"b":0},  # Remove margins
-                
-            )
-            fig.update_traces(marker=dict(sizemode="diameter", size=12, opacity=0.7))
-            return dcc.Graph(figure=fig), None
         
         elif selected_table == 'vms_table':
             # Ensure data is available
@@ -191,7 +318,7 @@ def register_callbacks(app):
                                     zoom=11, height=600,width=1200)
 
             # Set map style and marker behavior on hover
-            fig.update_traces(marker=dict(size=10, sizemode='area'),  # Default marker size
+            fig.update_traces(marker=dict(size=10, sizemode='area'),  
                             selector=dict(mode='markers'),
                             hoverinfo='text',
                             hoverlabel=dict(bgcolor="white", font_size=12))
@@ -228,7 +355,7 @@ def register_callbacks(app):
 
                 # Set map style and marker behavior on hover
                 fig.update_traces(
-                    marker=dict(size=10, sizemode='area'),  # Default marker size
+                    marker=dict(size=10, sizemode='area'), 
                     selector=dict(mode='markers'),
                     hoverinfo='text',
                     hoverlabel=dict(bgcolor="white", font_size=12),
@@ -323,4 +450,4 @@ def register_callbacks(app):
                     margin={"r": 0, "t": 0, "l": 0, "b": 0},  # Remove margins
                 )
 
-                return dcc.Graph(figure=fig)  # Return the figure to be displayed in the output Div
+                return dcc.Graph(figure=fig) 

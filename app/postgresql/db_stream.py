@@ -194,21 +194,19 @@ def fetch_vehicle_type_incidents():
     return df
 
 
-def fetch_recent_images():
-    """Fetch images from the image_table where the timestamp is within the last 5 minutes."""
+def fetch_images_table():
     conn = connect_db()
     if not conn:
-        return []
+        return pd.DataFrame()  # Return an empty DataFrame if connection fails
 
     cursor = conn.cursor()
 
-    # Define the query to select images with a timestamp within the last 5 minutes
+    # Define the query to select all images 
     query = """
-    SELECT * FROM image_table 
-    WHERE to_timestamp(timestamp, 'YYYY-MM-DD HH24:MI:SS') >= NOW() - INTERVAL '5 minutes'
+    SELECT * FROM image_table;
     """
     
-    # Execute query
+    # Execute the query
     cursor.execute(query)
     
     # Fetch all rows and column names
@@ -219,4 +217,6 @@ def fetch_recent_images():
     data_dicts = [dict(zip(column_names, row)) for row in data]
 
     conn.close()  # Always close the connection when done
-    return data_dicts
+    
+    # Convert the list of dictionaries to a Pandas DataFrame
+    return pd.DataFrame(data_dicts)
