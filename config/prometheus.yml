@@ -10,4 +10,4 @@ remote_write:
   - url: "https://prometheus-prod-37-prod-ap-southeast-1.grafana.net/api/prom/push"
     basic_auth:
       username: "1840228"  # Your Grafana Cloud Prometheus instance ID
-      password: ""  # Your Grafana Cloud API key
+      password: "glc_eyJvIjoiMTI0NDM5MCIsIm4iOiJzdGFjay0xMDYxNjIwLWludGVncmF0aW9uLWthaCIsImsiOiJUd0plMnU0RWt4NHBPMjh1N2E4eDNyMzgiLCJtIjp7InIiOiJwcm9kLWFwLXNvdXRoZWFzdC0xIn19"  # Your Grafana Cloud API key
