@@ -72,14 +72,13 @@ def fetch_and_produce_data(broker):
 
     KAFKA_TOPICS = {
         'incidents': 'traffic_incidents',
-        'images': 'traffic_images',
         'speedbands': 'traffic_speedbands',
         'vms': 'traffic_vms',
+        'images': 'traffic_images',
     }
 
     API_ENDPOINTS = {
         'incidents': "https://datamall2.mytransport.sg/ltaodataservice/TrafficIncidents",
-        'images': "https://datamall2.mytransport.sg/ltaodataservice/Traffic-Imagesv2",
         'speedbands': "https://datamall2.mytransport.sg/ltaodataservice/v3/TrafficSpeedBands",
         'vms': "https://datamall2.mytransport.sg/ltaodataservice/VMS",
     }
@@ -88,14 +87,57 @@ def fetch_and_produce_data(broker):
     for key, url in API_ENDPOINTS.items():
         data = fetch_data(url, key)
         send_to_kafka(producer, KAFKA_TOPICS[key], data)
+        
+    # Fetch and send image data specifically without API key
+    image_data = fetch_image()
+    if image_data:
+        send_to_kafka(producer, KAFKA_TOPICS['images'], image_data)
+    else:
+        print("No image data fetched.")
+        
+    
+def fetch_image():
+    """Fetch image data from the API and rename 'timestamp' to 'img_timestamp'."""
+    url = "https://api.data.gov.sg/v1/transport/traffic-images"
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        data = response.json()
+
+        # Check if there are items in the data
+        if 'items' in data and len(data['items']) > 0:
+            image_data = []
+            
+            # Rename 'timestamp' to 'img_timestamp' in each item
+            for item in data['items']:
+                img_timestamp = item.pop('timestamp', None)  # Remove original 'timestamp'
+                
+                for camera in item.get('cameras', []):
+                    camera_id = camera.get('camera_id')
+                    image_url = camera.get('image')
+                    latitude = camera['location']['latitude']
+                    longitude = camera['location']['longitude']
+                    
+                    # Add the image data along with the renamed 'img_timestamp'
+                    image_data.append({
+                        'camera_id': camera_id,
+                        'image_url': image_url,
+                        'latitude': latitude,
+                        'longitude': longitude,
+                        'img_timestamp': img_timestamp  # Renamed timestamp
+                    })
+
+            return image_data  # Return the image data with renamed timestamps
+    
+    return []  # Return empty if no data is fetched
 
 if __name__ == "__main__":
     broker = 'kafka:9092'
     create_topics(broker, {
         'incidents': 'traffic_incidents',
-        'images': 'traffic_images',
         'speedbands': 'traffic_speedbands',
         'vms': 'traffic_vms',
+        'images': 'traffic_images',
     })
 
     while True:

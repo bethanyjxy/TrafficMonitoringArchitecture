@@ -166,17 +166,19 @@ def process_stream(kafka_stream):
       
         
     images_schema = StructType() \
-        .add("CameraID", StringType()) \
-        .add("Latitude", DoubleType()) \
-        .add("Longitude", DoubleType()) \
-        .add("ImageLink", StringType())
+        .add("camera_id", StringType()) \
+        .add("image_url", StringType())\
+        .add("latitude", DoubleType()) \
+        .add("longitude", DoubleType()) \
+        .add("img_timestamp", StringType())
 
     # Define the image stream with the additional timestamp column
     image_stream = kafka_stream.filter(col("topic") == "traffic_images") \
         .withColumn("value", from_json(col("value"), images_schema))\
         .select(col("value.*"))\
-        .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") )
-        #.withColumn("Location", map_camera_id_udf(col("CameraID"))) \ 
+        .na.drop()
+       # .withColumn("Location", map_camera_id_udf(col("camera_id")))  
+
         
       
         

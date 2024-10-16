@@ -47,3 +47,4 @@ def send_to_hdfs(topic, data):
     except Exception as e:
         print(f"Error sending data to HDFS: {e}")
         print(f"Check if HDFS is running and accessible at {NAMENODE_HOST}:{NAMENODE_PORT}. Ensure the directory '{HDFS_DIRECTORY}' exists and is writable.")
+
