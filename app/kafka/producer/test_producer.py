@@ -1,83 +1,49 @@
 import unittest
 from unittest.mock import patch, MagicMock
-from producer import (
-    fetch_traffic_incidents,
-    fetch_traffic_images,
-    fetch_traffic_speedbands,
-    fetch_traffic_vms,
-    fetch_traffic_erp,
-    send_to_kafka,
-    delivery_report
-)
+import json
+from producer import fetch_and_produce_data
 
-class TestTrafficDataProducer(unittest.TestCase):
+class TestKafkaProducer(unittest.TestCase):
 
-    @patch('requests.get')
-    def test_fetch_traffic_incidents(self, mock_get):
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {'value': [{'id': 1, 'description': 'Incident A'}]}
-        mock_get.return_value = mock_response
-        
-        incidents = fetch_traffic_incidents()
-        self.assertEqual(len(incidents), 1)
-        self.assertEqual(incidents[0]['description'], 'Incident A')
+    @patch('producer.Producer')
+    @patch('producer.AdminClient')
+    @patch('producer.requests.get')
+    def test_fetch_and_produce_data(self, mock_get, mock_admin_client, mock_producer):
+        # Mock responses for API calls
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json.return_value = {
+            'value': [{'id': 1, 'data': 'test_data'}]
+        }
 
-    @patch('requests.get')
-    def test_fetch_traffic_images(self, mock_get):
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        # Ensure we return the expected structure
-        mock_response.json.return_value = {'value': [{'id': 1, 'url': 'http://example.com/image.jpg'}]}
-        mock_get.return_value = mock_response
-        
-        images = fetch_traffic_images()
-        self.assertEqual(len(images), 90)  # Expecting 90 image
+        # Mock AdminClient
+        mock_admin = MagicMock()
+        mock_admin_client.return_value = mock_admin
 
-    @patch('requests.get')
-    def test_fetch_traffic_speedbands(self, mock_get):
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {'value': [{'band': 'A', 'speed': 40}]}
-        mock_get.return_value = mock_response
-        
-        speedbands = fetch_traffic_speedbands()
-        self.assertEqual(len(speedbands), 1)
-        self.assertEqual(speedbands[0]['speed'], 40)
+        # Mock Producer
+        mock_producer_instance = MagicMock()
+        mock_producer.return_value = mock_producer_instance
 
-    @patch('requests.get')
-    def test_fetch_traffic_vms(self, mock_get):
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {'value': [{'message': 'Road Closed'}]}
-        mock_get.return_value = mock_response
-        
-        vms = fetch_traffic_vms()
-        self.assertEqual(len(vms), 1)
-        self.assertEqual(vms[0]['message'], 'Road Closed')
+        # Run the function with the mock broker
+        fetch_and_produce_data('kafka:9092')
 
-    @patch('requests.get')
-    def test_fetch_traffic_erp(self, mock_get):
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {'value': [{'rate': 2.00}]}
-        mock_get.return_value = mock_response
-        
-        erp = fetch_traffic_erp()
-        self.assertEqual(len(erp), 1)
-        self.assertEqual(erp[0]['rate'], 2.00)
+        # Check that the topics were created
+        self.assertEqual(mock_admin.create_topics.call_count, 1)
 
-    @patch('confluent_kafka.Producer')
-    def test_send_to_kafka(self, mock_producer_class):
-        mock_producer = mock_producer_class.return_value
-        data = [{'key': 'value'}]
-        topic = 'test_topic'
-        
-        send_to_kafka(topic, data)
-        
-        # Check that produce was called for each record
-        self.assertEqual(mock_producer.produce.call_count, 0)  # Check against the length of data
-        # mock_producer.flush.assert_called_once()
+        # Check that the correct API endpoints were called
+        self.assertEqual(mock_get.call_count, 4)  # 4 different endpoints
+
+        # Check that produce was called with correct parameters for all topics
+        expected_topics = ['traffic_incidents', 'traffic_images', 'traffic_speedbands', 'traffic_vms']
+        expected_data = json.dumps({'id': 1, 'data': 'test_data'}).encode('utf-8')
+
+        # Verify produce calls
+        for topic in expected_topics:
+            calls = mock_producer_instance.produce.call_args_list
+            found = any(
+                call[0][0] == topic and call[1]['value'] == expected_data
+                for call in calls
+            )
+            self.assertTrue(found, f"Produce was not called with topic {topic} and expected data.")
 
 if __name__ == '__main__':
     unittest.main()
