@@ -288,3 +288,22 @@ def fetch_report_incident():
     df = pd.DataFrame(result, columns=["date", "result"])
 
     return df
+
+def fetch_average_speedband(road_name):
+    conn = connect_db()
+    if not conn:
+        return pd.DataFrame()
+
+    with conn.cursor() as cursor:
+        query = """
+        SELECT * FROM traffic_speedband_prediction
+        WHERE recorded_at <= NOW() AND "RoadName" = %s
+        ORDER BY recorded_at;
+        """
+        cursor.execute(query, (road_name,))
+        data = cursor.fetchall()
+         # Fetch column names from the cursor description
+        colnames = [desc[0] for desc in cursor.description]
+
+    conn.close() 
+    return pd.DataFrame(data, columns = colnames)

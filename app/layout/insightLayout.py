@@ -37,7 +37,31 @@ layout = html.Div([
     ],  justify="between", className="mb-4"),
     ]),
     
-    # 3rd row
+    # 3rd Row
+    html.Div([
+        html.H3('Traffic Flow Prediction', className="text-center mb-4"),
+    dbc.Row([
+        dbc.Col(
+            dcc.Dropdown(
+                id='road-name-dropdown',
+                options=[],
+                placeholder="Select a road name",
+                clearable=False,
+                className="mb-4"
+            ),
+            width=12,
+        )
+    ]),
+    dbc.Row([
+        dbc.Col(
+            dcc.Graph(id='average-speed-graph', className="rounded shadow p-3 mb-4"),
+            width=12,
+        )
+    ], justify="between", className="mb-4"),
+    ]),
+
+    
+    # 4th row
     html.Div([
     html.H3('Vehicle Population', className="text-center mb-4"),
     
@@ -109,7 +133,7 @@ def register_callbacks(app):
             df, 
             x="date", 
             y="result", 
-            title="Incident Trends Overtime",  # Title reflects the current month
+            title="Daily Incident Trends",  # Title reflects the current month
             labels={"date": "Date", "result": "Number of Incidents"}
         )
 
@@ -335,5 +359,62 @@ def register_callbacks(app):
             return 'secondary', 'primary'  # Motorcycles button selected
         else:
             return 'primary', 'secondary'  # Default to Cars
+        
+        
+    @app.callback(
+        [Output('road-name-dropdown', 'options'),
+        Output('average-speed-graph', 'figure')],
+        Input('road-name-dropdown', 'value') 
+    )
+    def update_dropdown_and_graph(selected_road_name):
+        # Fetch unique road names for the dropdown
+        road_names_list = fetch_unique_location()
+
+        # Set default to "ADIS ROAD" if no road is selected on the first load
+        if selected_road_name is None:
+            # Fetch average speedband data based on the selected road name
+            df = fetch_average_speedband("ADIS ROAD")
+
+            # Create the figure
+            fig = px.line(
+                df,
+                x='hour_of_day',
+                y='average_speedband',
+                title=f"Average Speedband for ADIS ROAD",
+                labels={"hour_of_day": "Time", "average_speedband": "Average Speed (km/h)"},
+                markers=True
+            )
+        else:
+            # Fetch average speedband data based on the selected road name
+            df = fetch_average_speedband(selected_road_name)
+
+            # Create the figure
+            fig = px.line(
+                df,
+                x='hour_of_day',
+                y='average_speedband',
+                title=f"Average Speedband for {selected_road_name}",
+                labels={"hour_of_day": "Time", "average_speedband": "Average Speed (km/h)"},
+                markers=True
+            )
+             
+        
+
+        fig.update_traces(line=dict(width=4, color='blue'))
+
+         # Format the Y-axis for two decimal places and improve label visibility
+        fig.update_yaxes(
+            tickformat=".2f"
+        )
+
+
+        fig.update_layout(
+            margin={"r": 0, "t": 50, "l": 0, "b": 0},
+            title={'x': 0.5, 'xanchor': 'center'},
+            xaxis_title="Hour of the Day",
+            yaxis_title="Average Speed)",
+        )
+
+        return road_names_list, fig
     
     
