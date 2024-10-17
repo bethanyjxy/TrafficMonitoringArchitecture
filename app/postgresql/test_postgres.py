@@ -1,122 +1,116 @@
-import unittest
+import pytest
 from unittest.mock import patch, MagicMock
 import pandas as pd
-from postgresql.db_functions import (
-    connect_db,
-    check_db_connection,
-    fetch_data_from_table,
-    fetch_population_make_table,
-    fetch_population_cc_table,
-    fetch_population_year_table,
-    fetch_unique_type_table,
-    fetch_incident_count_today,
-    fetch_incidents_over_time,
-    fetch_vehicle_type_incidents,
-    fetch_vms_incident_correlation,
-    fetch_speedband_location,
-    fetch_unique_location,
-    fetch_recent_images
-)
+from db_batch import (connect_db, check_db_connection, fetch_data_from_table,
+                      fetch_population_make_table, fetch_population_cc_table,
+                      fetch_incidents_over_time, fetch_unique_location,
+                      fetch_report_incident, fetch_incident_count_today)
+from db_stream import fetch_speedband_location, fetch_unique_location as fetch_unique_location_stream
 
-class TestPostgresFunctions(unittest.TestCase):
+# Mocking the database connection
+@pytest.fixture(scope="function")
+def mock_db_connection():
+    with patch('db_batch.psycopg2.connect') as mock_connect:
+        mock_connection = MagicMock()
+        mock_connect.return_value = mock_connection
+        yield mock_connection
 
-    @patch('postgresql.db_functions.psycopg2.connect')
-    def test_connect_db_success(self, mock_connect):
-        mock_connect.return_value = MagicMock()
-        connection = connect_db()
-        self.assertIsNotNone(connection)
+def test_connect_db(mock_db_connection):
+    """Test the database connection."""
+    conn = connect_db()
+    assert conn is not None
+    mock_db_connection.assert_called_once()
 
-    @patch('postgresql.db_functions.psycopg2.connect')
-    def test_connect_db_failure(self, mock_connect):
-        mock_connect.side_effect = Exception("Connection error")
-        connection = connect_db()
-        self.assertIsNone(connection)
+def test_check_db_connection(mock_db_connection):
+    """Test the check_db_connection function."""
+    result = check_db_connection()
+    assert result == "Successfully connected to PostgreSQL!"
+    
+    # Test when connection fails
+    mock_db_connection.side_effect = Exception("Connection failed")
+    result = check_db_connection()
+    assert "Connection failed" in result
 
-    @patch('postgresql.db_functions.connect_db')
-    def test_check_db_connection_success(self, mock_connect_db):
-        mock_connect_db.return_value = MagicMock()
-        result = check_db_connection()
-        self.assertEqual(result, "Successfully connected to PostgreSQL!")
+def test_fetch_data_from_table(mock_db_connection):
+    """Test fetching data from a table."""
+    mock_cursor = mock_db_connection.cursor.return_value
+    mock_cursor.fetchall.return_value = [(1, 'data1'), (2, 'data2')]
+    mock_cursor.description = [('id',), ('data',)]
 
-    @patch('postgresql.db_functions.connect_db')
-    def test_check_db_connection_failure(self, mock_connect_db):
-        mock_connect_db.return_value = None
-        result = check_db_connection()
-        self.assertEqual(result, "Connection failed.")
+    result = fetch_data_from_table('test_table')
+    
+    expected = [{'id': 1, 'data': 'data1'}, {'id': 2, 'data': 'data2'}]
+    assert result == expected
 
-    @patch('postgresql.db_functions.connect_db')
-    def test_fetch_data_from_table(self, mock_connect_db):
-        mock_conn = MagicMock()
-        mock_connect_db.return_value = mock_conn
-        mock_cursor = MagicMock()
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        mock_cursor.fetchall.return_value = [(1, 'data1'), (2, 'data2')]
-        mock_cursor.description = [('id',), ('data',)]
+def test_fetch_population_make_table(mock_db_connection):
+    """Test fetching population by make."""
+    mock_cursor = mock_db_connection.cursor.return_value
+    mock_cursor.fetchall.return_value = [(2020, 100), (2021, 200)]
 
-        result = fetch_data_from_table('test_table')
-        expected = [{'id': 1, 'data': 'data1'}, {'id': 2, 'data': 'data2'}]
-        self.assertEqual(result, expected)
+    result = fetch_population_make_table('cars', 'Toyota')
+    
+    expected = pd.DataFrame({'year': [2020, 2021], 'total_number': [100, 200]})
+    pd.testing.assert_frame_equal(result, expected)
 
-    @patch('postgresql.db_functions.connect_db')
-    def test_fetch_population_make_table(self, mock_connect_db):
-        mock_conn = MagicMock()
-        mock_connect_db.return_value = mock_conn
-        mock_cursor = MagicMock()
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        mock_cursor.fetchall.return_value = [(2021, 100), (2022, 150)]
-        
-        df = fetch_population_make_table('cars', 'Toyota')
-        expected_df = pd.DataFrame({'year': [2021, 2022], 'total_number': [100, 150]})
-        pd.testing.assert_frame_equal(df, expected_df)
+def test_fetch_population_cc_table(mock_db_connection):
+    """Test fetching population by cc rating."""
+    mock_cursor = mock_db_connection.cursor.return_value
+    mock_cursor.fetchall.return_value = [(2020, 150), (2021, 250)]
 
-    @patch('postgresql.db_functions.connect_db')
-    def test_fetch_incident_count_today(self, mock_connect_db):
-        mock_conn = MagicMock()
-        mock_connect_db.return_value = mock_conn
-        mock_cursor = MagicMock()
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        mock_cursor.fetchone.return_value = [5]
+    result = fetch_population_cc_table('cars', '1000cc')
+    
+    expected = pd.DataFrame({'year': [2020, 2021], 'total_number': [150, 250]})
+    pd.testing.assert_frame_equal(result, expected)
 
-        count = fetch_incident_count_today()
-        self.assertEqual(count, 5)
+def test_fetch_incidents_over_time(mock_db_connection):
+    """Test fetching incidents over time."""
+    mock_cursor = mock_db_connection.cursor.return_value
+    mock_cursor.fetchall.return_value = [(pd.Timestamp('2024-10-01'), 5), (pd.Timestamp('2024-10-02'), 3)]
 
-    @patch('postgresql.db_functions.connect_db')
-    def test_fetch_incidents_over_time(self, mock_connect_db):
-        mock_conn = MagicMock()
-        mock_connect_db.return_value = mock_conn
-        mock_cursor = MagicMock()
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        mock_cursor.fetchall.return_value = [('2024-01-01', 2), ('2024-01-02', 3)]
-        
-        df = fetch_incidents_over_time()
-        expected_df = pd.DataFrame({'incident_date': ['2024-01-01', '2024-01-02'], 'incident_count': [2, 3]})
-        pd.testing.assert_frame_equal(df, expected_df)
+    result = fetch_incidents_over_time()
 
-    @patch('postgresql.db_functions.connect_db')
-    def test_fetch_vehicle_type_incidents(self, mock_connect_db):
-        mock_conn = MagicMock()
-        mock_connect_db.return_value = mock_conn
-        mock_cursor = MagicMock()
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        mock_cursor.fetchall.return_value = [('Car', 10), ('Motorcycle', 5)]
-        
-        df = fetch_vehicle_type_incidents()
-        expected_df = pd.DataFrame({'vehicle_type': ['Car', 'Motorcycle'], 'vehicle_count': [10, 5]})
-        pd.testing.assert_frame_equal(df, expected_df)
+    expected = pd.DataFrame({"incident_date": [pd.Timestamp('2024-10-01'), pd.Timestamp('2024-10-02')], "incident_count": [5, 3]})
+    pd.testing.assert_frame_equal(result, expected)
 
-    @patch('postgresql.db_functions.connect_db')
-    def test_fetch_unique_location(self, mock_connect_db):
-        mock_conn = MagicMock()
-        mock_connect_db.return_value = mock_conn
-        mock_cursor = MagicMock()
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        mock_cursor.fetchall.return_value = [('Location1',), ('Location2',)]
-        
-        result = fetch_unique_location()
-        expected = [{'label': 'Location1', 'value': 'Location1'}, {'label': 'Location2', 'value': 'Location2'}]
-        self.assertEqual(result, expected)
+def test_fetch_unique_location(mock_db_connection):
+    """Test fetching unique locations."""
+    mock_cursor = mock_db_connection.cursor.return_value
+    mock_cursor.fetchall.return_value = [('Road 1',), ('Road 2',)]
 
-    # Add more test cases for other functions as needed...
+    result = fetch_unique_location()
 
-if __name__ == '__main__':
-    unittest.main()
+    expected = [{'label': 'Road 1', 'value': 'Road 1'}, {'label': 'Road 2', 'value': 'Road 2'}]
+    assert result == expected
+
+def test_fetch_report_incident(mock_db_connection):
+    """Test fetching report incident."""
+    mock_cursor = mock_db_connection.cursor.return_value
+    mock_cursor.fetchall.return_value = [(pd.Timestamp('2024-10-01'), 10), (pd.Timestamp('2024-10-02'), 5)]
+
+    result = fetch_report_incident()
+
+    expected = pd.DataFrame({"date": [pd.Timestamp('2024-10-01'), pd.Timestamp('2024-10-02')], "result": [10, 5]})
+    pd.testing.assert_frame_equal(result, expected)
+
+def test_fetch_incident_count_today(mock_db_connection):
+    """Test fetching incident count for today."""
+    mock_cursor = mock_db_connection.cursor.return_value
+    mock_cursor.fetchone.return_value = (3,)
+
+    result = fetch_incident_count_today()
+    
+    assert result == 3
+
+def test_fetch_speedband_location(mock_db_connection):
+    """Test fetching speedband location."""
+    mock_cursor = mock_db_connection.cursor.return_value
+    mock_cursor.fetchall.return_value = [(1, 'Road 1', 'Data 1'), (2, 'Road 2', 'Data 2')]
+    mock_cursor.description = [('link_id',), ('road_name',), ('data',)]
+
+    result = fetch_speedband_location('Road 1')
+
+    expected = pd.DataFrame({'link_id': [1, 2], 'road_name': ['Road 1', 'Road 2'], 'data': ['Data 1', 'Data 2']})
+    pd.testing.assert_frame_equal(result, expected)
+
+if __name__ == "__main__":
+    pytest.main()

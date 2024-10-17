@@ -1,101 +1,101 @@
-import os
-import json
-import pytest
+import unittest
 from unittest.mock import patch, MagicMock
-from batch_config import send_to_hdfs, get_postgres_connection, create_table, insert_table, generate_id
-from daily_incident import main, read_json_from_hdfs
-from pyspark.sql import SparkSession
+from daily_incident import read_json_from_hdfs, main
+from hist_process import (
+    create_spark_session,
+    read_cars_data,
+    read_motorcycles_data,
+    read_speed_data,
+    read_traffic_lights_data
+)
 
-# Mock data for testing
-mock_data = {
-    "ID": "12345",
-    "Name": "Test Report",
-    "Result": 10,
-    "Date": "2024-10-10"
-}
+class TestDailyIncident(unittest.TestCase):
 
-# Test case for sending data to HDFS
-def test_send_to_hdfs():
-    with patch('hdfs.InsecureClient') as mock_client:
-        mock_hdfs_client = MagicMock()
-        mock_client.return_value = mock_hdfs_client
-        
-        send_to_hdfs("test_topic", mock_data)
+    @patch('daily_incident.spark')
+    def test_read_json_from_hdfs(self, mock_spark):
+        # Mock the JSON data
+        mock_spark.read.json.return_value = MagicMock()
+        result_df = read_json_from_hdfs(mock_spark, "test.json")
+        self.assertIsNotNone(result_df)
+        mock_spark.read.json.assert_called_once_with('hdfs://namenode:8020/user/hadoop/traffic_data/test.json')
 
-        # Check if HDFS write was called
-        mock_hdfs_client.write.assert_called()
-        assert mock_hdfs_client.write.call_count == 2  # One for creating and one for appending to the file
+    @patch('daily_incident.create_spark_session')
+    @patch('daily_incident.get_postgres_connection')
+    @patch('daily_incident.send_to_hdfs')
+    @patch('daily_incident.read_json_from_hdfs')
+    def test_main(self, mock_read_json, mock_send_to_hdfs, mock_get_postgres_connection, mock_create_spark_session):
+        mock_spark = MagicMock()
+        mock_create_spark_session.return_value = mock_spark
+        mock_read_json.return_value = MagicMock()  # Mock DataFrame
 
-# Test case for PostgreSQL connection
-def test_get_postgres_connection():
-    with patch('psycopg2.connect') as mock_connect:
-        mock_connect.return_value = MagicMock()
-        
-        conn = get_postgres_connection()
-        
-        # Verify the connection was established
-        assert conn is not None
-        mock_connect.assert_called_once()
+        mock_df = mock_read_json.return_value
+        mock_df.filter.return_value.count.return_value = 5  # Simulate 5 incidents today
 
-# Test case for creating a table
-def test_create_table():
-    create_table_query = """
-    CREATE TABLE IF NOT EXISTS report_incident (
-        ID VARCHAR(255) PRIMARY KEY
-    );
-    """
-    
-    mock_conn = MagicMock()
-    with patch('psycopg2.connect', return_value=mock_conn):
-        create_table(create_table_query, mock_conn)
-        
-        # Verify that the execute was called
-        mock_conn.cursor().execute.assert_called_once_with(create_table_query)
+        main()
 
-# Test case for inserting data into PostgreSQL
-def test_insert_table():
-    insert_query = """
-        INSERT INTO report_incident (ID, Name, Result, Date)
-        VALUES (%s, %s, %s, %s)
-    """
-    
-    mock_conn = MagicMock()
-    with patch('psycopg2.connect', return_value=mock_conn):
-        insert_table(mock_data.values(), insert_query, mock_conn)
-        
-        # Verify that the execute was called
-        mock_conn.cursor().execute.assert_called_once_with(insert_query, tuple(mock_data.values()))
+        mock_create_spark_session.assert_called_once_with("DailyIncident_BatchReport")
+        mock_read_json.assert_called_once_with(mock_spark, "traffic_incidents.json")
+        mock_get_postgres_connection.assert_called_once()
+        mock_send_to_hdfs.assert_called_once()
 
-# Test case for reading JSON from HDFS
-def test_read_json_from_hdfs():
-    mock_spark = MagicMock(spec=SparkSession)
-    mock_spark.read.json.return_value = MagicMock()
-    
-    with patch('daily_incident.create_spark_session', return_value=mock_spark):
-        df = read_json_from_hdfs(mock_spark, "test_file.json")
-        
-        # Verify that the JSON read function was called
-        mock_spark.read.json.assert_called_once_with("hdfs://namenode:8020/user/hadoop/traffic_data/test_file.json")
-        assert df is not None
+class TestHistoricalProcessing(unittest.TestCase):
 
-# Test case for main function in daily_incident.py
-def test_main_function():
-    with patch('daily_incident.read_json_from_hdfs') as mock_read:
-        mock_spark = MagicMock(spec=SparkSession)
-        mock_read.return_value = MagicMock()
-        mock_read.return_value.withColumn.return_value.filter.return_value.count.return_value = 10
+    @patch('hist_process.SparkSession')
+    def test_create_spark_session(self, mock_spark_session):
+        app_name = "TestApp"
+        spark = create_spark_session(app_name)
+        self.assertIsNotNone(spark)
+        mock_spark_session.builder.appName.assert_called_once_with(app_name)
 
-        with patch('daily_incident.get_postgres_connection', return_value=MagicMock()) as mock_conn:
-            with patch('daily_incident.send_to_hdfs') as mock_send:
-                main()  # Call the main function
+    @patch('hist_process.read_csv_from_hdfs')
+    @patch('hist_process.write_to_postgres')
+    def test_read_cars_data(self, mock_write_to_postgres, mock_read_csv_from_hdfs):
+        mock_spark = MagicMock()
+        mock_make_df = MagicMock()
+        mock_cc_df = MagicMock()
+        mock_read_csv_from_hdfs.side_effect = [mock_make_df, mock_cc_df]
 
-                # Verify that the data is inserted
-                mock_conn().cursor().execute.assert_any_call(
-                    "INSERT INTO report_incident (ID, Name, Result, Date) VALUES (%s, %s, %s, %s)",
-                    (mock.ANY, mock.ANY, 10, mock.ANY)
-                )
-                mock_send.assert_called_once()
+        read_cars_data(mock_spark)
 
-# Run the tests
-if __name__ == "__main__":
-    pytest.main()
+        self.assertTrue(mock_read_csv_from_hdfs.called)
+        self.assertEqual(mock_write_to_postgres.call_count, 2)
+
+    @patch('hist_process.read_csv_from_hdfs')
+    @patch('hist_process.write_to_postgres')
+    def test_read_motorcycles_data(self, mock_write_to_postgres, mock_read_csv_from_hdfs):
+        mock_spark = MagicMock()
+        mock_make_df = MagicMock()
+        mock_cc_df = MagicMock()
+        mock_read_csv_from_hdfs.side_effect = [mock_make_df, mock_cc_df]
+
+        read_motorcycles_data(mock_spark)
+
+        self.assertTrue(mock_read_csv_from_hdfs.called)
+        self.assertEqual(mock_write_to_postgres.call_count, 2)
+
+    @patch('hist_process.read_csv_from_hdfs')
+    @patch('hist_process.write_to_postgres')
+    def test_read_speed_data(self, mock_write_to_postgres, mock_read_csv_from_hdfs):
+        mock_spark = MagicMock()
+        mock_speed_df = MagicMock()
+        mock_read_csv_from_hdfs.return_value = mock_speed_df
+
+        read_speed_data(mock_spark)
+
+        mock_read_csv_from_hdfs.assert_called_once_with(mock_spark, "road_traffic_condition.csv", mock.ANY)
+        mock_write_to_postgres.assert_called_once()
+
+    @patch('hist_process.read_csv_from_hdfs')
+    @patch('hist_process.write_to_postgres')
+    def test_read_traffic_lights_data(self, mock_write_to_postgres, mock_read_csv_from_hdfs):
+        mock_spark = MagicMock()
+        mock_traffic_lights_df = MagicMock()
+        mock_read_csv_from_hdfs.return_value = mock_traffic_lights_df
+
+        read_traffic_lights_data(mock_spark)
+
+        mock_read_csv_from_hdfs.assert_called_once_with(mock_spark, "annual_traffic_lights.csv", mock.ANY)
+        mock_write_to_postgres.assert_called_once()
+
+if __name__ == '__main__':
+    unittest.main()
