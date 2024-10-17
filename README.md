@@ -70,3 +70,11 @@ docker exec -it hadoop-namenode bash
 hdfs dfs -mkdir -p /user/hadoop/historical
 hdfs dfs -put /historical/*.csv /user/hadoop/historical/
 hdfs dfs -ls /user/hadoop/historical/ 
+
+
+### Run Prediction Graph - only once
+1. enter airflow
+docker exec -it airflow-worker /bin/bash
+
+2. Run the traffic_prediction.py to create postgres table 
+spark-submit --master local /opt/airflow/app/spark/batch/traffic_prediction.py

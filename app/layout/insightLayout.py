@@ -368,7 +368,6 @@ def register_callbacks(app):
         Input('road-name-dropdown', 'value')         
     )
     def update_dropdown_and_graph(selected_road_name):
-        # Fetch unique road names for the dropdown menu
         road_names_list = fetch_unique_location()
         road_names_options = road_names_list
 
@@ -381,13 +380,6 @@ def register_callbacks(app):
         if df.empty:
             return road_names_options, px.scatter()  
 
-        # Hover data configuration 
-        hover_data = {
-            "hour_of_day": True,             
-            "speedband_description": True
-        }
-
-        # Define color mapping for congestion levels
         color_map = {
             "Heavy congestion": "red",
             "Moderate congestion": "orange",
@@ -402,24 +394,31 @@ def register_callbacks(app):
         # Create scatter plot
         fig = px.scatter(
             df,
-            x='average_speedband',
-            y='hour_of_day',                                  
-            title=f"Average Speedband for {selected_road_name}",  
-            hover_data=hover_data     
+            x='hour_of_day',
+            y='speedband_description', 
+            title=f"Average Speedband for {selected_road_name}",
+            hover_data={"speedband_description": True, "hour_of_day": True}, 
+            custom_data=["speedband_description", "average_speedband"]
         )
 
-        fig.update_traces(marker=dict(size=15,
-                                    color=df['marker_color'], 
-                                    line=dict(width=1)))
-        
-        fig.update_yaxes(tickmode='array', tickvals=list(range(24)), ticktext=list(range(24)))
-        fig.update_xaxes(tickformat=".2f")
+        # Update the traces to use hovertemplate
+        fig.update_traces(
+            marker=dict(size=15, color=df['marker_color'], line=dict(width=1)),
+            hovertemplate="<b>Hour of Day</b>: %{x}:00<br>"  
+                        "<b>Average Speedband</b>: %{customdata[1]:.2f}<br>" 
+                        "<b>Congestion Level</b>: %{customdata[0]}<br>"  
+                        "<extra></extra>"  # Remove the default hover box extra info
+        )
 
+        # Update x-axis for hour of the day
+        fig.update_xaxes(tickmode='array', tickvals=list(range(24)), ticktext=list(range(24)))
+
+        # Adjust the layout and axes labels
         fig.update_layout(
-            margin={"r": 0, "t": 50, "l": 0, "b": 0}, 
-            title={'x': 0.5, 'xanchor': 'center'},    
-            xaxis_title="Traffic Congestion Level",
-            yaxis_title="Hour of the Day"            
+            margin={"r": 0, "t": 50, "l": 0, "b": 0},
+            title={'x': 0.5, 'xanchor': 'center'},
+            xaxis_title="Hour of the Day",
+            yaxis_title="Traffic Congestion Level" 
         )
 
         return road_names_options, fig
