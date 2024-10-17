@@ -18,8 +18,7 @@ docker exec -it hadoop-namenode bash
 hdfs dfs -mkdir -p /user/hadoop/traffic_data
 3. 
 hdfs dfs -chown hadoop:supergroup /user/hadoop/traffic_data
-4. 
-hdfs dfs -chmod 755 /user/hadoop/traffic_data (idk need or not)
+
 
 
 
@@ -71,5 +70,3 @@ docker exec -it hadoop-namenode bash
 hdfs dfs -mkdir -p /user/hadoop/historical
 hdfs dfs -put /historical/*.csv /user/hadoop/historical/
 hdfs dfs -ls /user/hadoop/historical/ 
-
-docker cp app/spark/batch/hist_process.py spark-master:/opt/spark/hist_process.py 

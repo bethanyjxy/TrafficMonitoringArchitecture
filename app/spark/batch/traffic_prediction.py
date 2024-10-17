@@ -3,6 +3,7 @@ from pyspark.sql.functions import col, avg, hour, current_timestamp
 from pyspark.sql.types import FloatType
 import logging
 from batch_config import create_spark_session, get_postgres_connection
+from postgresql.postgres_config import SPARK_POSTGRES
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO)
@@ -48,10 +49,10 @@ def write_to_postgres(df, table_name):
         postgres_properties = get_postgres_connection()
         logging.info(f"Writing DataFrame to PostgreSQL table: {table_name}")
         df.write.jdbc(
-            url=postgres_properties["url"], 
+            url=SPARK_POSTGRES['url'], 
             table=table_name, 
             mode="append", 
-            properties=postgres_properties["properties"]
+            properties=SPARK_POSTGRES["properties"]
         )
         logging.info("Data successfully written to PostgreSQL.")
     except Exception as e:

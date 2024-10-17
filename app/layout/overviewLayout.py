@@ -3,7 +3,7 @@ import plotly.express as px
 from dash import html, dcc
 from dash.dependencies import Input, Output
 
-from postgresql.db_functions import *
+from postgresql.db_stream import *
 
 
 # Traffic Overview Layout

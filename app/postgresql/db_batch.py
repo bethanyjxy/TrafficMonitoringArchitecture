@@ -34,7 +34,6 @@ def check_db_connection():
         if connection:
             connection.close()
 
-
 def fetch_data_from_table(table_name):
     """Fetch all data from the specified table."""
     conn = connect_db()
@@ -56,7 +55,6 @@ def fetch_data_from_table(table_name):
 
     conn.close()
     return data_dicts
-
 
 def fetch_population_make_table(type, selected):
     conn = connect_db()
@@ -179,26 +177,6 @@ def fetch_unique_type_table(type, filtertype):
 
 
 
-# Fetch the count of incidents for today
-def fetch_incident_count_today():
-    """Fetch the count of incidents that occurred today."""
-    query = """
-    SELECT COUNT(*) AS incident_count
-    FROM incident_table
-    WHERE TO_DATE(incident_date || '/' || EXTRACT(YEAR FROM CURRENT_DATE), 'DD/MM/YYYY') = CURRENT_DATE
-    LIMIT 100;
-
-    """
-    conn = connect_db()
-    if not conn:
-        return 0
-
-    with conn.cursor() as cursor:
-        cursor.execute(query)
-        result = cursor.fetchone()
-    
-    conn.close()
-    return result[0] if result else 0
 
 
 # Fetch the incidents over time for the past month
@@ -226,31 +204,6 @@ def fetch_incidents_over_time():
     df = pd.DataFrame(result, columns=["incident_date", "incident_count"])
 
     return df
-
-
-# Fetch vehicle types involved in incidents and their counts
-def fetch_vehicle_type_incidents():
-    """Fetch the breakdown of vehicle types involved in incidents."""
-    query = """
-    SELECT "Type" AS vehicle_type, COUNT(*) AS vehicle_count
-    FROM incident_table
-    GROUP BY vehicle_type
-    ORDER BY vehicle_count DESC;
-    """
-    conn = connect_db()
-    if not conn:
-        return pd.DataFrame()
-
-    with conn.cursor() as cursor:
-        cursor.execute(query)
-        result = cursor.fetchall()
-
-    conn.close()
-
-    # Convert result to pandas DataFrame
-    df = pd.DataFrame(result, columns=["vehicle_type", "vehicle_count"])
-    return df
-
 
 
 def fetch_vms_incident_correlation():
@@ -282,40 +235,6 @@ def fetch_vms_incident_correlation():
     
     return df
 
-def fetch_speedband_location(location):
-    conn = connect_db()
-    if not conn:
-        return pd.DataFrame()  # Return an empty DataFrame if the connection fails
-
-    cursor = conn.cursor()
-    
-    # Construct the SQL query based on whether a location is provided
-    if location == "":
-        query = '''
-        SELECT DISTINCT ON ("LinkID") * 
-        FROM speedbands_table 
-        ORDER BY "LinkID", timestamp DESC;
-        '''
-        cursor.execute(query)  # No parameters needed for this query
-    else:
-        query = '''
-        SELECT DISTINCT ON ("LinkID") * 
-        FROM speedbands_table 
-        WHERE "RoadName" = %s
-        ORDER BY "LinkID", timestamp DESC;
-        '''
-        cursor.execute(query, (location,))  # Pass the location as a tuple
-
-    # Fetch all rows and column names
-    data = cursor.fetchall()
-    column_names = [desc[0].lower() for desc in cursor.description]  # Get column names from cursor description
-
-    # Close the database connection
-    conn.close()
-    
-    # Create a DataFrame from the fetched data
-    df = pd.DataFrame(data, columns=column_names)
-    return df  # Return the DataFrame
 
 def fetch_unique_location():
     conn = connect_db()
@@ -334,37 +253,41 @@ def fetch_unique_location():
     conn.close()
     # Format data for the dropdown
     return [{'label': row[0], 'value': row[0]} for row in data]
-    
 
-    
-##########################################################
-def fetch_recent_images():
-    """Fetch images from the image_table where the timestamp is within the last 5 minutes."""
+def fetch_report_incident():
+    """Fetch the number of incidents per day for the current month."""
+    # Get the current date and calculate the first day of the month
+    today = datetime.now()
+    first_day_of_month = today.replace(day=1)
+
+    # SQL query to fetch incidents for the current month
+    query = """
+    SELECT "date", "result"
+    FROM report_incident
+    WHERE "date" >= %s AND "date" < %s
+    """
+
+    # Calculate the first day of the next month to use in the query
+    if today.month == 12:  # Handle December case (next month is January of the next year)
+        first_day_of_next_month = today.replace(year=today.year + 1, month=1, day=1)
+    else:
+        first_day_of_next_month = today.replace(month=today.month + 1, day=1)
+
     conn = connect_db()
     if not conn:
-        return []
+        return pd.DataFrame()
 
-    cursor = conn.cursor()
+    with conn.cursor() as cursor:
+        # Execute the query, passing the parameters for the start of the current month and next month
+        cursor.execute(query, (first_day_of_month, first_day_of_next_month))
+        result = cursor.fetchall()
+    
+    conn.close()
 
-    # Define the query to select images with a timestamp within the last 5 minutes
-    query = """
-    SELECT * FROM image_table 
-    WHERE to_timestamp(timestamp, 'YYYY-MM-DD HH24:MI:SS') >= NOW() - INTERVAL '5 minutes'
-    """
-    
-    # Execute query
-    cursor.execute(query)
-    
-    # Fetch all rows and column names
-    data = cursor.fetchall()
-    column_names = [desc[0].lower() for desc in cursor.description]  # Convert column names to lowercase
-    
-    # Convert each row to a dictionary mapping column names to values
-    data_dicts = [dict(zip(column_names, row)) for row in data]
+    # Convert the result to a pandas DataFrame
+    df = pd.DataFrame(result, columns=["date", "result"])
 
-    cursor.close()
-    conn.close()  # Always close the connection when done
-    return data_dicts
+    return df
 
 def fetch_average_speedband(road_name):
     conn = connect_db()
@@ -373,13 +296,14 @@ def fetch_average_speedband(road_name):
 
     with conn.cursor() as cursor:
         query = """
-        SELECT * FROM traffic_speedband_predictions
-        WHERE recorded_at <= NOW()
+        SELECT * FROM traffic_speedband_prediction
+        WHERE recorded_at <= NOW() AND "RoadName" = %s
         ORDER BY recorded_at;
         """
         cursor.execute(query, (road_name,))
         data = cursor.fetchall()
-        column_names = ['hour', 'average_speedband']
+         # Fetch column names from the cursor description
+        colnames = [desc[0] for desc in cursor.description]
 
     conn.close() 
-    return pd.DataFrame(data, columns=column_names)
+    return pd.DataFrame(data, columns = colnames)

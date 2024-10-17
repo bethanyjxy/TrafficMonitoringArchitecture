@@ -1,3 +1,5 @@
+# Run this file once 
+
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, FloatType
 from pyspark.sql.functions import col, when
@@ -29,12 +31,8 @@ def read_csv_from_hdfs(spark, file_name, schema):
 def get_postgres_properties():
     """Returns PostgreSQL connection properties."""
     return {
-        "url": "jdbc:postgresql://postgres:5432/traffic_db",
-        "properties": {
-            "user": "traffic_admin",
-            "password": "traffic_pass",
-            "driver": "org.postgresql.Driver"
-        }
+        "url": SPARK_POSTGRES['url'], 
+        "properties": SPARK_POSTGRES['properties']  # Get the properties (user, password, driver)
     }
 
 def write_to_postgres(df, table_name):

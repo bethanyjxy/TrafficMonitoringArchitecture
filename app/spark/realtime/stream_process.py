@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import udf, when, col, from_json,  regexp_extract, concat, lit, current_timestamp, regexp_replace, date_format, trim, to_timestamp
+from pyspark.sql.functions import udf, col, from_json,  regexp_extract, current_timestamp, regexp_replace, date_format, trim
 from pyspark.sql.types import StructType, StringType, DoubleType, IntegerType
 
 def create_spark_session():
@@ -158,25 +158,28 @@ def process_stream(kafka_stream):
         
     # Create a UDF to map CameraID to Location
     def map_camera_id_to_location(camera_id):
+        if camera_id is None:
+            return None  # Handle None values
         return camera_location_mapping.get(camera_id, camera_id)  # Return camera_id if location is unknown
 
     map_camera_id_udf = udf(map_camera_id_to_location, StringType())
       
         
     images_schema = StructType() \
-        .add("CameraID", StringType()) \
-        .add("Latitude", DoubleType()) \
-        .add("Longitude", DoubleType()) \
-        .add("ImageLink", StringType())
+        .add("camera_id", StringType()) \
+        .add("image_url", StringType())\
+        .add("latitude", DoubleType()) \
+        .add("longitude", DoubleType()) \
+        .add("img_timestamp", StringType())
 
     # Define the image stream with the additional timestamp column
     image_stream = kafka_stream.filter(col("topic") == "traffic_images") \
-        .withColumn("value", from_json(col("value"), images_schema)) \
-        .select(col("value.*")) \
-        .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") ) \
-        .withColumn("Location", map_camera_id_udf(col("CameraID"))) \
-        .dropDuplicates(["CameraID"])
-        #.withColumn("Location", map_camera_id_udf(col("CameraID"))) \
+        .withColumn("value", from_json(col("value"), images_schema))\
+        .select(col("value.*"))\
+        .na.drop()
+       # .withColumn("Location", map_camera_id_udf(col("camera_id")))  
+
+        
       
         
     vms_schema = StructType() \
@@ -204,8 +207,8 @@ def write_to_console(df, table_name):
 
 def main():
     # Kafka configurations
-    kafka_broker = "localhost:9092"
-    kafka_topics = "traffic_incidents,traffic_images,traffic_speedbands,traffic_vms,traffic_erp"
+    kafka_broker = "kafka:9092"
+    kafka_topics = "traffic_incidents,traffic_images,traffic_speedbands,traffic_vms"
 
     # Create Spark session
     spark = create_spark_session()

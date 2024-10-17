@@ -22,6 +22,6 @@ dag = DAG(
 # Task to run Kafka producer script for traffic incidents
 run_incidents_producer = BashOperator(
     task_id='run_kafka_incidents_producer',
-    bash_command='python3 /opt/airflow/app/kafka/producer/fetch_and_produce_data.py',
+    bash_command='python3 /opt/airflow/app/kafka/producer/producer.py',
     dag=dag,
 )
