@@ -1,0 +1,28 @@
+mappings:
+  # Mapping Airflow task instance duration to a Prometheus-friendly name
+  - match: "airflow.task_instance_duration_seconds"
+    name: "airflow_task_instance_duration_seconds"
+    labels:
+      task: "$1"
+    action: map
+
+  # Mapping Airflow DAG run duration to a Prometheus-friendly name
+  - match: "airflow.dag_run_duration_seconds"
+    name: "airflow_dag_run_duration_seconds"
+    labels:
+      dag: "$1"
+    action: map
+
+  # Mapping for Airflow scheduler heartbeat
+  - match: "airflow.scheduler_heartbeat"
+    name: "airflow_scheduler_heartbeat"
+    labels:
+      scheduler: "$1"
+    action: map
+
+  # Mapping for queued tasks
+  - match: "airflow.queued_tasks"
+    name: "airflow_queued_tasks"
+    labels:
+      task: "$1"
+    action: map

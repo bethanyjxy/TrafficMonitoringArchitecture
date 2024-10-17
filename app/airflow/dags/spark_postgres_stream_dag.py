@@ -1,17 +1,17 @@
 from airflow import DAG
 from airflow.operators.bash import BashOperator
-from airflow.utils.dates import days_ago
+import pendulum
+
 from datetime import timedelta
 
 # Define default arguments for the DAG
 default_args = {
     'owner': 'airflow',
-    'start_date': days_ago(1),
+    'start_date':  pendulum.today('UTC').add(seconds=4),
     'depends_on_past': False,
     'email_on_failure': False,
     'email_on_retry': False,
     'retries': 1,  # Retry once if the task fails
-    'retry_delay': timedelta(minutes=5),
 }
 
 # Initialize the DAG
@@ -19,7 +19,7 @@ dag = DAG(
     'spark_postgres_stream_dag',
     default_args=default_args,
     description='Run Spark streaming job to process Kafka data and store in PostgreSQL',
-    schedule_interval=None,  # Set this to your desired schedule, e.g., every 10 minutes
+    schedule='@daily',  # Set this to your desired schedule, e.g., every 10 minutes
 )
 
 # Task to run the Spark streaming job
