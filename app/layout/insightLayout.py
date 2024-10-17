@@ -1,6 +1,6 @@
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
-import plotly.express as px
+import plotly.express as px 
 from dash import html, dcc, callback_context
 from dash.dependencies import Input, Output
 from postgresql.db_batch import *
@@ -24,28 +24,6 @@ layout = html.Div([
     dcc.Interval(id='interval-component-insights', interval=300*1000, n_intervals=0),
     
     # 2nd Row
-    html.Div([
-    dbc.Row([
-        dbc.Col(
-            dcc.Dropdown(
-                id='road-name-dropdown',
-                options=[],
-                placeholder="Select a road name",
-                clearable=False,
-                className="mb-4"
-            ),
-            width=12,
-        )
-    ]),
-    dbc.Row([
-        dbc.Col(
-            dcc.Graph(id='average-speed-graph', className="rounded shadow p-3 mb-4"),
-            width=12,
-        )
-    ], justify="between", className="mb-4"),
-    ]),
-
-    # 3rd row
     html.Div([
     dbc.Row([
         dbc.Col(
@@ -384,59 +362,49 @@ def register_callbacks(app):
         
         
     @app.callback(
-        [Output('road-name-dropdown', 'options'),
-        Output('average-speed-graph', 'figure')],
-        Input('road-name-dropdown', 'value') 
+        [
+            Output('road-name-dropdown', 'options'), 
+            Output('average-speed-graph', 'figure')   
+        ],
+        Input('road-name-dropdown', 'value')         
     )
     def update_dropdown_and_graph(selected_road_name):
-        # Fetch unique road names for the dropdown
+        # Fetch unique road names for the dropdown menu
         road_names_list = fetch_unique_location()
+        road_names_options = road_names_list
 
-        # Set default to "ADIS ROAD" if no road is selected on the first load
+        # Set default to "ADIS ROAD" if no road is selected initially
         if selected_road_name is None:
-            # Fetch average speedband data based on the selected road name
-            df = fetch_average_speedband("ADIS ROAD")
+            selected_road_name = "ADIS ROAD"
 
-            # Create the figure
-            fig = px.line(
-                df,
-                x='hour_of_day',
-                y='average_speedband',
-                title=f"Average Speedband for ADIS ROAD",
-                labels={"hour_of_day": "Time", "average_speedband": "Average Speed (km/h)"},
-                markers=True
-            )
-        else:
-            # Fetch average speedband data based on the selected road name
-            df = fetch_average_speedband(selected_road_name)
+        df = fetch_average_speedband(selected_road_name)
 
-            # Create the figure
-            fig = px.line(
-                df,
-                x='hour_of_day',
-                y='average_speedband',
-                title=f"Average Speedband for {selected_road_name}",
-                labels={"hour_of_day": "Time", "average_speedband": "Average Speed (km/h)"},
-                markers=True
-            )
-             
-        
+        if df.empty:
+            return road_names_options, px.scatter()  
 
-        fig.update_traces(line=dict(width=4, color='blue'))
+        # Hover data configuration 
+        hover_data = {
+            "hour_of_day": True,             
+            "speedband_description": True
+        }
 
-         # Format the Y-axis for two decimal places and improve label visibility
-        fig.update_yaxes(
-            tickformat=".2f"
+        fig = px.scatter(
+            df,
+            x='hour_of_day',                    
+            y='average_speedband',              
+            title=f"Average Speedband for {selected_road_name}",  
+            hover_data=hover_data     
         )
 
+        fig.update_traces(marker=dict(size=10, color='blue', line=dict(width=1)))
+        fig.update_xaxes(tickmode='array', tickvals=list(range(24)), ticktext=list(range(24)))
+        fig.update_yaxes(tickformat=".2f")
 
         fig.update_layout(
-            margin={"r": 0, "t": 50, "l": 0, "b": 0},
-            title={'x': 0.5, 'xanchor': 'center'},
-            xaxis_title="Hour of the Day",
-            yaxis_title="Average Speed)",
+            margin={"r": 0, "t": 50, "l": 0, "b": 0}, 
+            title={'x': 0.5, 'xanchor': 'center'},    
+            xaxis_title="Hour of the Day",             
+            yaxis_title="Traffic Congestion Level"  
         )
 
-        return road_names_list, fig
-    
-    
+        return road_names_options, fig
