@@ -1,48 +1,88 @@
 import unittest
 from unittest.mock import patch, MagicMock
 import json
-from confluent_kafka import Consumer, KafkaError
-from consumer_config import initialize_consumer, commit_offsets, handle_errors, close_consumer
+import kafka_erp_consumer
+import kafka_images_consumer
+import kafka_incidents_consumer
+import kafka_speedbands_consumer
+import kafka_vms_consumer
 
 class TestKafkaConsumers(unittest.TestCase):
-    
-    @patch('consumer_config.Consumer')
-    def test_initialize_consumer(self, mock_consumer):
-        topic = 'test_topic'
-        consumer = initialize_consumer(topic)
-        mock_consumer.assert_called_once_with({
-            'bootstrap.servers': 'kafka:9092',
-            'group.id': f'{topic}_consumer_group',
-            'auto.offset.reset': 'earliest',
-            'enable.auto.commit': True,
-            'auto.commit.interval.ms': 5000,
-        })
-        self.assertEqual(consumer, mock_consumer.return_value)
-        mock_consumer.return_value.subscribe.assert_called_once_with([topic])
-    
-    def test_commit_offsets(self):
-        mock_consumer = MagicMock()
-        commit_offsets(mock_consumer)
-        mock_consumer.commit.assert_called_once_with(asynchronous=False)
 
-    def test_handle_errors_partition_eof(self):
-        mock_msg = MagicMock()
-        mock_msg.error.return_value.code.return_value = KafkaError._PARTITION_EOF
-        self.assertTrue(handle_errors(mock_msg))
+    @patch('kafka_erp_consumer.send_to_hdfs')
+    @patch('kafka_erp_consumer.initialize_consumer')
+    @patch('kafka_erp_consumer.handle_errors')
+    def test_kafka_erp_consumer(self, mock_handle_errors, mock_initialize_consumer, mock_send_to_hdfs):
+        topic = 'traffic_erp'
+        message = MagicMock()
+        message.value.return_value = json.dumps({"rate": 10}).encode('utf-8')
+        
+        mock_initialize_consumer.return_value.poll.return_value = message
+        mock_handle_errors.return_value = True
+        
+        kafka_erp_consumer.handle_erp_message(message)
+        
+        mock_send_to_hdfs.assert_called_once_with(topic, {"rate": 10})
 
-    def test_handle_errors_other(self):
-        mock_msg = MagicMock()
-        mock_msg.error.return_value.code.return_value = KafkaError.UNKNOWN_TOPIC_OR_PART
-        with patch('builtins.print') as mock_print:
-            self.assertFalse(handle_errors(mock_msg))
-            mock_print.assert_called_once_with(f"Error: {mock_msg.error()}")
+    @patch('kafka_images_consumer.send_to_hdfs')
+    @patch('kafka_images_consumer.initialize_consumer')
+    @patch('kafka_images_consumer.handle_errors')
+    def test_kafka_images_consumer(self, mock_handle_errors, mock_initialize_consumer, mock_send_to_hdfs):
+        topic = 'traffic_images'
+        message = MagicMock()
+        message.value.return_value = json.dumps({"image_id": "12345"}).encode('utf-8')
+        
+        mock_initialize_consumer.return_value.poll.return_value = message
+        mock_handle_errors.return_value = True
+        
+        kafka_images_consumer.handle_images_message(message)
+        
+        mock_send_to_hdfs.assert_called_once_with(topic, {"image_id": "12345"})
 
-    @patch('consumer_config.Consumer')
-    def test_close_consumer(self, mock_consumer):
-        consumer = mock_consumer.return_value
-        close_consumer(consumer)
-        consumer.close.assert_called_once()
-        print("Consumer connection closed.")  # This line will be executed during the test.
+    @patch('kafka_incidents_consumer.send_to_hdfs')
+    @patch('kafka_incidents_consumer.initialize_consumer')
+    @patch('kafka_incidents_consumer.handle_errors')
+    def test_kafka_incidents_consumer(self, mock_handle_errors, mock_initialize_consumer, mock_send_to_hdfs):
+        topic = 'traffic_incidents'
+        message = MagicMock()
+        message.value.return_value = json.dumps({"incident": "accident"}).encode('utf-8')
+        
+        mock_initialize_consumer.return_value.poll.return_value = message
+        mock_handle_errors.return_value = True
+        
+        kafka_incidents_consumer.handle_incidents_message(message)
+        
+        mock_send_to_hdfs.assert_called_once_with(topic, {"incident": "accident"})
+
+    @patch('kafka_speedbands_consumer.send_to_hdfs')
+    @patch('kafka_speedbands_consumer.initialize_consumer')
+    @patch('kafka_speedbands_consumer.handle_errors')
+    def test_kafka_speedbands_consumer(self, mock_handle_errors, mock_initialize_consumer, mock_send_to_hdfs):
+        topic = 'traffic_speedbands'
+        message = MagicMock()
+        message.value.return_value = json.dumps({"speed": 80}).encode('utf-8')
+        
+        mock_initialize_consumer.return_value.poll.return_value = message
+        mock_handle_errors.return_value = True
+        
+        kafka_speedbands_consumer.handle_speedbands_message(message)
+        
+        mock_send_to_hdfs.assert_called_once_with(topic, {"speed": 80})
+
+    @patch('kafka_vms_consumer.send_to_hdfs')
+    @patch('kafka_vms_consumer.initialize_consumer')
+    @patch('kafka_vms_consumer.handle_errors')
+    def test_kafka_vms_consumer(self, mock_handle_errors, mock_initialize_consumer, mock_send_to_hdfs):
+        topic = 'traffic_vms'
+        message = MagicMock()
+        message.value.return_value = json.dumps({"message": "VMS Alert"}).encode('utf-8')
+        
+        mock_initialize_consumer.return_value.poll.return_value = message
+        mock_handle_errors.return_value = True
+        
+        kafka_vms_consumer.handle_vms_message(message)
+        
+        mock_send_to_hdfs.assert_called_once_with(topic, {"message": "VMS Alert"})
 
 if __name__ == '__main__':
     unittest.main()

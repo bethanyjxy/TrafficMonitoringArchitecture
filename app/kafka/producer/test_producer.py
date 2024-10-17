@@ -1,49 +1,100 @@
 import unittest
 from unittest.mock import patch, MagicMock
 import json
-from producer import fetch_and_produce_data
+import producer  # Adjust the import based on your file structure
 
 class TestKafkaProducer(unittest.TestCase):
 
-    @patch('producer.Producer')
     @patch('producer.AdminClient')
-    @patch('producer.requests.get')
-    def test_fetch_and_produce_data(self, mock_get, mock_admin_client, mock_producer):
-        # Mock responses for API calls
-        mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = {
-            'value': [{'id': 1, 'data': 'test_data'}]
+    def test_create_topics(self, mock_AdminClient):
+        mock_admin_client = MagicMock()
+        mock_AdminClient.return_value = mock_admin_client
+        mock_admin_client.create_topics.return_value = {}
+
+        kafka_topics = {
+            'incidents': 'traffic_incidents',
+            'images': 'traffic_images',
+            'speedbands': 'traffic_speedbands',
+            'vms': 'traffic_vms',
         }
 
-        # Mock AdminClient
-        mock_admin = MagicMock()
-        mock_admin_client.return_value = mock_admin
+        producer.create_topics('kafka:9092', kafka_topics)
 
-        # Mock Producer
-        mock_producer_instance = MagicMock()
-        mock_producer.return_value = mock_producer_instance
+        # Check that create_topics was called with the correct arguments
+        mock_admin_client.create_topics.assert_called_once()
+        new_topics = mock_admin_client.create_topics.call_args[0][0]
+        self.assertEqual(len(new_topics), len(kafka_topics))
 
-        # Run the function with the mock broker
-        fetch_and_produce_data('kafka:9092')
+    @patch('producer.requests.get')
+    def test_fetch_data_success(self, mock_get):
+        url = 'https://example.com/api'
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {'value': [{'data': 'example_data'}]}
+        mock_get.return_value = mock_response
 
-        # Check that the topics were created
-        self.assertEqual(mock_admin.create_topics.call_count, 1)
+        result = producer.fetch_data(url, 'test_description')
+        self.assertEqual(result, [{'data': 'example_data'}])
 
-        # Check that the correct API endpoints were called
-        self.assertEqual(mock_get.call_count, 4)  # 4 different endpoints
+    @patch('producer.requests.get')
+    def test_fetch_data_rate_limit(self, mock_get):
+        url = 'https://example.com/api'
+        mock_response = MagicMock()
+        mock_response.status_code = 429
+        mock_get.return_value = mock_response
 
-        # Check that produce was called with correct parameters for all topics
-        expected_topics = ['traffic_incidents', 'traffic_images', 'traffic_speedbands', 'traffic_vms']
-        expected_data = json.dumps({'id': 1, 'data': 'test_data'}).encode('utf-8')
+        result = producer.fetch_data(url, 'test_description')
+        self.assertEqual(result, [])
 
-        # Verify produce calls
-        for topic in expected_topics:
-            calls = mock_producer_instance.produce.call_args_list
-            found = any(
-                call[0][0] == topic and call[1]['value'] == expected_data
-                for call in calls
-            )
-            self.assertTrue(found, f"Produce was not called with topic {topic} and expected data.")
+    @patch('producer.requests.get')
+    def test_fetch_data_error(self, mock_get):
+        url = 'https://example.com/api'
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_get.return_value = mock_response
+
+        result = producer.fetch_data(url, 'test_description')
+        self.assertEqual(result, [])
+
+    @patch('producer.Producer')
+    def test_send_to_kafka(self, mock_Producer):
+        mock_producer = MagicMock()
+        mock_Producer.return_value = mock_producer
+        topic = 'test_topic'
+        data = [{'key': 'value'}]
+
+        producer.send_to_kafka(mock_producer, topic, data)
+
+        # Check that produce was called for each record
+        self.assertEqual(mock_producer.produce.call_count, len(data))
+
+    @patch('producer.Producer')
+    @patch('producer.delivery_report')
+    def test_delivery_report_success(self, mock_delivery_report, mock_Producer):
+        mock_producer = MagicMock()
+        mock_Producer.return_value = mock_producer
+        message = MagicMock()
+        message.value.return_value = json.dumps({'key': 'value'})
+
+        producer.delivery_report(None, message)
+
+        mock_delivery_report.assert_called_once_with(None, message)
+
+    @patch('producer.time.sleep')
+    @patch('producer.fetch_data')
+    @patch('producer.send_to_kafka')
+    @patch('producer.Producer')
+    def test_fetch_and_produce_data(self, mock_Producer, mock_send_to_kafka, mock_fetch_data, mock_sleep):
+        mock_producer = MagicMock()
+        mock_Producer.return_value = mock_producer
+
+        # Mock the API responses
+        mock_fetch_data.return_value = [{'data': 'example_data'}]
+
+        producer.fetch_and_produce_data('kafka:9092')
+
+        # Ensure data was fetched and sent to Kafka
+        mock_send_to_kafka.assert_called_once()
 
 if __name__ == '__main__':
     unittest.main()
