@@ -359,8 +359,7 @@ def register_callbacks(app):
             return 'secondary', 'primary'  # Motorcycles button selected
         else:
             return 'primary', 'secondary'  # Default to Cars
-        
-        
+
     @app.callback(
         [
             Output('road-name-dropdown', 'options'), 
@@ -388,23 +387,39 @@ def register_callbacks(app):
             "speedband_description": True
         }
 
+        # Define color mapping for congestion levels
+        color_map = {
+            "Heavy congestion": "red",
+            "Moderate congestion": "orange",
+            "Light to moderate congestion": "yellow",
+            "Light congestion": "green",
+            "Unknown": "gray"
+        }
+
+        # Create a new column for colors based on congestion levels
+        df['marker_color'] = df['speedband_description'].map(color_map)
+
+        # Create scatter plot
         fig = px.scatter(
             df,
-            x='hour_of_day',                    
-            y='average_speedband',              
+            x='average_speedband',
+            y='hour_of_day',                                  
             title=f"Average Speedband for {selected_road_name}",  
             hover_data=hover_data     
         )
 
-        fig.update_traces(marker=dict(size=10, color='blue', line=dict(width=1)))
-        fig.update_xaxes(tickmode='array', tickvals=list(range(24)), ticktext=list(range(24)))
-        fig.update_yaxes(tickformat=".2f")
+        fig.update_traces(marker=dict(size=15,
+                                    color=df['marker_color'], 
+                                    line=dict(width=1)))
+        
+        fig.update_yaxes(tickmode='array', tickvals=list(range(24)), ticktext=list(range(24)))
+        fig.update_xaxes(tickformat=".2f")
 
         fig.update_layout(
             margin={"r": 0, "t": 50, "l": 0, "b": 0}, 
             title={'x': 0.5, 'xanchor': 'center'},    
-            xaxis_title="Hour of the Day",             
-            yaxis_title="Traffic Congestion Level"  
+            xaxis_title="Traffic Congestion Level",
+            yaxis_title="Hour of the Day"            
         )
 
         return road_names_options, fig
