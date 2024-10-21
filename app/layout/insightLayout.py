@@ -362,59 +362,66 @@ def register_callbacks(app):
         
         
     @app.callback(
-        [Output('road-name-dropdown', 'options'),
-        Output('average-speed-graph', 'figure')],
-        Input('road-name-dropdown', 'value') 
-    )
+            [
+                Output('road-name-dropdown', 'options'), 
+                Output('average-speed-graph', 'figure')   
+            ],
+            Input('road-name-dropdown', 'value')         
+        )
     def update_dropdown_and_graph(selected_road_name):
-        # Fetch unique road names for the dropdown
         road_names_list = fetch_unique_location()
+        road_names_options = road_names_list
 
-        # Set default to "ADIS ROAD" if no road is selected on the first load
+        # Set default to "ADIS ROAD" if no road is selected initially
         if selected_road_name is None:
-            # Fetch average speedband data based on the selected road name
-            df = fetch_average_speedband("ADIS ROAD")
+            selected_road_name = "ADIS ROAD"
 
-            # Create the figure
-            fig = px.line(
-                df,
-                x='hour_of_day',
-                y='average_speedband',
-                title=f"Average Speedband for ADIS ROAD",
-                labels={"hour_of_day": "Time", "average_speedband": "Average Speed (km/h)"},
-                markers=True
-            )
-        else:
-            # Fetch average speedband data based on the selected road name
-            df = fetch_average_speedband(selected_road_name)
+        df = fetch_average_speedband(selected_road_name)
 
-            # Create the figure
-            fig = px.line(
-                df,
-                x='hour_of_day',
-                y='average_speedband',
-                title=f"Average Speedband for {selected_road_name}",
-                labels={"hour_of_day": "Time", "average_speedband": "Average Speed (km/h)"},
-                markers=True
-            )
-             
-        
+        if df.empty:
+            return road_names_options, px.scatter()  
 
-        fig.update_traces(line=dict(width=4, color='blue'))
+        color_map = {
+            "Heavy congestion": "red",
+            "Moderate congestion": "orange",
+            "Light to moderate congestion": "yellow",
+            "Light congestion": "green",
+            "Unknown": "gray"
+        }
 
-         # Format the Y-axis for two decimal places and improve label visibility
-        fig.update_yaxes(
-            tickformat=".2f"
+        # Create a new column for colors based on congestion levels
+        df['marker_color'] = df['speedband_description'].map(color_map)
+
+        # Create scatter plot
+        fig = px.scatter(
+            df,
+            x='hour_of_day',
+            y='speedband_description', 
+            title=f"Average Speedband for {selected_road_name}",
+            hover_data={"speedband_description": True, "hour_of_day": True}, 
+            custom_data=["speedband_description", "average_speedband"]
         )
 
+        # Update the traces to use hovertemplate
+        fig.update_traces(
+            marker=dict(size=15, color=df['marker_color'], line=dict(width=1)),
+            hovertemplate="<b>Hour of Day</b>: %{x}:00<br>"  
+                        "<b>Average Speedband</b>: %{customdata[1]:.2f}<br>" 
+                        "<b>Congestion Level</b>: %{customdata[0]}<br>"  
+                        "<extra></extra>"  # Remove the default hover box extra info
+        )
 
+        # Update x-axis for hour of the day
+        fig.update_xaxes(tickmode='array', tickvals=list(range(24)), ticktext=list(range(24)))
+
+        # Adjust the layout and axes labels
         fig.update_layout(
             margin={"r": 0, "t": 50, "l": 0, "b": 0},
             title={'x': 0.5, 'xanchor': 'center'},
             xaxis_title="Hour of the Day",
-            yaxis_title="Average Speed)",
+            yaxis_title="Traffic Congestion Level" 
         )
 
-        return road_names_list, fig
+        return road_names_options, fig
     
     
