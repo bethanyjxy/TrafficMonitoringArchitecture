@@ -296,14 +296,18 @@ def fetch_average_speedband(road_name):
 
     with conn.cursor() as cursor:
         query = """
-        SELECT * FROM traffic_speedband_prediction
+        SELECT "RoadName", "hour_of_day", "average_speedband", 
+               "rounded_speedband", "speedband_description", "recorded_at"
+        FROM traffic_speedband_prediction
         WHERE recorded_at <= NOW() AND "RoadName" = %s
         ORDER BY recorded_at;
         """
         cursor.execute(query, (road_name,))
         data = cursor.fetchall()
-         # Fetch column names from the cursor description
+
+        # Fetch column names from the cursor description
         colnames = [desc[0] for desc in cursor.description]
 
     conn.close() 
-    return pd.DataFrame(data, columns = colnames)
+    df = pd.DataFrame(data, columns=colnames)
+    return df
