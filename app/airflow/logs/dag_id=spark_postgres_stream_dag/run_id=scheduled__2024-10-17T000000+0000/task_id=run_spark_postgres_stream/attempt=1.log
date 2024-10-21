@@ -1,0 +1,27 @@
+[2024-10-18T16:10:38.893+0000] {local_task_job_runner.py:123} INFO - ::group::Pre task execution logs
+[2024-10-18T16:10:38.957+0000] {taskinstance.py:2612} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: spark_postgres_stream_dag.run_spark_postgres_stream scheduled__2024-10-17T00:00:00+00:00 [queued]>
+[2024-10-18T16:10:38.987+0000] {taskinstance.py:2612} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: spark_postgres_stream_dag.run_spark_postgres_stream scheduled__2024-10-17T00:00:00+00:00 [queued]>
+[2024-10-18T16:10:38.995+0000] {taskinstance.py:2865} INFO - Starting attempt 1 of 2
+[2024-10-18T16:10:39.041+0000] {taskinstance.py:2888} INFO - Executing <Task(BashOperator): run_spark_postgres_stream> on 2024-10-17 00:00:00+00:00
+[2024-10-18T16:10:39.063+0000] {warnings.py:112} WARNING - /home/airflow/.local/lib/python3.12/site-packages/airflow/task/task_runner/standard_task_runner.py:70: DeprecationWarning: This process (pid=75) is multi-threaded, use of fork() may lead to deadlocks in the child.
+  pid = os.fork()
+
+[2024-10-18T16:10:39.097+0000] {standard_task_runner.py:72} INFO - Started process 98 to run task
+[2024-10-18T16:10:39.120+0000] {standard_task_runner.py:104} INFO - Running: ['airflow', 'tasks', 'run', 'spark_postgres_stream_dag', 'run_spark_postgres_stream', 'scheduled__2024-10-17T00:00:00+00:00', '--job-id', '57', '--raw', '--subdir', 'DAGS_FOLDER/spark_postgres_stream_dag.py', '--cfg-path', '/tmp/tmp4bvxf2tt']
+[2024-10-18T16:10:39.181+0000] {standard_task_runner.py:105} INFO - Job 57: Subtask run_spark_postgres_stream
+[2024-10-18T16:10:39.402+0000] {task_command.py:467} INFO - Running <TaskInstance: spark_postgres_stream_dag.run_spark_postgres_stream scheduled__2024-10-17T00:00:00+00:00 [running]> on host d3e030726ed3
+[2024-10-18T16:10:39.689+0000] {taskinstance.py:3131} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='airflow' AIRFLOW_CTX_DAG_ID='spark_postgres_stream_dag' AIRFLOW_CTX_TASK_ID='run_spark_postgres_stream' AIRFLOW_CTX_EXECUTION_DATE='2024-10-17T00:00:00+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='scheduled__2024-10-17T00:00:00+00:00'
+[2024-10-18T16:10:39.697+0000] {taskinstance.py:731} INFO - ::endgroup::
+[2024-10-18T16:10:39.736+0000] {subprocess.py:63} INFO - Tmp dir root location: /tmp
+[2024-10-18T16:10:39.737+0000] {subprocess.py:75} INFO - Running command: ['/usr/bin/bash', '-c', ' \n        spark-submit         --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1         --jars /opt/spark/jars/postgresql-42.2.18.jar         /opt/airflow/app/spark/realtime/postgres_stream.py         2>&1\n    ']
+[2024-10-18T16:10:39.761+0000] {subprocess.py:86} INFO - Output:
+[2024-10-18T16:10:44.287+0000] {subprocess.py:93} INFO - :: loading settings :: url = jar:file:/opt/spark-3.1.1-bin-hadoop2.7/jars/ivy-2.4.0.jar!/org/apache/ivy/core/settings/ivysettings.xml
+[2024-10-18T16:10:44.520+0000] {subprocess.py:93} INFO - Ivy Default Cache set to: /home/airflow/.ivy2/cache
+[2024-10-18T16:10:44.521+0000] {subprocess.py:93} INFO - The jars for the packages stored in: /home/airflow/.ivy2/jars
+[2024-10-18T16:10:44.528+0000] {subprocess.py:93} INFO - org.apache.spark#spark-sql-kafka-0-10_2.12 added as a dependency
+[2024-10-18T16:10:44.530+0000] {subprocess.py:93} INFO - :: resolving dependencies :: org.apache.spark#spark-submit-parent-f8cf3930-3c27-4db7-8f9b-5bbaca63a063;1.0
+[2024-10-18T16:10:44.531+0000] {subprocess.py:93} INFO - 	confs: [default]
+[2024-10-18T16:10:50.925+0000] {subprocess.py:93} INFO - 	found org.apache.spark#spark-sql-kafka-0-10_2.12;3.1.1 in central
+[2024-10-18T16:10:52.010+0000] {subprocess.py:93} INFO - 	found org.apache.spark#spark-token-provider-kafka-0-10_2.12;3.1.1 in central
+[2024-10-18T16:10:53.032+0000] {subprocess.py:93} INFO - 	found org.apache.kafka#kafka-clients;2.6.0 in central
+[2024-10-18T16:10:54.087+0000] {subprocess.py:93} INFO - 	found com.github.luben#zstd-jni;1.4.8-1 in central

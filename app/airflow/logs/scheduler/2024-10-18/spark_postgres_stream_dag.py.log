@@ -1,0 +1,7 @@
+[2024-10-18T16:10:31.092+0000] {processor.py:186} INFO - Started process (PID=53) to work on /opt/airflow/dags/spark_postgres_stream_dag.py
+[2024-10-18T16:10:31.097+0000] {processor.py:914} INFO - Processing file /opt/airflow/dags/spark_postgres_stream_dag.py for tasks to queue
+[2024-10-18T16:10:31.102+0000] {logging_mixin.py:190} INFO - [2024-10-18T16:10:31.102+0000] {dagbag.py:588} INFO - Filling up the DagBag from /opt/airflow/dags/spark_postgres_stream_dag.py
+[2024-10-18T16:10:31.142+0000] {processor.py:925} INFO - DAG(s) 'spark_postgres_stream_dag' retrieved from /opt/airflow/dags/spark_postgres_stream_dag.py
+[2024-10-18T16:10:32.034+0000] {logging_mixin.py:190} INFO - [2024-10-18T16:10:32.033+0000] {dag.py:3239} INFO - Sync 1 DAGs
+[2024-10-18T16:10:32.189+0000] {logging_mixin.py:190} INFO - [2024-10-18T16:10:32.189+0000] {dag.py:4180} INFO - Setting next_dagrun for spark_postgres_stream_dag to 2024-10-19 00:00:00+00:00, run_after=2024-10-20 00:00:00+00:00
+[2024-10-18T16:10:32.339+0000] {processor.py:208} INFO - Processing /opt/airflow/dags/spark_postgres_stream_dag.py took 1.273 seconds

@@ -1,0 +1,58 @@
+[2024-10-18T16:10:38.893+0000] {local_task_job_runner.py:123} INFO - ::group::Pre task execution logs
+[2024-10-18T16:10:39.011+0000] {taskinstance.py:2612} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: historical_dag.historical_dag scheduled__2024-10-16T00:00:00+00:00 [queued]>
+[2024-10-18T16:10:39.075+0000] {taskinstance.py:2612} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: historical_dag.historical_dag scheduled__2024-10-16T00:00:00+00:00 [queued]>
+[2024-10-18T16:10:39.077+0000] {taskinstance.py:2865} INFO - Starting attempt 1 of 1
+[2024-10-18T16:10:39.135+0000] {taskinstance.py:2888} INFO - Executing <Task(BashOperator): historical_dag> on 2024-10-16 00:00:00+00:00
+[2024-10-18T16:10:39.153+0000] {warnings.py:112} WARNING - /home/airflow/.local/lib/python3.12/site-packages/airflow/task/task_runner/standard_task_runner.py:70: DeprecationWarning: This process (pid=67) is multi-threaded, use of fork() may lead to deadlocks in the child.
+  pid = os.fork()
+
+[2024-10-18T16:10:39.173+0000] {standard_task_runner.py:72} INFO - Started process 103 to run task
+[2024-10-18T16:10:39.162+0000] {standard_task_runner.py:104} INFO - Running: ['airflow', 'tasks', 'run', 'historical_dag', 'historical_dag', 'scheduled__2024-10-16T00:00:00+00:00', '--job-id', '58', '--raw', '--subdir', 'DAGS_FOLDER/historical_dag.py', '--cfg-path', '/tmp/tmpft8ukwu7']
+[2024-10-18T16:10:39.182+0000] {standard_task_runner.py:105} INFO - Job 58: Subtask historical_dag
+[2024-10-18T16:10:39.391+0000] {task_command.py:467} INFO - Running <TaskInstance: historical_dag.historical_dag scheduled__2024-10-16T00:00:00+00:00 [running]> on host d3e030726ed3
+[2024-10-18T16:10:39.668+0000] {taskinstance.py:3131} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='airflow' AIRFLOW_CTX_DAG_ID='historical_dag' AIRFLOW_CTX_TASK_ID='historical_dag' AIRFLOW_CTX_EXECUTION_DATE='2024-10-16T00:00:00+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='scheduled__2024-10-16T00:00:00+00:00'
+[2024-10-18T16:10:39.671+0000] {taskinstance.py:731} INFO - ::endgroup::
+[2024-10-18T16:10:39.702+0000] {subprocess.py:63} INFO - Tmp dir root location: /tmp
+[2024-10-18T16:10:39.705+0000] {subprocess.py:75} INFO - Running command: ['/usr/bin/bash', '-c', 'spark-submit --master local /opt/airflow/app/spark/batch/hist_process.py']
+[2024-10-18T16:10:39.737+0000] {subprocess.py:86} INFO - Output:
+[2024-10-18T16:10:44.897+0000] {subprocess.py:93} INFO - 24/10/18 16:10:44 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+[2024-10-18T16:10:47.992+0000] {subprocess.py:93} INFO - INFO:root:Creating Spark session for HistoricalProcessing
+[2024-10-18T16:10:48.086+0000] {subprocess.py:93} INFO - Using Spark's default log4j profile: org/apache/spark/log4j-defaults.properties
+[2024-10-18T16:10:48.096+0000] {subprocess.py:93} INFO - 24/10/18 16:10:48 INFO SparkContext: Running Spark version 3.1.1
+[2024-10-18T16:10:48.155+0000] {subprocess.py:93} INFO - 24/10/18 16:10:48 INFO ResourceUtils: ==============================================================
+[2024-10-18T16:10:48.156+0000] {subprocess.py:93} INFO - 24/10/18 16:10:48 INFO ResourceUtils: No custom resources configured for spark.driver.
+[2024-10-18T16:10:48.158+0000] {subprocess.py:93} INFO - 24/10/18 16:10:48 INFO ResourceUtils: ==============================================================
+[2024-10-18T16:10:48.158+0000] {subprocess.py:93} INFO - 24/10/18 16:10:48 INFO SparkContext: Submitted application: HistoricalProcessing
+[2024-10-18T16:10:48.189+0000] {subprocess.py:93} INFO - 24/10/18 16:10:48 INFO ResourceProfile: Default ResourceProfile created, executor resources: Map(cores -> name: cores, amount: 1, script: , vendor: , memory -> name: memory, amount: 1024, script: , vendor: , offHeap -> name: offHeap, amount: 0, script: , vendor: ), task resources: Map(cpus -> name: cpus, amount: 1.0)
+[2024-10-18T16:10:48.209+0000] {subprocess.py:93} INFO - 24/10/18 16:10:48 INFO ResourceProfile: Limiting resource is cpu
+[2024-10-18T16:10:48.210+0000] {subprocess.py:93} INFO - 24/10/18 16:10:48 INFO ResourceProfileManager: Added ResourceProfile id: 0
+[2024-10-18T16:10:48.284+0000] {subprocess.py:93} INFO - 24/10/18 16:10:48 INFO SecurityManager: Changing view acls to: airflow
+[2024-10-18T16:10:48.285+0000] {subprocess.py:93} INFO - 24/10/18 16:10:48 INFO SecurityManager: Changing modify acls to: airflow
+[2024-10-18T16:10:48.286+0000] {subprocess.py:93} INFO - 24/10/18 16:10:48 INFO SecurityManager: Changing view acls groups to:
+[2024-10-18T16:10:48.287+0000] {subprocess.py:93} INFO - 24/10/18 16:10:48 INFO SecurityManager: Changing modify acls groups to:
+[2024-10-18T16:10:48.288+0000] {subprocess.py:93} INFO - 24/10/18 16:10:48 INFO SecurityManager: SecurityManager: authentication disabled; ui acls disabled; users  with view permissions: Set(airflow); groups with view permissions: Set(); users  with modify permissions: Set(airflow); groups with modify permissions: Set()
+[2024-10-18T16:10:48.631+0000] {subprocess.py:93} INFO - 24/10/18 16:10:48 INFO Utils: Successfully started service 'sparkDriver' on port 45415.
+[2024-10-18T16:10:48.693+0000] {subprocess.py:93} INFO - 24/10/18 16:10:48 INFO SparkEnv: Registering MapOutputTracker
+[2024-10-18T16:10:48.761+0000] {subprocess.py:93} INFO - 24/10/18 16:10:48 INFO SparkEnv: Registering BlockManagerMaster
+[2024-10-18T16:10:48.805+0000] {subprocess.py:93} INFO - 24/10/18 16:10:48 INFO BlockManagerMasterEndpoint: Using org.apache.spark.storage.DefaultTopologyMapper for getting topology information
+[2024-10-18T16:10:48.808+0000] {subprocess.py:93} INFO - 24/10/18 16:10:48 INFO BlockManagerMasterEndpoint: BlockManagerMasterEndpoint up
+[2024-10-18T16:10:48.813+0000] {subprocess.py:93} INFO - 24/10/18 16:10:48 INFO SparkEnv: Registering BlockManagerMasterHeartbeat
+[2024-10-18T16:10:48.847+0000] {subprocess.py:93} INFO - 24/10/18 16:10:48 INFO DiskBlockManager: Created local directory at /tmp/blockmgr-ae2d947c-fec5-420b-95b7-caef45d182fb
+[2024-10-18T16:10:48.893+0000] {subprocess.py:93} INFO - 24/10/18 16:10:48 INFO MemoryStore: MemoryStore started with capacity 366.3 MiB
+[2024-10-18T16:10:48.950+0000] {subprocess.py:93} INFO - 24/10/18 16:10:48 INFO SparkEnv: Registering OutputCommitCoordinator
+[2024-10-18T16:10:49.369+0000] {subprocess.py:93} INFO - 24/10/18 16:10:49 WARN Utils: Service 'SparkUI' could not bind on port 4040. Attempting port 4041.
+[2024-10-18T16:10:49.370+0000] {subprocess.py:93} INFO - 24/10/18 16:10:49 WARN Utils: Service 'SparkUI' could not bind on port 4041. Attempting port 4042.
+[2024-10-18T16:10:49.383+0000] {subprocess.py:93} INFO - 24/10/18 16:10:49 INFO Utils: Successfully started service 'SparkUI' on port 4042.
+[2024-10-18T16:10:49.492+0000] {subprocess.py:93} INFO - 24/10/18 16:10:49 INFO SparkUI: Bound SparkUI to 0.0.0.0, and started at http://d3e030726ed3:4042
+[2024-10-18T16:10:49.975+0000] {subprocess.py:93} INFO - 24/10/18 16:10:49 INFO Executor: Starting executor ID driver on host d3e030726ed3
+[2024-10-18T16:10:50.015+0000] {subprocess.py:93} INFO - 24/10/18 16:10:50 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 46343.
+[2024-10-18T16:10:50.016+0000] {subprocess.py:93} INFO - 24/10/18 16:10:50 INFO NettyBlockTransferService: Server created on d3e030726ed3:46343
+[2024-10-18T16:10:50.018+0000] {subprocess.py:93} INFO - 24/10/18 16:10:50 INFO BlockManager: Using org.apache.spark.storage.RandomBlockReplicationPolicy for block replication policy
+[2024-10-18T16:10:50.027+0000] {subprocess.py:93} INFO - 24/10/18 16:10:50 INFO BlockManagerMaster: Registering BlockManager BlockManagerId(driver, d3e030726ed3, 46343, None)
+[2024-10-18T16:10:50.034+0000] {subprocess.py:93} INFO - 24/10/18 16:10:50 INFO BlockManagerMasterEndpoint: Registering block manager d3e030726ed3:46343 with 366.3 MiB RAM, BlockManagerId(driver, d3e030726ed3, 46343, None)
+[2024-10-18T16:10:50.035+0000] {subprocess.py:93} INFO - 24/10/18 16:10:50 INFO BlockManagerMaster: Registered BlockManager BlockManagerId(driver, d3e030726ed3, 46343, None)
+[2024-10-18T16:10:50.037+0000] {subprocess.py:93} INFO - 24/10/18 16:10:50 INFO BlockManager: Initialized BlockManager: BlockManagerId(driver, d3e030726ed3, 46343, None)
+[2024-10-18T16:10:51.045+0000] {subprocess.py:93} INFO - 24/10/18 16:10:51 INFO SharedState: Setting hive.metastore.warehouse.dir ('null') to the value of spark.sql.warehouse.dir ('file:/tmp/airflowtmpt_vbnjal/spark-warehouse').
+[2024-10-18T16:10:51.046+0000] {subprocess.py:93} INFO - 24/10/18 16:10:51 INFO SharedState: Warehouse path is 'file:/tmp/airflowtmpt_vbnjal/spark-warehouse'.
+[2024-10-18T16:10:52.105+0000] {subprocess.py:93} INFO - INFO:root:Reading CSV from hdfs://namenode:8020/user/hadoop/historical/Cars_by_make.csv
+[2024-10-18T16:10:52.996+0000] {subprocess.py:93} INFO - 24/10/18 16:10:52 INFO InMemoryFileIndex: It took 123 ms to list leaf files for 1 paths.

@@ -1,0 +1,7 @@
+[2024-10-18T16:10:32.927+0000] {processor.py:186} INFO - Started process (PID=64) to work on /opt/airflow/dags/historical_dag.py
+[2024-10-18T16:10:32.930+0000] {processor.py:914} INFO - Processing file /opt/airflow/dags/historical_dag.py for tasks to queue
+[2024-10-18T16:10:32.961+0000] {logging_mixin.py:190} INFO - [2024-10-18T16:10:32.958+0000] {dagbag.py:588} INFO - Filling up the DagBag from /opt/airflow/dags/historical_dag.py
+[2024-10-18T16:10:33.322+0000] {processor.py:925} INFO - DAG(s) 'historical_dag' retrieved from /opt/airflow/dags/historical_dag.py
+[2024-10-18T16:10:33.778+0000] {logging_mixin.py:190} INFO - [2024-10-18T16:10:33.778+0000] {dag.py:3239} INFO - Sync 1 DAGs
+[2024-10-18T16:10:33.814+0000] {logging_mixin.py:190} INFO - [2024-10-18T16:10:33.814+0000] {dag.py:4180} INFO - Setting next_dagrun for historical_dag to 2024-10-17 00:00:00+00:00, run_after=2024-10-18 00:00:00+00:00
+[2024-10-18T16:10:33.846+0000] {processor.py:208} INFO - Processing /opt/airflow/dags/historical_dag.py took 1.062 seconds

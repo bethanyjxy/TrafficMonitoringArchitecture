@@ -1,0 +1,17 @@
+[2024-10-18T16:10:33.892+0000] {processor.py:186} INFO - Started process (PID=71) to work on /opt/airflow/dags/consumer_dag.py
+[2024-10-18T16:10:33.893+0000] {processor.py:914} INFO - Processing file /opt/airflow/dags/consumer_dag.py for tasks to queue
+[2024-10-18T16:10:33.898+0000] {logging_mixin.py:190} INFO - [2024-10-18T16:10:33.896+0000] {dagbag.py:588} INFO - Filling up the DagBag from /opt/airflow/dags/consumer_dag.py
+[2024-10-18T16:10:33.945+0000] {processor.py:925} INFO - DAG(s) 'kafka_consumer_dag' retrieved from /opt/airflow/dags/consumer_dag.py
+[2024-10-18T16:10:34.184+0000] {logging_mixin.py:190} INFO - [2024-10-18T16:10:34.183+0000] {dag.py:3239} INFO - Sync 1 DAGs
+[2024-10-18T16:10:34.241+0000] {logging_mixin.py:190} INFO - [2024-10-18T16:10:34.240+0000] {dag.py:4180} INFO - Setting next_dagrun for kafka_consumer_dag to 2024-10-18 00:00:00+00:00, run_after=2024-10-19 00:00:00+00:00
+[2024-10-18T16:10:34.396+0000] {processor.py:208} INFO - Processing /opt/airflow/dags/consumer_dag.py took 0.514 seconds
+[2024-10-18T16:10:41.231+0000] {processor.py:186} INFO - Started process (PID=85) to work on /opt/airflow/dags/consumer_dag.py
+[2024-10-18T16:10:41.233+0000] {processor.py:914} INFO - Processing file /opt/airflow/dags/consumer_dag.py for tasks to queue
+[2024-10-18T16:10:41.245+0000] {logging_mixin.py:190} INFO - [2024-10-18T16:10:41.242+0000] {dagbag.py:588} INFO - Filling up the DagBag from /opt/airflow/dags/consumer_dag.py
+[2024-10-18T16:10:41.402+0000] {processor.py:925} INFO - DAG(s) 'kafka_consumer_dag' retrieved from /opt/airflow/dags/consumer_dag.py
+[2024-10-18T16:10:41.626+0000] {logging_mixin.py:190} INFO - [2024-10-18T16:10:41.625+0000] {taskinstance.py:3312} ERROR - {'DAG Id': 'kafka_consumer_dag', 'Task Id': 'run_kafka_speedbands_consumer', 'Run Id': 'manual__2024-10-16T09:32:10.169983+00:00', 'Hostname': 'fe42fb68d486', 'External Executor Id': 'a2e6f914-9328-42cb-af35-cb7ca479f8e7'}
+[2024-10-18T16:10:41.879+0000] {logging_mixin.py:190} INFO - [2024-10-18T16:10:41.878+0000] {taskinstance.py:1225} INFO - Marking task as FAILED. dag_id=kafka_consumer_dag, task_id=run_kafka_speedbands_consumer, run_id=manual__2024-10-16T09:32:10.169983+00:00, execution_date=20241016T093210, start_date=20241016T093212, end_date=20241018T161041
+[2024-10-18T16:10:41.966+0000] {logging_mixin.py:190} INFO - [2024-10-18T16:10:41.964+0000] {processor.py:876} INFO - Executed callback for <TaskInstance: kafka_consumer_dag.run_kafka_speedbands_consumer manual__2024-10-16T09:32:10.169983+00:00 [failed]> in state failed
+[2024-10-18T16:10:41.990+0000] {logging_mixin.py:190} INFO - [2024-10-18T16:10:41.988+0000] {dag.py:3239} INFO - Sync 1 DAGs
+[2024-10-18T16:10:42.193+0000] {logging_mixin.py:190} INFO - [2024-10-18T16:10:42.192+0000] {dag.py:4180} INFO - Setting next_dagrun for kafka_consumer_dag to 2024-10-18 00:00:00+00:00, run_after=2024-10-19 00:00:00+00:00
+[2024-10-18T16:10:42.258+0000] {processor.py:208} INFO - Processing /opt/airflow/dags/consumer_dag.py took 1.048 seconds

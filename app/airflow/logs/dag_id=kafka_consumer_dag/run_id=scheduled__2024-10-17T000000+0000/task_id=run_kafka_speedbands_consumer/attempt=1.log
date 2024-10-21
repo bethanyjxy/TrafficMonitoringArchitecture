@@ -1,0 +1,17 @@
+[2024-10-18T16:10:38.761+0000] {local_task_job_runner.py:123} INFO - ::group::Pre task execution logs
+[2024-10-18T16:10:38.820+0000] {taskinstance.py:2612} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: kafka_consumer_dag.run_kafka_speedbands_consumer scheduled__2024-10-17T00:00:00+00:00 [queued]>
+[2024-10-18T16:10:38.877+0000] {taskinstance.py:2612} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: kafka_consumer_dag.run_kafka_speedbands_consumer scheduled__2024-10-17T00:00:00+00:00 [queued]>
+[2024-10-18T16:10:38.894+0000] {taskinstance.py:2865} INFO - Starting attempt 1 of 1
+[2024-10-18T16:10:38.942+0000] {taskinstance.py:2888} INFO - Executing <Task(BashOperator): run_kafka_speedbands_consumer> on 2024-10-17 00:00:00+00:00
+[2024-10-18T16:10:38.962+0000] {warnings.py:112} WARNING - /home/airflow/.local/lib/python3.12/site-packages/airflow/task/task_runner/standard_task_runner.py:70: DeprecationWarning: This process (pid=79) is multi-threaded, use of fork() may lead to deadlocks in the child.
+  pid = os.fork()
+
+[2024-10-18T16:10:38.967+0000] {standard_task_runner.py:104} INFO - Running: ['airflow', 'tasks', 'run', 'kafka_consumer_dag', 'run_kafka_speedbands_consumer', 'scheduled__2024-10-17T00:00:00+00:00', '--job-id', '49', '--raw', '--subdir', 'DAGS_FOLDER/consumer_dag.py', '--cfg-path', '/tmp/tmpzydxttg2']
+[2024-10-18T16:10:38.969+0000] {standard_task_runner.py:72} INFO - Started process 88 to run task
+[2024-10-18T16:10:38.977+0000] {standard_task_runner.py:105} INFO - Job 49: Subtask run_kafka_speedbands_consumer
+[2024-10-18T16:10:39.184+0000] {task_command.py:467} INFO - Running <TaskInstance: kafka_consumer_dag.run_kafka_speedbands_consumer scheduled__2024-10-17T00:00:00+00:00 [running]> on host d3e030726ed3
+[2024-10-18T16:10:39.520+0000] {taskinstance.py:3131} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='airflow' AIRFLOW_CTX_DAG_ID='kafka_consumer_dag' AIRFLOW_CTX_TASK_ID='run_kafka_speedbands_consumer' AIRFLOW_CTX_EXECUTION_DATE='2024-10-17T00:00:00+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='scheduled__2024-10-17T00:00:00+00:00'
+[2024-10-18T16:10:39.523+0000] {taskinstance.py:731} INFO - ::endgroup::
+[2024-10-18T16:10:39.675+0000] {subprocess.py:63} INFO - Tmp dir root location: /tmp
+[2024-10-18T16:10:39.678+0000] {subprocess.py:75} INFO - Running command: ['/usr/bin/bash', '-c', 'python3 /opt/airflow/app/kafka/consumer/kafka_speedbands_consumer.py']
+[2024-10-18T16:10:39.712+0000] {subprocess.py:86} INFO - Output:
