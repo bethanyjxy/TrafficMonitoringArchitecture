@@ -16,3 +16,17 @@ SPARK_POSTGRES = {
         'driver': 'org.postgresql.Driver'
     }
 }
+
+
+
+'''
+    return {
+        "url": SPARK_POSTGRES['url'],
+        "properties": {
+            "user": SPARK_POSTGRES['user'],
+            "password": SPARK_POSTGRES['password'],
+            "driver": SPARK_POSTGRES['driver']
+        }
+    }
+
+'''

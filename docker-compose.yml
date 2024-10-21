@@ -19,13 +19,17 @@ x-airflow-common: &airflow-common
     AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://traffic_admin:traffic_pass@postgres:5432/airflow_db
     AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
     AIRFLOW__CORE__FERNET_KEY: ''
-    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
     AIRFLOW_CONN_HDFS_DEFAULT: hdfs://namenode:8020
     PYTHONPATH: /opt/airflow/app:/opt/airflow/dags
 
+    AIRFLOW__METRICS__STATSD_ON: 'True'
+    AIRFLOW__METRICS__STATSD_HOST: 'statsd-exporter'  # Referencing the StatsD exporter container
+    AIRFLOW__METRICS__STATSD_PORT: '9125'
+    AIRFLOW__METRICS__STATSD_PREFIX: 'airflow'          # Prefix for Airflow metrics
+    AIRFLOW__METRICS__STATSD_DISABLED_TAGS: 'job_id,run_id'
     # Kafka settings
     AIRFLOW_CONN_KAFKA_DEFAULT: kafka://kafka:9092
     KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -36,9 +40,9 @@ x-airflow-common: &airflow-common
   volumes:
     - ./app/airflow/dags:/opt/airflow/dags
     - ./app/airflow/logs:/opt/airflow/logs
-    - ./app/airflow/config:/opt/airflow/config
     - ./app/airflow/plugins:/opt/airflow/plugins
     - ./app:/opt/airflow/app
+    - ./app/airflow/config/airflow.cfg:/opt/airflow/airflow.cfg
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on: &airflow-common-depends-on
     redis:
@@ -47,8 +51,33 @@ x-airflow-common: &airflow-common
       condition: service_healthy
     kafka:
       condition: service_started
+    statsd-exporter:
+      condition: service_started
 
 services:
+  statsd-exporter:
+    image: prom/statsd-exporter:latest
+    hostname: statsd-exporter
+    container_name: statsd-exporter
+    ports:
+      - "9102:9102"  # Prometheus will scrape this port
+    environment:
+      - STATSD_MAPPING_CONFIG=/tmp/statsd_mapping.yml
+    volumes:
+      - ./config/statsd_mapping.yml:/tmp/statsd_mapping.yml
+    networks:
+      - hadoop-network
+    
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"  # You can expose Prometheus here if you want to test locally
+    networks:
+      - hadoop-network
+
   redis:
     image: redis:7.2-bookworm
     container_name: redis
@@ -181,8 +210,8 @@ services:
 
   flask-app:
     build:
-      context: ./app 
-      dockerfile: Dockerfile  
+      context: ./app
+      dockerfile: Dockerfile
     container_name: flaskapp
     ports:
       - "5000:5000"
@@ -245,7 +274,6 @@ services:
     ports:
       - 2181:2181
 
-
   kafka:
     image: bitnami/kafka:latest
     container_name: kafka
@@ -283,7 +311,7 @@ services:
     volumes:
       - namenode-data:/hadoop/dfs/name
     ports:
-      - "9870:9870"  # Namenode web UI
+      - "9870:9870" # Namenode web UI
     networks:
       - hadoop-network
     restart: always
@@ -294,27 +322,27 @@ services:
       retries: 3
       start_period: 15s
   datanode1:
-      image: bde2020/hadoop-datanode:latest
-      container_name: hadoop-datanode1
-      environment:
-        - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
-        - CORE_CONF_hadoop_http_staticuser_user=root
-        - HDFS_CONF_dfs_replication=2
-      volumes:
-        - datanode1-data:/hadoop/dfs/data
-      depends_on:
-        - namenode
-      ports:
-        - "9864:9864"  # Datanode1 web UI
-      networks:
-        - hadoop-network
-      restart: always
-      healthcheck:
-        test: ["CMD", "curl", "--fail", "http://localhost:9864"]
-        interval: 30s
-        timeout: 10s
-        retries: 3
-        start_period: 15s
+    image: bde2020/hadoop-datanode:latest
+    container_name: hadoop-datanode1
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+      - CORE_CONF_hadoop_http_staticuser_user=root
+      - HDFS_CONF_dfs_replication=2
+    volumes:
+      - datanode1-data:/hadoop/dfs/data
+    depends_on:
+      - namenode
+    ports:
+      - "9864:9864" # Datanode1 web UI
+    networks:
+      - hadoop-network
+    restart: always
+    healthcheck:
+      test: [ "CMD", "curl", "--fail", "http://localhost:9864" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   datanode2:
     image: bde2020/hadoop-datanode:latest
@@ -328,24 +356,23 @@ services:
     depends_on:
       - namenode
     ports:
-      - "9865:9864"  # Datanode2 web UI
+      - "9865:9864" # Datanode2 web UI
     networks:
       - hadoop-network
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:9865"]
+      test: [ "CMD", "curl", "--fail", "http://localhost:9865" ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 15s
 
-
   spark-master:
     container_name: spark-master
     image: bitnami/spark:latest
     ports:
-      - "8082:8082"  # Spark UI
-      - "7077:7077"  # Spark master port
+      - "8082:8082" # Spark UI
+      - "7077:7077" # Spark master port
     environment:
       - SPARK_MODE=master
       - SPARK_MASTER_PORT=7077
@@ -367,7 +394,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
-      
+
   spark-worker:
     container_name: spark-worker
     image: bitnami/spark:latest

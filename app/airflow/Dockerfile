@@ -1,7 +1,7 @@
 FROM apache/airflow:2.10.2
 
 # Install Python packages
-RUN pip install --no-cache-dir Flask psycopg2-binary dash dash-bootstrap-components plotly kafka-python kafka confluent-kafka folium pyspark==3.1.1 hdfs pandas apache-airflow requests numpy jsons apache-airflow-providers-postgres apache-airflow-providers-apache-spark
+RUN pip install --no-cache-dir Flask psycopg2-binary dash dash-bootstrap-components pendulum plotly kafka-python kafka confluent-kafka folium pyspark==3.1.1 hdfs pandas apache-airflow requests numpy jsons apache-airflow-providers-postgres apache-airflow-providers-apache-spark
 
 USER root
 
@@ -18,6 +18,24 @@ RUN apt-get update && \
 # Set JAVA_HOME environment variable
 ENV JAVA_HOME=/opt/java/jdk8u392-b08
 ENV PATH="$JAVA_HOME/bin:$PATH"
+
+# Install Hadoop client (required for HDFS commands)
+RUN apt-get update && \
+    apt-get install -y curl && \
+    curl -L https://archive.apache.org/dist/hadoop/common/hadoop-2.7.7/hadoop-2.7.7.tar.gz | tar -xz -C /opt/ && \
+    ln -s /opt/hadoop-2.7.7 /opt/hadoop && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set HADOOP_HOME environment variable
+ENV HADOOP_HOME=/opt/hadoop
+ENV PATH=$HADOOP_HOME/bin:$PATH
+
+
+
+
+
+
 # Install Spark
 RUN curl -L https://archive.apache.org/dist/spark/spark-3.1.1/spark-3.1.1-bin-hadoop2.7.tgz | tar -xz -C /opt/ && \
     ln -s /opt/spark-3.1.1-bin-hadoop2.7 /opt/spark && \

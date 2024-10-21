@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 5s  # Adjust based on your needs
+
+scrape_configs:
+  - job_name: 'airflow'
+    static_configs:
+      - targets: ['statsd-exporter:9102']  # This is the StatsD exporter
+
+remote_write:
+  - url: "https://prometheus-prod-37-prod-ap-southeast-1.grafana.net/api/prom/push"
+    basic_auth:
+      username: "1840228"  # Your Grafana Cloud Prometheus instance ID

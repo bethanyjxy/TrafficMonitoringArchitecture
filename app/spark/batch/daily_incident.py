@@ -1,96 +1,98 @@
-import sys
-import os
-
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, to_date, regexp_extract, current_timestamp, current_date
-from pyspark.sql.types import StructType, StructField, StringType, IntegerType
+# daily_incident.py
+import logging
 from datetime import datetime
-import time
+from pyspark.sql.functions import col, to_date, current_date
+from batch_config import create_spark_session, send_to_hdfs, get_postgres_connection, create_table, insert_table, generate_id
 
-SPARK_POSTGRES = {
-    'url': "jdbc:postgresql://postgres:5432/traffic_db",
-    'properties': {
-        'user': 'traffic_admin',
-        'password': 'traffic_pass',
-        'driver': 'org.postgresql.Driver'
-    }
-}
 
-def write_to_postgres(df, table_name, postgres_url, postgres_properties):
+# Global variables for hostname and directory
+hostname = "hdfs://namenode:8020"
+directory = "/user/hadoop/traffic_data/"
+          
+def read_json_from_hdfs(spark, file_name):
+    """Reads a JSON file from HDFS and returns a DataFrame."""
+    path = f"{hostname}{directory}{file_name}"
     try:
-        df.write.jdbc(url=postgres_url, table=table_name, mode="append", properties=postgres_properties)
-        print(f"Successfully wrote data to {table_name}")
+        logging.info(f"Reading JSON from {path}")
+        return spark.read.json(path) 
     except Exception as e:
-        print(f"Error writing to PostgreSQL table {table_name}: {e}")
+        logging.error(f"Error reading JSON file: {e}")
         raise
 
-def generate_id():
-    return str(int(time.time() * 1000))  # Current time in milliseconds
-
 def main():
-    # PostgreSQL connection properties
-    postgres_url = SPARK_POSTGRES['url']
-    postgres_properties = SPARK_POSTGRES['properties']
-
-    # Create Spark session 
-    spark = SparkSession.builder \
-        .master('local[2]') \
-        .appName("Incident_Batch_Process") \
-        .config("spark.sql.legacy.timeParserPolicy", "LEGACY") \
-        .getOrCreate()
-
-    # Path to batch data in HDFS
-    batch_data_path = "hdfs://namenode:9000/user/hadoop/traffic_data/traffic_incidents.json"
+    spark = create_spark_session("DailyIncident_BatchReport")
 
     # Read JSON data
-    df = spark.read.format("json").load(batch_data_path)
+    df = read_json_from_hdfs(spark, "traffic_incidents.json")
+    
+    # Extract timestamp from JSON data
+    df = df.withColumn("timestamp", col("timestamp"))  
+    
+    # Filter incidents for today 
+    today_incident = df.filter(to_date(col("timestamp")) == current_date())
 
-
-    # Extract date from Message
-    df = df.withColumn("IncidentDate", regexp_extract(col("Message"), r"\((\d{1,2}/\d{1,2})\)", 1))
-    df = df.withColumn("IncidentDate", to_date(col("IncidentDate"), "MM/dd"))
-
-    #If want to filter based on date range 
-    #start_date = '2024-09-01'
-    #end_date = '2024-09-30'
-    #!!! add into accident_in_range : (col("IncidentDate") >= start_date) & (col("IncidentDate") <= end_date)
-
-    # Filter incidents of type "Accident" within the date range
-    filter_accidents = df.filter(
-        (col("Type") == "Accident") & 
-        (col("IncidentDate") == current_date())
-    )
-
-    # Calculate total count of accidents
-    total_count = filter_accidents.count()
+    # Calculate total count of incidents
+    try:
+        total_count = today_incident.count()
+        logging.info(f"Total count of today's incidents: {total_count}")
+    except Exception as e:
+        logging.error(f"Error counting today_incident: {e}")
+        total_count = 0  # Default to 0 if an error occurs
 
     # Get current date in MMDDYY format
-    current_date_str = datetime.now().strftime("%m%d%y")
+    current_date_str = datetime.now().strftime("%d%m%y")
 
-   # Generate a unique ID
+    # Generate a unique ID
     unique_id = generate_id()
 
-    # Create a DataFrame with the ID, Name and Result columns
+    # Prepare data to insert
     report_name = f"Incident Report {current_date_str}"
-    data = [(unique_id, report_name, total_count)]
-    schema = StructType([
-        StructField("ID", StringType(), False),
-        StructField("Name", StringType(), False),
-        StructField("Result", IntegerType(), False)
-    ])
 
-    incidents_summary = spark.createDataFrame(data, schema=schema)
-    # Add the current timestamp as the Date column
-    incidents_summary = incidents_summary.withColumn("Date", current_timestamp())
+    # Convert current datetime to a string
+    current_timestamp_str = datetime.now().strftime("%Y-%m-%d")
 
+    
+    ####### Sending report to POSTGRESQL #######
+    
+    # Initialize PostgreSQL connection
+    conn = get_postgres_connection()
+    
+    # Prepare data to insert
+    data = (unique_id, report_name, total_count, current_timestamp_str)  # Data as a tuple
 
-    # Write batch results to PostgreSQL
-    write_to_postgres(incidents_summary, "report_incident", postgres_url, postgres_properties)
+    # SQL queries
+    create_table_query = """
+    CREATE TABLE IF NOT EXISTS report_incident (
+        ID VARCHAR(255) PRIMARY KEY,
+        Name VARCHAR(255),
+        Result INTEGER,
+        Date DATE
+    );
+    """
+    
+    insert_query = """
+        INSERT INTO report_incident (ID, Name, Result, Date)
+        VALUES (%s, %s, %s, %s)
+    """
+    
+    try:
+        # Create the report_incident table if it does not exist
+        create_table(create_table_query, conn)
+
+        # Insert data into PostgreSQL
+        insert_table(data, insert_query, conn)
+    finally:
+        if conn:
+            conn.close()  # Ensure the connection is closed after operations
+
+    ####### Send report to HDFS #######
+    historical_data = {
+        "ID": unique_id,
+        "Name": report_name,
+        "Result": total_count,
+        "Date": current_timestamp_str
+    }
+    send_to_hdfs("historical_incidents", historical_data)
 
 if __name__ == "__main__":
     main()
-
-
-
-
-

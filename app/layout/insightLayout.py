@@ -3,7 +3,7 @@ import dash_core_components as dcc
 import plotly.express as px
 from dash import html, dcc, callback_context
 from dash.dependencies import Input, Output
-from postgresql.db_functions import *
+from postgresql.db_batch import *
 
 layout = html.Div([
     html.H3('Traffic Insights', className="text-center mb-5 mt-2"),
@@ -37,7 +37,31 @@ layout = html.Div([
     ],  justify="between", className="mb-4"),
     ]),
     
-    # 3rd row
+    # 3rd Row
+    html.Div([
+        html.H3('Traffic Flow Prediction', className="text-center mb-4"),
+    dbc.Row([
+        dbc.Col(
+            dcc.Dropdown(
+                id='road-name-dropdown',
+                options=[],
+                placeholder="Select a road name",
+                clearable=False,
+                className="mb-4"
+            ),
+            width=12,
+        )
+    ]),
+    dbc.Row([
+        dbc.Col(
+            dcc.Graph(id='average-speed-graph', className="rounded shadow p-3 mb-4"),
+            width=12,
+        )
+    ], justify="between", className="mb-4"),
+    ]),
+
+    
+    # 4th row
     html.Div([
     html.H3('Vehicle Population', className="text-center mb-4"),
     
@@ -95,25 +119,39 @@ def register_callbacks(app):
         Input('interval-component-insights', 'n_intervals')
     )
     def update_trend_chart(n):
-        df = fetch_incidents_over_time()
-        fig = px.line(
+        # Fetch data from the database (fetch_report_incident already gets date and result)
+        df = fetch_report_incident()
+
+        # Convert the date column to a datetime format if it's not already
+        df['date'] = pd.to_datetime(df['date'])
+
+        # Get the current month name
+        current_month = datetime.now().strftime('%B')
+
+        # Plot the line chart with dates on the x-axis
+        fig = px.bar(
             df, 
-            x="incident_date", 
-            y="incident_count", 
-            title="Incident Trends Over Time",
-            labels={"incident_date": "Date", "incident_count": "Number of Incidents"}
+            x="date", 
+            y="result", 
+            title="Daily Incident Trends",  # Title reflects the current month
+            labels={"date": "Date", "result": "Number of Incidents"}
         )
+
+        # Customize hover template to show the date and number of incidents
         fig.update_traces(
             hovertemplate="Date: %{x}<br>Number of Incidents: %{y}<extra></extra>"
         )
+
+        # Update the layout
         fig.update_layout(
-            margin={"r":0,"t":50,"l":0,"b":0},
-            title={'x':0.5, 'xanchor': 'center'},
+            margin={"r": 0, "t": 50, "l": 0, "b": 0},
+            title={'x': 0.5, 'xanchor': 'center'},
             xaxis_title="Date",
             yaxis_title="Number of Incidents",
             template="simple_white",
-            hovermode="x unified"
+            hovermode="x unified",
         )
+
         return fig
 
     @app.callback(
@@ -321,5 +359,69 @@ def register_callbacks(app):
             return 'secondary', 'primary'  # Motorcycles button selected
         else:
             return 'primary', 'secondary'  # Default to Cars
+        
+        
+    @app.callback(
+            [
+                Output('road-name-dropdown', 'options'), 
+                Output('average-speed-graph', 'figure')   
+            ],
+            Input('road-name-dropdown', 'value')         
+        )
+    def update_dropdown_and_graph(selected_road_name):
+        road_names_list = fetch_unique_location()
+        road_names_options = road_names_list
+
+        # Set default to "ADIS ROAD" if no road is selected initially
+        if selected_road_name is None:
+            selected_road_name = "ADIS ROAD"
+
+        df = fetch_average_speedband(selected_road_name)
+
+        if df.empty:
+            return road_names_options, px.scatter()  
+
+        color_map = {
+            "Heavy congestion": "red",
+            "Moderate congestion": "orange",
+            "Light to moderate congestion": "yellow",
+            "Light congestion": "green",
+            "Unknown": "gray"
+        }
+
+        # Create a new column for colors based on congestion levels
+        df['marker_color'] = df['speedband_description'].map(color_map)
+
+        # Create scatter plot
+        fig = px.scatter(
+            df,
+            x='hour_of_day',
+            y='speedband_description', 
+            title=f"Average Speedband for {selected_road_name}",
+            hover_data={"speedband_description": True, "hour_of_day": True}, 
+            custom_data=["speedband_description", "average_speedband"]
+        )
+
+        # Update the traces to use hovertemplate
+        fig.update_traces(
+            marker=dict(size=15, color=df['marker_color'], line=dict(width=1)),
+            hovertemplate="<b>Hour of Day</b>: %{x}:00<br>"  
+                        "<b>Average Speedband</b>: %{customdata[1]:.2f}<br>" 
+                        "<b>Congestion Level</b>: %{customdata[0]}<br>"  
+                        "<extra></extra>"  # Remove the default hover box extra info
+        )
+
+        # Update x-axis for hour of the day
+        fig.update_xaxes(tickmode='array', tickvals=list(range(24)), ticktext=list(range(24)))
+
+        # Adjust the layout and axes labels
+        fig.update_layout(
+            margin={"r": 0, "t": 50, "l": 0, "b": 0},
+            title={'x': 0.5, 'xanchor': 'center'},
+            xaxis_title="Hour of the Day",
+            yaxis_title="Traffic Congestion Level" 
+        )
+
+        return road_names_options, fig
     
     

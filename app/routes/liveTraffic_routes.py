@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request
 import folium
 from folium.plugins import HeatMap
 import numpy as np
-from postgresql.db_functions import *
+from postgresql.db_stream import *
 
 def get_color_from_congestion(speedband):
     if speedband == 1:
@@ -24,7 +24,7 @@ live_traffic_blueprint = Blueprint('live_traffic_blueprint', __name__)
 @live_traffic_blueprint.route('/live_traffic')
 def live_traffic():
 
-    incidents_data = fetch_data_from_table('incident_table')
+    incidents_data = fetch_stream_table('incident_table')
     """Display live traffic map with Folium based on selected filters."""
     filters = request.args.get('filters', '')
     selected_filters = filters.split(',') if filters else []
@@ -61,7 +61,7 @@ def live_traffic():
         table_name = table_mapping.get(filter_type)
         if table_name:
             try:
-                data = fetch_data_from_table(table_name)
+                data = fetch_stream_table(table_name)
                 if not data:
                     print(f"No data found for {table_name}")
                 for row in data:
