@@ -1,7 +1,6 @@
 # TrafficMonitoringArchitecture
 
 
-
 Up ONLY POSTGRES Container
 1. 
 docker-compose up -d postgres
@@ -18,7 +17,6 @@ docker exec -it hadoop-namenode bash
 hdfs dfs -mkdir -p /user/hadoop/traffic_data
 3. 
 hdfs dfs -chown hadoop:supergroup /user/hadoop/traffic_data
-
 
 
 
@@ -46,19 +44,11 @@ spark-submit \
     --jars /opt/spark/jars/postgresql-42.2.18.jar \
     app/spark/realtime/postgres_stream.py
 
-    
 
-Enter Postgre and Check data
+
+##### Check Data in Postgres SQL
 1. 
 docker exec -it postgres psql -U traffic_admin -d traffic_db
-
-
-
-( Nth much)
-Spark Checks
-
-ls -l /opt/spark
-ls /opt/spark/bin/
 
 
 ##### For Hadoop to Spark
@@ -70,3 +60,25 @@ docker exec -it hadoop-namenode bash
 hdfs dfs -mkdir -p /user/hadoop/historical
 hdfs dfs -put /historical/*.csv /user/hadoop/historical/
 hdfs dfs -ls /user/hadoop/historical/ 
+
+##### Running Batch Commands in Airflow
+1. Run Airflow Container
+docker exec -it airflow-worker /bin/bash
+
+- Historical Data
+spark-submit --master local /opt/airflow/app/spark/batch/hist_process.py
+
+- Traffic Prediction
+spark-submit --master local /opt/airflow/app/spark/batch/traffic_prediction.py
+
+- Daily Incident
+spark-submit --master local /opt/airflow/app/spark/batch/daily_incident.py
+
+
+
+
+( Nth much)
+Spark Checks
+
+ls -l /opt/spark
+ls /opt/spark/bin/
