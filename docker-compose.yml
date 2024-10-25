@@ -29,6 +29,7 @@ x-airflow-common: &airflow-common
     AIRFLOW__METRICS__STATSD_PORT: '9125'
     AIRFLOW__METRICS__STATSD_PREFIX: 'airflow'          # Prefix for Airflow metrics
     AIRFLOW__METRICS__STATSD_DISABLED_TAGS: 'job_id,run_id'
+    AIRFLOW_UID : ${AIRFLOW_UID:-50000}
     # Kafka settings
     AIRFLOW_CONN_KAFKA_DEFAULT: kafka://kafka:9092
     KAFKA_BOOTSTRAP_SERVERS: kafka:9092
