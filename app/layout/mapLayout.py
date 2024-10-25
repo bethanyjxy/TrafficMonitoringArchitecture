@@ -131,10 +131,10 @@ def register_callbacks(app):
         if df.empty:
                 return html.P("No data available."), None
 
-
-        # Sort data by 'incident_date' and 'incident_time' in descending order
-        df = df.sort_values(by=['incident_date', 'incident_time'], ascending=[False, False])
-            
+        # Sort data based on the combined column in descending order
+        df['combined'] = df['incident_date'].str.replace('/', '') + df['incident_time'].str.replace(':', '')
+        df = df.sort_values(by='combined', ascending=False)
+        df = df.drop(columns=['combined'])         
         # Create incident table to display recent incidents
         incident_table_component = dash_table.DataTable(
         id='incident-table',
