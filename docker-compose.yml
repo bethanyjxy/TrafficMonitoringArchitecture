@@ -24,7 +24,6 @@ x-airflow-common: &airflow-common
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
     AIRFLOW_CONN_HDFS_DEFAULT: hdfs://namenode:8020
     PYTHONPATH: /opt/airflow/app:/opt/airflow/dags
-    AIRFLOW_UID : 50000
     AIRFLOW__METRICS__STATSD_ON: 'True'
     AIRFLOW__METRICS__STATSD_HOST: 'statsd-exporter'  # Referencing the StatsD exporter container
     AIRFLOW__METRICS__STATSD_PORT: '9125'
