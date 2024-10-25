@@ -55,6 +55,43 @@ x-airflow-common: &airflow-common
       condition: service_started
 
 services:
+  loki:
+  image: grafana/loki:2.8.2
+  container_name: loki
+  networks:
+    - hadoop-network
+  ports:
+    - "3100:3100"  # Expose Loki's HTTP API
+  volumes:
+    - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    - ./loki-config.yml:/etc/loki/loki-config.yml:ro
+  command: -config.file=/etc/loki/loki-config.yml
+  restart: unless-stopped
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    networks:
+      - hadoop-network
+    ports:
+      - "8080:8080"  # Expose cAdvisor's metrics API
+    volumes:
+      - /:/rootfs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    restart: unless-stopped
+
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node_exporter
+    networks:
+      - hadoop-network
+    ports:
+      - "9100:9100"  # Expose Node Exporter's metrics API
+    restart: unless-stopped
+
   statsd-exporter:
     image: prom/statsd-exporter:latest
     hostname: statsd-exporter
