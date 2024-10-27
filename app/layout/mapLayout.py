@@ -57,24 +57,17 @@ layout = html.Div([
         )
     ], justify="center"),  
     
-    # Row for the map and speedband 
+    # Row for the speedband map
     dbc.Row([  
         dbc.Col(
             html.Div([
                 dcc.Graph(id='speedband-map'),
             ]),
-            width=7,  
+            width=12,  
             className="shadow-sm p-3 mb-4 bg-white rounded",
             id="speedband-map-row",
             style={'display': 'none'}, 
-        ),
-        dbc.Col(
-            html.Div(id='polylines-image-container', style={'marginTop': '20px', 'textAlign': 'center'}),
-            width=5, 
-            className="shadow-sm p-3 mb-4 bg-white rounded",
-            id="polylines-image-container-row",
-            style={'display': 'none'}  # Hidden until a marker is clicked
-        ),
+        )
     ], justify="center"),
 
     # Row for the map and image container
@@ -179,7 +172,6 @@ def register_callbacks(app):
             Output('general-map-row', 'style'),  # General map
             Output('speedband-map-row', 'style'),  # Speedband map
             Output('camera-map-row', 'style'),  # Camera map
-            Output('polylines-image-container-row', 'style'),  # Polylines image container
             Output('image-container-row', 'style')  # Image container
         ],
         Input('table-selector', 'value')
@@ -187,192 +179,127 @@ def register_callbacks(app):
     def toggle_maps(selected_table):
         if selected_table == 'speedbands_table':
             # Show the speedband map & polylines image container
-            return {'display': 'none'}, {'display': 'block'}, {'display': 'none'}, {'display': 'block'}, {'display': 'none'}
+            return {'display': 'none'}, {'display': 'block'}, {'display': 'none'}, {'display': 'none'}
         elif selected_table == 'image_table':
             # Show the camera map & image container
-            return {'display': 'none'}, {'display': 'none'}, {'display': 'block'}, {'display': 'none'}, {'display': 'block'}
+            return {'display': 'none'}, {'display': 'none'}, {'display': 'block'}, {'display': 'block'}
         else:
             # Show the general map, hide speedband map, camera map & their containers
-            return {'display': 'block'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}
+            return {'display': 'block'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}
 
-    # Function to display speedband map and polylines
+    # Function to display speedband map 
     @app.callback(
         Output('speedband-map', 'figure', allow_duplicate=True),
-        Output('polylines-image-container', 'children', allow_duplicate=True),
-        Input('location-dropdown', 'value'),  # Changed input ID here
-        Input('speedband-map', 'clickData'),  # Keeps track of clicks on the map
-        prevent_initial_call='initial_duplicate' 
+        Output('location-dropdown', 'value', allow_duplicate=True),  # Update dropdown value
+        Input('location-dropdown', 'value'),  # Location from dropdown
+        Input('speedband-map', 'clickData'),  # Click data from map
+        prevent_initial_call=True
     )
-    def update_speedband_map(selected_location, click_data):  # Updated parameter name here
-        # Fetch speedband data
-        speed_df = fetch_speedband_location("") 
+    def update_speedband_map(selected_location, click_data):
+        # Initialize the figure
+        fig = go.Figure()
+
+        # If click_data is available, use it to update selected_location
+        if click_data:
+            selected_location = click_data['points'][0]['hovertext']
         
-        # Create a Plotly figure for displaying road names
-        fig = px.scatter_mapbox(
-            speed_df, 
-            lat="startlat", 
-            lon="startlon", 
-            hover_name="roadname",  
-            zoom=11, 
-            height=600, 
-            width=1200
-        )
+        # Check if selected_location is None or empty (use dropdown to clear)
+        if not selected_location:
+            # Fetch all road locations if no location is selected
+            speed_df = fetch_speedband_location("") 
 
-        # Set map style and marker behavior on hover
-        fig.update_traces(
-            marker=dict(size=10, sizemode='area'), 
-            selector=dict(mode='markers'),
-            hoverinfo='text',
-            hoverlabel=dict(bgcolor="white", font_size=12),
-            hovertext=speed_df['roadname'],
-        )
+            # Create a Plotly figure for displaying road names
+            fig = px.scatter_mapbox(
+                speed_df, 
+                lat="startlat", 
+                lon="startlon", 
+                hover_name="roadname",  
+                zoom=11, 
+                height=600, 
+                width=1200
+            )
 
-        # Use Mapbox open street map style
-        fig.update_layout(
-            mapbox_style="open-street-map",
-            mapbox=dict(
-                center=dict(lat=1.3521, lon=103.8198),  # Singapore coordinates
-                zoom=11
-            ),
-            margin={"r": 0, "t": 0, "l": 0, "b": 0},  # Remove margins
-        )
-        fig.update_traces(marker=dict(sizemode="diameter", size=12, opacity=0.7))
+            # Set map style and marker behavior on hover
+            fig.update_traces(
+                marker=dict(size=10, sizemode='area', opacity=0.7), 
+                selector=dict(mode='markers'),
+                hoverinfo='text',
+                hoverlabel=dict(bgcolor="white", font_size=12),
+                hovertext=speed_df['roadname'],
+            )
 
-        # Initialize polylines list
-        polylines = []  
-        image_content = html.Div([html.H3("")])  # Default image content when no marker is clicked
+            # Use Mapbox open street map style
+            fig.update_layout(
+                mapbox_style="open-street-map",
+                mapbox=dict(
+                    center=dict(lat=1.3521, lon=103.8198),  # Singapore coordinates
+                    zoom=11
+                ),
+                margin={"r": 0, "t": 0, "l": 0, "b": 0},  # Remove margins
+            )
 
-        # Check if there is click data
-        if click_data is not None:
-            point_number = click_data['points'][0]['pointNumber']
-            selected_polyline = speed_df.iloc[point_number]
-            
-            # Extract relevant details from the selected polyline
-            road_name = selected_polyline['roadname']
+            return fig, None  # Reset dropdown value
 
-            # Process speedbands for polylines based on the selected road
-            for i, row in speed_df.iterrows():
-                start_lat = row['startlat']
-                start_lon = row['startlon']
-                end_lat = row['endlat']
-                end_lon = row['endlon']
+        else:
+            # Fetch speedband data for the selected location
+            speed_df = fetch_speedband_location(selected_location)
+
+            # Check if there is data for the selected location
+            if speed_df.empty:
+                # Handle case where no data is available for the selected location
+                fig.update_layout(
+                    title="No Data Available",
+                    mapbox_style="open-street-map",
+                    mapbox=dict(center=dict(lat=1.3521, lon=103.8198), zoom=11),
+                    height=600,
+                    width=1200,
+                    margin={"r": 0, "t": 0, "l": 0, "b": 0}
+                )
+                return fig, selected_location
+
+            # Prepare polylines for the selected location
+            polylines = []
+            for _, row in speed_df.iterrows():
+                start_lat, start_lon = row['startlat'], row['startlon']
+                end_lat, end_lon = row['endlat'], row['endlon']
                 cog_lvl = row['speedband']
 
+                # Validate coordinates before creating polylines
                 if pd.notna(start_lat) and pd.notna(start_lon) and pd.notna(end_lat) and pd.notna(end_lon):
-                    # Determine polyline color and traffic label based on congestion level
-                    if cog_lvl <= 2:
-                        line_color = 'red'
-                        traffic_label = "Heavy Traffic"
-                    elif 3 <= cog_lvl <= 5:
-                        line_color = 'orange'
-                        traffic_label = "Moderate Traffic"
-                    else:
-                        line_color = 'green'
-                        traffic_label = "Light Traffic"
+                    line_color = 'red' if cog_lvl <= 2 else 'orange' if cog_lvl <= 5 else 'green'
 
-                    # Create polyline segments
                     polylines.append({
                         "lat": [start_lat, end_lat],
                         "lon": [start_lon, end_lon],
                         "color": line_color,
-                        "traffic_label": traffic_label
+                        "traffic_label": f"{'Heavy' if cog_lvl <= 2 else 'Moderate' if cog_lvl <= 5 else 'Light'} Traffic"
                     })
 
-            # Add polylines to the existing figure
+            # Add polylines to the figure
             for polyline in polylines:
                 fig.add_trace(go.Scattermapbox(
                     lat=polyline["lat"],
                     lon=polyline["lon"],
                     mode='lines',
                     line=dict(width=8, color=polyline['color']),
-                    name=polyline['traffic_label'],
                     hoverinfo='text',
                     hovertext=polyline['traffic_label'],
-                    showlegend=False
+                    showlegend=False  # Remove legend for speedbands
                 ))
 
-            # Calculate center coordinates for the map based on polylines
-            if polylines:
-                lat_center = np.mean([p["lat"][0] for p in polylines])
-                lon_center = np.mean([p["lon"][0] for p in polylines])
-                fig.update_layout(mapbox=dict(center=dict(lat=lat_center, lon=lon_center), zoom=16))
-
-        return fig, image_content
-
-        # If a specific location is selected, fetch the location-based polylines
-        speed_df = fetch_speedband_location(selected_location)  
-        polylines = []  # To collect polyline data
-
-        # Loop over each row in the fetched data 
-        for i, row in speed_df.iterrows():
-            start_lat = row['startlat']
-            start_lon = row['startlon']
-            end_lat = row['endlat']
-            end_lon = row['endlon']
-            cog_lvl = row['speedband']  # Get the congestion level
-            
-            # Check for valid coordinates
-            if pd.notna(start_lat) and pd.notna(start_lon) and pd.notna(end_lat) and pd.notna(end_lon):
-                # Determine polyline color and traffic label based on congestion level (speedband)
-                if cog_lvl <= 2:
-                    line_color = 'red'
-                    traffic_label = "Heavy Traffic"
-                elif 3 <= cog_lvl <= 5:
-                    line_color = 'orange'
-                    traffic_label = "Moderate Traffic"
-                else:
-                    line_color = 'green'
-                    traffic_label = "Light Traffic"
-
-                # Create polyline segments
-                polylines.append({
-                    "lat": [start_lat, end_lat],
-                    "lon": [start_lon, end_lon],
-                    "color": line_color,
-                    "traffic_label": traffic_label  # Label for the traffic condition
-                })
-        if not polylines:
-            # If no polylines were created, handle accordingly
-            return html.P("No Speedband Data Available for this Location")
-
-        # Create a Plotly figure for displaying polylines
-        fig = go.Figure()
-
-        # Add polylines to the map
-        for polyline in polylines:
-            fig.add_trace(go.Scattermapbox(
-                lat=polyline["lat"],
-                lon=polyline["lon"],
-                mode='lines',
-                line=dict(width=8, color=polyline['color']),  # Line color based on congestion level
-                name=polyline['traffic_label'],  # Dynamic label based on traffic condition
-                hoverinfo='text',  # Show custom hover text
-                hovertext=polyline['traffic_label'],  # Full display of traffic label
-                showlegend=False
-            ))
-
-        # Set map zoom level and center
-        zoom_level = 16 if selected_location else 13  # Higher zoom for specific location, lower for overall map
-
-        if polylines:
+            # Center the map based on the polyline locations
             lat_center = np.mean([p["lat"][0] for p in polylines])
             lon_center = np.mean([p["lon"][0] for p in polylines])
-        else:
-            lat_center, lon_center = 0, 0  # Fallback center if no polylines exist
 
-        fig.update_layout(
-            mapbox_style="open-street-map",
-            mapbox=dict(
-                center=dict(lat=lat_center, lon=lon_center),
-                zoom=zoom_level,  # Set the zoom level based on location selection
-            ),
-            height=600,
-            width=1200,
-            margin={"r": 0, "t": 0, "l": 0, "b": 0},  # Remove margins
-        )
+            fig.update_layout(
+                mapbox_style="open-street-map",
+                mapbox=dict(center=dict(lat=lat_center, lon=lon_center), zoom=16),
+                height=600,
+                width=1200,
+                margin={"r": 0, "t": 0, "l": 0, "b": 0}
+            )
 
-        return dcc.Graph(figure=fig) 
-
+            return fig, selected_location
 
     # Function to display Camera Image Map
     @app.callback(
