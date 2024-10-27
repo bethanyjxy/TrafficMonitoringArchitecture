@@ -388,6 +388,11 @@ def register_callbacks(app):
             "Unknown": "gray"
         }
 
+        # Create an ordered categorical type for congestion levels
+        congestion_order = ["Light congestion", "Light to moderate congestion", "Moderate congestion", "Heavy congestion", "Unknown"]
+        df['speedband_description'] = pd.Categorical(df['speedband_description'], categories=congestion_order, ordered=True)
+        df = df.sort_values('speedband_description')  
+
         # Create a new column for colors based on congestion levels
         df['marker_color'] = df['speedband_description'].map(color_map)
 
