@@ -41,6 +41,7 @@ layout = html.Div([
                 placeholder="Select a location",
                 options=[],  # Populated dynamically
                 value=None,
+                clearable=True,
             ),
             width=3
         )
@@ -124,15 +125,20 @@ def register_callbacks(app):
         
     # Update Location dropdown selection    
     @app.callback(
-    Output('location-dropdown', 'options'),
-    Output('location-dropdown', 'value'), 
-    Input('location-row', 'id')  
-        )
-    def update_location_options(_):
-        option = fetch_unique_location()
-        default_value = option[0] if option else None
-        return option, default_value
-
+        Output('location-dropdown', 'options'),
+        Output('location-dropdown', 'value'),
+        Input('table-selector', 'value'),
+        Input('speedband-map', 'clickData')
+    )
+    def update_location_options(selected_table, click_data):
+        if selected_table == 'speedbands_table':
+            options = fetch_unique_location()
+            if click_data:
+                selected_location = click_data['points'][0]['hovertext']
+                return options, selected_location
+            return options, options[0] if options else None
+        return [], None
+        
     # Update Notification Table
     @app.callback(
         Output('incident-table', 'children'),
@@ -190,63 +196,19 @@ def register_callbacks(app):
     # Function to display speedband map 
     @app.callback(
         Output('speedband-map', 'figure', allow_duplicate=True),
-        Output('location-dropdown', 'value', allow_duplicate=True),  # Update dropdown value
-        Input('location-dropdown', 'value'),  # Location from dropdown
-        Input('speedband-map', 'clickData'),  # Click data from map
+        Input('location-dropdown', 'value'),  
+        Input('speedband-map', 'clickData'), 
         prevent_initial_call=True
     )
     def update_speedband_map(selected_location, click_data):
         # Initialize the figure
         fig = go.Figure()
 
-        # If click_data is available, use it to update selected_location
-        if click_data:
-            selected_location = click_data['points'][0]['hovertext']
-        
-        # Check if selected_location is None or empty (use dropdown to clear)
-        if not selected_location:
-            # Fetch all road locations if no location is selected
-            speed_df = fetch_speedband_location("") 
-
-            # Create a Plotly figure for displaying road names
-            fig = px.scatter_mapbox(
-                speed_df, 
-                lat="startlat", 
-                lon="startlon", 
-                hover_name="roadname",  
-                zoom=11, 
-                height=600, 
-                width=1200
-            )
-
-            # Set map style and marker behavior on hover
-            fig.update_traces(
-                marker=dict(size=10, sizemode='area', opacity=0.7), 
-                selector=dict(mode='markers'),
-                hoverinfo='text',
-                hoverlabel=dict(bgcolor="white", font_size=12),
-                hovertext=speed_df['roadname'],
-            )
-
-            # Use Mapbox open street map style
-            fig.update_layout(
-                mapbox_style="open-street-map",
-                mapbox=dict(
-                    center=dict(lat=1.3521, lon=103.8198),  # Singapore coordinates
-                    zoom=11
-                ),
-                margin={"r": 0, "t": 0, "l": 0, "b": 0},  # Remove margins
-            )
-
-            return fig, None  # Reset dropdown value
-
-        else:
-            # Fetch speedband data for the selected location
+        # If the dropdown has a selection, prioritize that
+        if selected_location:
             speed_df = fetch_speedband_location(selected_location)
 
-            # Check if there is data for the selected location
             if speed_df.empty:
-                # Handle case where no data is available for the selected location
                 fig.update_layout(
                     title="No Data Available",
                     mapbox_style="open-street-map",
@@ -255,7 +217,7 @@ def register_callbacks(app):
                     width=1200,
                     margin={"r": 0, "t": 0, "l": 0, "b": 0}
                 )
-                return fig, selected_location
+                return fig
 
             # Prepare polylines for the selected location
             polylines = []
@@ -264,7 +226,6 @@ def register_callbacks(app):
                 end_lat, end_lon = row['endlat'], row['endlon']
                 cog_lvl = row['speedband']
 
-                # Validate coordinates before creating polylines
                 if pd.notna(start_lat) and pd.notna(start_lon) and pd.notna(end_lat) and pd.notna(end_lon):
                     line_color = 'red' if cog_lvl <= 2 else 'orange' if cog_lvl <= 5 else 'green'
 
@@ -284,10 +245,10 @@ def register_callbacks(app):
                     line=dict(width=8, color=polyline['color']),
                     hoverinfo='text',
                     hovertext=polyline['traffic_label'],
-                    showlegend=False  # Remove legend for speedbands
+                    showlegend=False
                 ))
 
-            # Center the map based on the polyline locations
+            # Center the map based on the selected polylines
             lat_center = np.mean([p["lat"][0] for p in polylines])
             lon_center = np.mean([p["lon"][0] for p in polylines])
 
@@ -299,7 +260,86 @@ def register_callbacks(app):
                 margin={"r": 0, "t": 0, "l": 0, "b": 0}
             )
 
-            return fig, selected_location
+            return fig 
+
+        # If clickData is present
+        if click_data:
+            # Check if a polyline was clicked
+            if 'points' in click_data:
+                # Reset to the main view when clicking on traffic flow
+                selected_location = None
+
+                # Fetch data for all locations to reset the map
+                speed_df = fetch_speedband_location("") 
+
+                # Create a scatter mapbox for all locations
+                fig = px.scatter_mapbox(
+                    speed_df, 
+                    lat="startlat", 
+                    lon="startlon", 
+                    hover_name="roadname",  
+                    zoom=11, 
+                    height=600, 
+                    width=1200
+                )
+
+                fig.update_traces(
+                    marker=dict(size=10, sizemode='area', opacity=0.7), 
+                    selector=dict(mode='markers'),
+                    hoverinfo='text',
+                    hoverlabel=dict(bgcolor="white", font_size=12),
+                    hovertext=speed_df['roadname'],
+                )
+
+                fig.update_layout(
+                    mapbox_style="open-street-map",
+                    mapbox=dict(
+                        center=dict(lat=1.3521, lon=103.8198),  # Center coordinates for Singapore
+                        zoom=11
+                    ),
+                    margin={"r": 0, "t": 0, "l": 0, "b": 0},
+                )
+
+                return fig  # Return the figure for the main map
+        
+        # Handle clearing of the dropdown or when it is empty
+        if selected_location is None or selected_location == '':
+            speed_df = fetch_speedband_location("") 
+
+            # Create a scatter mapbox for all locations
+            fig = px.scatter_mapbox(
+                speed_df, 
+                lat="startlat", 
+                lon="startlon", 
+                hover_name="roadname",  
+                zoom=11, 
+                height=600, 
+                width=1200
+            )
+
+            fig.update_traces(
+                marker=dict(size=10, sizemode='area', opacity=0.7), 
+                selector=dict(mode='markers'),
+                hoverinfo='text',
+                hoverlabel=dict(bgcolor="white", font_size=12),
+                hovertext=speed_df['roadname'],
+            )
+
+            fig.update_layout(
+                mapbox_style="open-street-map",
+                mapbox=dict(
+                    center=dict(lat=1.3521, lon=103.8198),  # Center coordinates for Singapore
+                    zoom=11
+                ),
+                margin={"r": 0, "t": 0, "l": 0, "b": 0},
+            )
+
+            return fig  # Return the figure for the main map
+
+
+        # Return an empty figure if nothing matches
+        return fig, None
+            
 
     # Function to display Camera Image Map
     @app.callback(
