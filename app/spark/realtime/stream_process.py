@@ -72,8 +72,7 @@ def process_stream(kafka_stream):
         .withColumn("StartLon", col("StartLon").cast("double")) \
         .withColumn("StartLat", col("StartLat").cast("double")) \
         .withColumn("EndLon", col("EndLon").cast("double")) \
-        .withColumn("EndLat", col("EndLat").cast("double"))
-        
+        .withColumn("EndLat", col("EndLat").cast("double"))    
         
     images_schema = StructType() \
         .add("camera_id", StringType()) \

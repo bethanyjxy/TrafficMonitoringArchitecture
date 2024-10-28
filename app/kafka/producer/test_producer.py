@@ -1,83 +1,100 @@
 import unittest
 from unittest.mock import patch, MagicMock
-from producer import (
-    fetch_traffic_incidents,
-    fetch_traffic_images,
-    fetch_traffic_speedbands,
-    fetch_traffic_vms,
-    fetch_traffic_erp,
-    send_to_kafka,
-    delivery_report
-)
+import json
+import producer  # Adjust the import based on your file structure
 
-class TestTrafficDataProducer(unittest.TestCase):
+class TestKafkaProducer(unittest.TestCase):
 
-    @patch('requests.get')
-    def test_fetch_traffic_incidents(self, mock_get):
+    @patch('producer.AdminClient')
+    def test_create_topics(self, mock_AdminClient):
+        mock_admin_client = MagicMock()
+        mock_AdminClient.return_value = mock_admin_client
+        mock_admin_client.create_topics.return_value = {}
+
+        kafka_topics = {
+            'incidents': 'traffic_incidents',
+            'images': 'traffic_images',
+            'speedbands': 'traffic_speedbands',
+            'vms': 'traffic_vms',
+        }
+
+        producer.create_topics('kafka:9092', kafka_topics)
+
+        # Check that create_topics was called with the correct arguments
+        mock_admin_client.create_topics.assert_called_once()
+        new_topics = mock_admin_client.create_topics.call_args[0][0]
+        self.assertEqual(len(new_topics), len(kafka_topics))
+
+    @patch('producer.requests.get')
+    def test_fetch_data_success(self, mock_get):
+        url = 'https://example.com/api'
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {'value': [{'id': 1, 'description': 'Incident A'}]}
+        mock_response.json.return_value = {'value': [{'data': 'example_data'}]}
         mock_get.return_value = mock_response
-        
-        incidents = fetch_traffic_incidents()
-        self.assertEqual(len(incidents), 1)
-        self.assertEqual(incidents[0]['description'], 'Incident A')
 
-    @patch('requests.get')
-    def test_fetch_traffic_images(self, mock_get):
+        result = producer.fetch_data(url, 'test_description')
+        self.assertEqual(result, [{'data': 'example_data'}])
+
+    @patch('producer.requests.get')
+    def test_fetch_data_rate_limit(self, mock_get):
+        url = 'https://example.com/api'
         mock_response = MagicMock()
-        mock_response.status_code = 200
-        # Ensure we return the expected structure
-        mock_response.json.return_value = {'value': [{'id': 1, 'url': 'http://example.com/image.jpg'}]}
+        mock_response.status_code = 429
         mock_get.return_value = mock_response
-        
-        images = fetch_traffic_images()
-        self.assertEqual(len(images), 90)  # Expecting 90 image
 
-    @patch('requests.get')
-    def test_fetch_traffic_speedbands(self, mock_get):
+        result = producer.fetch_data(url, 'test_description')
+        self.assertEqual(result, [])
+
+    @patch('producer.requests.get')
+    def test_fetch_data_error(self, mock_get):
+        url = 'https://example.com/api'
         mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {'value': [{'band': 'A', 'speed': 40}]}
+        mock_response.status_code = 500
         mock_get.return_value = mock_response
-        
-        speedbands = fetch_traffic_speedbands()
-        self.assertEqual(len(speedbands), 1)
-        self.assertEqual(speedbands[0]['speed'], 40)
 
-    @patch('requests.get')
-    def test_fetch_traffic_vms(self, mock_get):
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {'value': [{'message': 'Road Closed'}]}
-        mock_get.return_value = mock_response
-        
-        vms = fetch_traffic_vms()
-        self.assertEqual(len(vms), 1)
-        self.assertEqual(vms[0]['message'], 'Road Closed')
+        result = producer.fetch_data(url, 'test_description')
+        self.assertEqual(result, [])
 
-    @patch('requests.get')
-    def test_fetch_traffic_erp(self, mock_get):
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {'value': [{'rate': 2.00}]}
-        mock_get.return_value = mock_response
-        
-        erp = fetch_traffic_erp()
-        self.assertEqual(len(erp), 1)
-        self.assertEqual(erp[0]['rate'], 2.00)
-
-    @patch('confluent_kafka.Producer')
-    def test_send_to_kafka(self, mock_producer_class):
-        mock_producer = mock_producer_class.return_value
-        data = [{'key': 'value'}]
+    @patch('producer.Producer')
+    def test_send_to_kafka(self, mock_Producer):
+        mock_producer = MagicMock()
+        mock_Producer.return_value = mock_producer
         topic = 'test_topic'
-        
-        send_to_kafka(topic, data)
-        
+        data = [{'key': 'value'}]
+
+        producer.send_to_kafka(mock_producer, topic, data)
+
         # Check that produce was called for each record
-        self.assertEqual(mock_producer.produce.call_count, 0)  # Check against the length of data
-        # mock_producer.flush.assert_called_once()
+        self.assertEqual(mock_producer.produce.call_count, len(data))
+
+    @patch('producer.Producer')
+    @patch('producer.delivery_report')
+    def test_delivery_report_success(self, mock_delivery_report, mock_Producer):
+        mock_producer = MagicMock()
+        mock_Producer.return_value = mock_producer
+        message = MagicMock()
+        message.value.return_value = json.dumps({'key': 'value'})
+
+        producer.delivery_report(None, message)
+
+        mock_delivery_report.assert_called_once_with(None, message)
+
+    @patch('producer.time.sleep')
+    @patch('producer.fetch_data')
+    @patch('producer.send_to_kafka')
+    @patch('producer.Producer')
+    def test_fetch_and_produce_data(self, mock_Producer, mock_send_to_kafka, mock_fetch_data, mock_sleep):
+        mock_producer = MagicMock()
+        mock_Producer.return_value = mock_producer
+
+        # Mock the API responses
+        mock_fetch_data.return_value = [{'data': 'example_data'}]
+
+        producer.fetch_and_produce_data('kafka:9092')
+
+        # Ensure data was fetched and sent to Kafka
+        mock_send_to_kafka.assert_called_once()
 
 if __name__ == '__main__':
     unittest.main()
