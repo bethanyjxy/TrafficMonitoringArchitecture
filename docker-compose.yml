@@ -29,6 +29,7 @@ x-airflow-common: &airflow-common
     AIRFLOW__METRICS__STATSD_PORT: '9125'
     AIRFLOW__METRICS__STATSD_PREFIX: 'airflow'          # Prefix for Airflow metrics
     AIRFLOW__METRICS__STATSD_DISABLED_TAGS: 'job_id,run_id'
+    AIRFLOW_UID : ${AIRFLOW_UID:-50000}
     # Kafka settings
     AIRFLOW_CONN_KAFKA_DEFAULT: kafka://kafka:9092
     KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -55,18 +56,17 @@ x-airflow-common: &airflow-common
 
 services:
   loki:
-  image: grafana/loki:2.8.2
-  container_name: loki
-  networks:
-    - hadoop-network
-  ports:
-    - "3100:3100"  # Expose Loki's HTTP API
-  volumes:
-    - /var/lib/docker/containers:/var/lib/docker/containers:ro
-    - /var/run/docker.sock:/var/run/docker.sock:ro
-    - ./loki-config.yml:/etc/loki/loki-config.yml:ro
-  command: -config.file=/etc/loki/loki-config.yml
-  restart: unless-stopped
+    image: grafana/loki:2.8.2  # Ensure the image is correctly defined
+    container_name: loki
+    networks:
+      - hadoop-network
+    ports:
+      - "3100:3100"
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./loki-config.yml:/etc/loki/loki-config.yml:ro
+    restart: unless-stopped
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
@@ -74,7 +74,7 @@ services:
     networks:
       - hadoop-network
     ports:
-      - "8080:8080"  # Expose cAdvisor's metrics API
+      - "8081:8080"  # Expose cAdvisor's metrics API
     volumes:
       - /:/rootfs:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -250,7 +250,7 @@ services:
       dockerfile: Dockerfile
     container_name: flaskapp
     ports:
-      - "80:5000"
+      - "5000:5000"
     volumes:
       - ./app:/app
     environment:
@@ -281,7 +281,7 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: traffic_db
+      POSTGRES_MULTIPLE_DATABASES: "traffic_db,airflow_db"
       POSTGRES_USER: traffic_admin
       POSTGRES_PASSWORD: traffic_pass
     volumes:
@@ -308,7 +308,7 @@ services:
       - JUTE_MAXBUFFER=4194304
 
     ports:
-      - 2181:2181
+      - "2181:2181"
 
   kafka:
     image: bitnami/kafka:latest
