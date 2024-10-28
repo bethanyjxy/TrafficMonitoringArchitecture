@@ -41,6 +41,7 @@ layout = html.Div([
                 placeholder="Select a location",
                 options=[],  # Populated dynamically
                 value=None,
+                clearable=True,
             ),
             width=3
         )
@@ -53,9 +54,23 @@ layout = html.Div([
             width=12,  
             className="shadow-sm p-3 mb-4 bg-white rounded" ,
             id = "general-map-row",
+            style={'display':'block'},
         )
     ], justify="center"),  
     
+    # Row for the speedband map
+    dbc.Row([  
+        dbc.Col(
+            html.Div([
+                dcc.Graph(id='speedband-map'),
+            ]),
+            width=12,  
+            className="shadow-sm p-3 mb-4 bg-white rounded",
+            id="speedband-map-row",
+            style={'display': 'none'}, 
+        )
+    ], justify="center"),
+
     # Row for the map and image container
     dbc.Row([  
         dbc.Col(
@@ -110,15 +125,20 @@ def register_callbacks(app):
         
     # Update Location dropdown selection    
     @app.callback(
-    Output('location-dropdown', 'options'),
-    Output('location-dropdown', 'value'), 
-    Input('location-row', 'id')  
-        )
-    def update_location_options(_):
-        option = fetch_unique_location()
-        default_value = option[0] if option else None
-        return option, default_value
-
+        Output('location-dropdown', 'options'),
+        Output('location-dropdown', 'value'),
+        Input('table-selector', 'value'),
+        Input('speedband-map', 'clickData')
+    )
+    def update_location_options(selected_table, click_data):
+        if selected_table == 'speedbands_table':
+            options = fetch_unique_location()
+            if click_data:
+                selected_location = click_data['points'][0]['hovertext']
+                return options, selected_location
+            return options, options[0] if options else None
+        return [], None
+        
     # Update Notification Table
     @app.callback(
         Output('incident-table', 'children'),
@@ -151,24 +171,176 @@ def register_callbacks(app):
         incident_table_component.data = df[["incident_date", "incident_time", "incident_message"]].to_dict('records')
 
         return incident_table_component
-    
-    # Function to change from general map to Camera Map 
+
+    # Function to change from general map to Traffic flow Map or Camera Map
     @app.callback(
         [
-            Output('general-map-row', 'style'),     # Hide the general map
-            Output('camera-map-row', 'style'),      # Show the camera map
-            Output('image-container-row', 'style')  # Show the image container
+            Output('general-map-row', 'style'),  # General map
+            Output('speedband-map-row', 'style'),  # Speedband map
+            Output('camera-map-row', 'style'),  # Camera map
+            Output('image-container-row', 'style')  # Image container
         ],
-        Input('table-selector', 'value')            # Get the selected table value
-    )
+        Input('table-selector', 'value')
+        )
     def toggle_maps(selected_table):
-        if selected_table == 'image_table':
-            #Show the camera map & image container
-            return {'display': 'none'}, {'display': 'block'}, {'display': 'block'}
+        if selected_table == 'speedbands_table':
+            # Show the speedband map & polylines image container
+            return {'display': 'none'}, {'display': 'block'}, {'display': 'none'}, {'display': 'none'}
+        elif selected_table == 'image_table':
+            # Show the camera map & image container
+            return {'display': 'none'}, {'display': 'none'}, {'display': 'block'}, {'display': 'block'}
         else:
-            #Show the general map , hide the camera map & image container
-            return {'display': 'block'}, {'display': 'none'}, {'display': 'none'}
+            # Show the general map, hide speedband map, camera map & their containers
+            return {'display': 'block'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}
+
+    # Function to display speedband map 
+    @app.callback(
+        Output('speedband-map', 'figure', allow_duplicate=True),
+        Input('location-dropdown', 'value'),  
+        Input('speedband-map', 'clickData'), 
+        prevent_initial_call=True
+    )
+    def update_speedband_map(selected_location, click_data):
+        # Initialize the figure
+        fig = go.Figure()
+
+        # If the dropdown has a selection, prioritize that
+        if selected_location:
+            speed_df = fetch_speedband_location(selected_location)
+
+            if speed_df.empty:
+                fig.update_layout(
+                    title="No Data Available",
+                    mapbox_style="open-street-map",
+                    mapbox=dict(center=dict(lat=1.3521, lon=103.8198), zoom=11),
+                    height=600,
+                    width=1200,
+                    margin={"r": 0, "t": 0, "l": 0, "b": 0}
+                )
+                return fig
+
+            # Prepare polylines for the selected location
+            polylines = []
+            for _, row in speed_df.iterrows():
+                start_lat, start_lon = row['startlat'], row['startlon']
+                end_lat, end_lon = row['endlat'], row['endlon']
+                cog_lvl = row['speedband']
+
+                if pd.notna(start_lat) and pd.notna(start_lon) and pd.notna(end_lat) and pd.notna(end_lon):
+                    line_color = 'red' if cog_lvl <= 2 else 'orange' if cog_lvl <= 5 else 'green'
+
+                    polylines.append({
+                        "lat": [start_lat, end_lat],
+                        "lon": [start_lon, end_lon],
+                        "color": line_color,
+                        "traffic_label": f"{'Heavy' if cog_lvl <= 2 else 'Moderate' if cog_lvl <= 5 else 'Light'} Traffic"
+                    })
+
+            # Add polylines to the figure
+            for polyline in polylines:
+                fig.add_trace(go.Scattermapbox(
+                    lat=polyline["lat"],
+                    lon=polyline["lon"],
+                    mode='lines',
+                    line=dict(width=8, color=polyline['color']),
+                    hoverinfo='text',
+                    hovertext=polyline['traffic_label'],
+                    showlegend=False
+                ))
+
+            # Center the map based on the selected polylines
+            lat_center = np.mean([p["lat"][0] for p in polylines])
+            lon_center = np.mean([p["lon"][0] for p in polylines])
+
+            fig.update_layout(
+                mapbox_style="open-street-map",
+                mapbox=dict(center=dict(lat=lat_center, lon=lon_center), zoom=16),
+                height=600,
+                width=1200,
+                margin={"r": 0, "t": 0, "l": 0, "b": 0}
+            )
+
+            return fig 
+
+        # If clickData is present
+        if click_data:
+            # Check if a polyline was clicked
+            if 'points' in click_data:
+                # Reset to the main view when clicking on traffic flow
+                selected_location = None
+
+                # Fetch data for all locations to reset the map
+                speed_df = fetch_speedband_location("") 
+
+                # Create a scatter mapbox for all locations
+                fig = px.scatter_mapbox(
+                    speed_df, 
+                    lat="startlat", 
+                    lon="startlon", 
+                    hover_name="roadname",  
+                    zoom=11, 
+                    height=600, 
+                    width=1200
+                )
+
+                fig.update_traces(
+                    marker=dict(size=10, sizemode='area', opacity=0.7), 
+                    selector=dict(mode='markers'),
+                    hoverinfo='text',
+                    hoverlabel=dict(bgcolor="white", font_size=12),
+                    hovertext=speed_df['roadname'],
+                )
+
+                fig.update_layout(
+                    mapbox_style="open-street-map",
+                    mapbox=dict(
+                        center=dict(lat=1.3521, lon=103.8198),  # Center coordinates for Singapore
+                        zoom=11
+                    ),
+                    margin={"r": 0, "t": 0, "l": 0, "b": 0},
+                )
+
+                return fig  # Return the figure for the main map
         
+        # Handle clearing of the dropdown or when it is empty
+        if selected_location is None or selected_location == '':
+            speed_df = fetch_speedband_location("") 
+
+            # Create a scatter mapbox for all locations
+            fig = px.scatter_mapbox(
+                speed_df, 
+                lat="startlat", 
+                lon="startlon", 
+                hover_name="roadname",  
+                zoom=11, 
+                height=600, 
+                width=1200
+            )
+
+            fig.update_traces(
+                marker=dict(size=10, sizemode='area', opacity=0.7), 
+                selector=dict(mode='markers'),
+                hoverinfo='text',
+                hoverlabel=dict(bgcolor="white", font_size=12),
+                hovertext=speed_df['roadname'],
+            )
+
+            fig.update_layout(
+                mapbox_style="open-street-map",
+                mapbox=dict(
+                    center=dict(lat=1.3521, lon=103.8198),  # Center coordinates for Singapore
+                    zoom=11
+                ),
+                margin={"r": 0, "t": 0, "l": 0, "b": 0},
+            )
+
+            return fig  # Return the figure for the main map
+
+
+        # Return an empty figure if nothing matches
+        return fig, None
+            
+
     # Function to display Camera Image Map
     @app.callback(
         [Output('camera-map', 'figure'),        # Update the figure of the graph
@@ -289,121 +461,7 @@ def register_callbacks(app):
             fig.update_traces(marker=dict(sizemode="diameter", size=12, opacity=0.7))
 
             return dcc.Graph(figure=fig), None
-        
-        elif selected_table == 'speedbands_table':
-            if location is None:
-                # Fetch Road name if no location is selected
-                speed_df = fetch_speedband_location("") 
-
-                # Create a Plotly figure for displaying road names
-                fig = px.scatter_mapbox(
-                    speed_df, 
-                    lat="startlat", 
-                    lon="startlon", 
-                    hover_name="roadname",  
-                    zoom=11, 
-                    height=600, 
-                    width=1200
-                )
-
-                # Set map style and marker behavior on hover
-                fig.update_traces(
-                    marker=dict(size=10, sizemode='area'), 
-                    selector=dict(mode='markers'),
-                    hoverinfo='text',
-                    hoverlabel=dict(bgcolor="white", font_size=12),
-                    hovertext=speed_df['roadname'],
-                )
-
-                # Use Mapbox open street map style
-                fig.update_layout(
-                    mapbox_style="open-street-map",
-                    mapbox=dict(
-                        center=dict(lat=1.3521, lon=103.8198),  # Singapore coordinates
-                        zoom=11
-                    ),
-                    margin={"r": 0, "t": 0, "l": 0, "b": 0},  # Remove margins
-                )
-
-                fig.update_traces(marker=dict(sizemode="diameter", size=12, opacity=0.7))
-
-                return dcc.Graph(figure=fig), None
-
-            else:
-                # If a specific location is selected, fetch the location-based polylines
-                speed_df = fetch_speedband_location(location)  
-                polylines = []  # To collect polyline data
-
-                # Loop over each row in the fetched data
-                for i, row in speed_df.iterrows():
-                    start_lat = row['startlat']
-                    start_lon = row['startlon']
-                    end_lat = row['endlat']
-                    end_lon = row['endlon']
-                    cog_lvl = row['speedband']  # Get the congestion level
-
-                    # Check for valid coordinates
-                    if pd.notna(start_lat) and pd.notna(start_lon) and pd.notna(end_lat) and pd.notna(end_lon):
-                        # Determine polyline color and traffic label based on congestion level (speedband)
-                        if cog_lvl <= 2:
-                            line_color = 'red'
-                            traffic_label = "Heavy Traffic"
-                        elif 3 <= cog_lvl <= 5:
-                            line_color = 'orange'
-                            traffic_label = "Moderate Traffic"
-                        else:
-                            line_color = 'green'
-                            traffic_label = "Light Traffic"
-
-                        # Create polyline segments
-                        polylines.append({
-                            "lat": [start_lat, end_lat],
-                            "lon": [start_lon, end_lon],
-                            "color": line_color,
-                            "traffic_label": traffic_label  # Label for the traffic condition
-                        })
-
-                if not polylines:
-                    # If no polylines were created, handle accordingly
-                    return html.P("No Speedband Data Available for this Location")
-
-                # Create a Plotly figure for displaying polylines
-                fig = go.Figure()
-
-                # Add polylines to the map
-                for polyline in polylines:
-                    fig.add_trace(go.Scattermapbox(
-                        lat=polyline["lat"],
-                        lon=polyline["lon"],
-                        mode='lines',
-                        line=dict(width=8, color=polyline['color']),  # Line color based on congestion level
-                        name=polyline['traffic_label'],  # Dynamic label based on traffic condition
-                        hoverinfo='text',  # Show custom hover text
-                        hovertext=polyline['traffic_label'],  # Full display of traffic label
-                        showlegend=False
-                    ))
-
-                # Set map zoom level and center
-                zoom_level = 16 if location else 13  # Higher zoom for specific location, lower for overall map
-
-                if polylines:
-                    lat_center = np.mean([p["lat"][0] for p in polylines])
-                    lon_center = np.mean([p["lon"][0] for p in polylines])
-                else:
-                    lat_center, lon_center = 0, 0  # Fallback center if no polylines exist
-
-                fig.update_layout(
-                    mapbox_style="open-street-map",
-                    mapbox=dict(
-                        center=dict(lat=lat_center, lon=lon_center),
-                        zoom=zoom_level,  # Set the zoom level based on location selection
-                    ),
-                    height=600,
-                    width=1200,
-                    margin={"r": 0, "t": 0, "l": 0, "b": 0},  # Remove margins
-                )
-
-                return dcc.Graph(figure=fig) 
+            
             
 # Define the mapping of CameraID to Location
 camera_location_mapping = {
