@@ -214,8 +214,18 @@ services:
     command:
       - -c
       - |
-        mkdir -p /sources/logs /sources/dags /sources/plugins
-        chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins}
+	mkdir -p /opt/airflow/logs /opt/airflow/dags /opt/airflow/plugins /opt/airflow/config
+
+        # Set ownership with AIRFLOW_UID for all directories
+        chown -R "${AIRFLOW_UID:-50000}:0" /opt/airflow/{logs,dags,plugins,config}
+
+        # Ensure proper permissions (read/write)
+        chmod -R 775 /opt/airflow/{logs,dags,plugins,config}
+
+        # Verify ownership and permissions (optional debugging)
+        ls -ld /opt/airflow/{logs,dags,plugins,config}
+
+        # Run Airflow version to verify initialization
         exec /entrypoint airflow version
     environment:
       <<: *airflow-common-env
