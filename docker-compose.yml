@@ -300,7 +300,6 @@ services:
   zookeeper:
     image: bitnami/zookeeper:latest
     container_name: zookeeper
-    hostname: 'zookeeper'
     networks:
       - hadoop-network
     environment:
@@ -314,7 +313,6 @@ services:
   kafka:
     image: bitnami/kafka:latest
     container_name: kafka
-    hostname: 'kafka'
     networks:
       - hadoop-network
     ports:
