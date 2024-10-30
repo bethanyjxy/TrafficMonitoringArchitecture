@@ -7,17 +7,21 @@ import subprocess
 def run_spark_streaming():
     """Run the Spark streaming job using subprocess."""
     try:
-        subprocess.run(
+        result = subprocess.run(
             [
                 "spark-submit",
                 "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1",
                 "--jars", "/opt/spark/jars/postgresql-42.2.18.jar",
                 "/opt/airflow/app/spark/realtime/postgres_stream.py"
             ],
+            stdout=subprocess.PIPE,  # Capture stdout
+            stderr=subprocess.PIPE,  # Capture stderr
+            text=True,  # Ensure output is in string format
             check=True
         )
+        print(result.stdout)  # Log stdout
     except subprocess.CalledProcessError as e:
-        print(f"Spark job failed with exit code {e.returncode}: {e.output}")
+        print(f"Spark job failed with exit code {e.returncode}: {e.stderr}")
         raise
 
 # Define default arguments
