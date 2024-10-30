@@ -1,38 +1,21 @@
 from airflow import DAG
-from airflow.operators.python import PythonOperator
+from airflow.operators.bash import BashOperator
+ 
 import pendulum
 from datetime import timedelta
-import subprocess
 
-def run_spark_streaming():
-    """Run the Spark streaming job using subprocess."""
-    try:
-        result = subprocess.run(
-            [
-                "spark-submit",
-                "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1",
-                "--jars", "/opt/spark/jars/postgresql-42.2.18.jar",
-                "/opt/airflow/app/spark/realtime/postgres_stream.py"
-            ],
-            stdout=subprocess.PIPE,  # Capture stdout
-            stderr=subprocess.PIPE,  # Capture stderr
-            text=True,  # Ensure output is in string format
-            check=True
-        )
-        print(result.stdout)  # Log stdout
-    except subprocess.CalledProcessError as e:
-        print(f"Spark job failed with exit code {e.returncode}: {e.stderr}")
-        raise
 
-# Define default arguments
+# Define default arguments for the DAG
+
 default_args = {
     'owner': 'airflow',
-    'start_date': pendulum.today('UTC').add(seconds=4),
+    'start_date':  pendulum.today('UTC').add(seconds=4),
+
     'depends_on_past': False,
     'email_on_failure': False,
     'email_on_retry': False,
-    'retries': 1,
-    'retry_delay': timedelta(minutes=5),
+    'retries': 1,  # Retry once if the task fails
+
 }
 
 # Initialize the DAG
@@ -42,14 +25,23 @@ dag = DAG(
     max_active_runs=1,  # Only one active run at a time
     concurrency=1,  # Ensure one task runs at a time
     description='Run Spark streaming job to process Kafka data and store in PostgreSQL',
+
     schedule_interval='@once',  # Run once and keep streaming
     catchup=False,
 )
 
-# Use PythonOperator to run the Spark streaming job
-run_spark_postgres_stream = PythonOperator(
+# Task to run the Spark streaming job
+run_spark_postgres_stream = BashOperator(
+
     task_id='run_spark_postgres_stream',
-    python_callable=run_spark_streaming,
-    execution_timeout=timedelta(hours=2),
+    bash_command=''' 
+        spark-submit \
+        --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1 \
+        --jars /opt/spark/jars/postgresql-42.2.18.jar \
+        /opt/airflow/app/spark/realtime/postgres_stream.py \
+        2>&1
+    ''',
+    execution_timeout=timedelta(days=7),  # Adjust based on expected runtime of the Spark job
+
     dag=dag,
 )
