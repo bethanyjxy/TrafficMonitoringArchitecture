@@ -26,9 +26,9 @@ x-airflow-common: &airflow-common
     PYTHONPATH: /opt/airflow/app:/opt/airflow/dags
 
     AIRFLOW__METRICS__STATSD_ON: 'True'
-    AIRFLOW__METRICS__STATSD_HOST: 'statsd-exporter'  # Referencing the StatsD exporter container
+    AIRFLOW__METRICS__STATSD_HOST: 'statsd-exporter' # Referencing the StatsD exporter container
     AIRFLOW__METRICS__STATSD_PORT: '9125'
-    AIRFLOW__METRICS__STATSD_PREFIX: 'airflow'          # Prefix for Airflow metrics
+    AIRFLOW__METRICS__STATSD_PREFIX: 'airflow' # Prefix for Airflow metrics
     AIRFLOW__METRICS__STATSD_DISABLED_TAGS: 'job_id,run_id'
     # Kafka settings
     AIRFLOW_CONN_KAFKA_DEFAULT: kafka://kafka:9092
@@ -60,21 +60,21 @@ services:
     hostname: statsd-exporter
     container_name: statsd-exporter
     ports:
-      - "9102:9102"  # Prometheus will scrape this port
+      - "9102:9102" # Prometheus will scrape this port
     environment:
       - STATSD_MAPPING_CONFIG=/tmp/statsd_mapping.yml
     volumes:
       - ./config/statsd_mapping.yml:/tmp/statsd_mapping.yml
     networks:
       - hadoop-network
-    
+
   prometheus:
     image: prom/prometheus
     container_name: prometheus
     volumes:
       - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
-      - "9090:9090"  # You can expose Prometheus here if you want to test locally
+      - "9090:9090" # You can expose Prometheus here if you want to test locally
     networks:
       - hadoop-network
 
@@ -85,10 +85,10 @@ services:
       - 6379
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
-      interval: 10s
+      interval: 60s
       timeout: 30s
       retries: 50
-      start_period: 30s
+      start_period: 60s
     restart: always
     networks:
       - hadoop-network
@@ -101,10 +101,10 @@ services:
       - "8080:8080"
     healthcheck:
       test: [ "CMD", "curl", "--fail", "http://localhost:8080/health" ]
-      interval: 30s
-      timeout: 10s
+      interval: 90s
+      timeout: 15s
       retries: 5
-      start_period: 30s
+      start_period: 60s
     restart: always
     depends_on:
       <<: *airflow-common-depends-on
@@ -119,10 +119,10 @@ services:
     container_name: airflow-scheduler
     healthcheck:
       test: [ "CMD", "curl", "--fail", "http://localhost:8974/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
+      interval: 90s
+      timeout: 15s
+      retries: 4
+      start_period: 60s
     restart: always
     depends_on:
       <<: *airflow-common-depends-on
@@ -139,10 +139,10 @@ services:
       test:
         - "CMD-SHELL"
         - 'celery --app airflow.providers.celery.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}" || celery --app airflow.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}"'
-      interval: 30s
-      timeout: 10s
+      interval: 90s
+      timeout: 15s
       retries: 5
-      start_period: 30s
+      start_period: 60s
     environment:
       <<: *airflow-common-env
       DUMB_INIT_SETSID: "0"
@@ -160,10 +160,10 @@ services:
     container_name: airflow-triggerer
     healthcheck:
       test: [ "CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"' ]
-      interval: 30s
-      timeout: 10s
+      interval: 90s
+      timeout: 15s
       retries: 5
-      start_period: 30s
+      start_period: 60s
     restart: always
     depends_on:
       <<: *airflow-common-depends-on
