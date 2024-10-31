@@ -120,10 +120,10 @@ services:
       - 6379
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
-      interval: 60s
+      interval: 10s
       timeout: 30s
       retries: 50
-      start_period: 60s
+      start_period: 30s
     restart: always
     networks:
       - hadoop-network
@@ -136,10 +136,10 @@ services:
       - "8080:8080"
     healthcheck:
       test: [ "CMD", "curl", "--fail", "http://localhost:8080/health" ]
-      interval: 90s
-      timeout: 15s
+      interval: 30s
+      timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 30s
     restart: always
     depends_on:
       <<: *airflow-common-depends-on
@@ -154,10 +154,10 @@ services:
     container_name: airflow-scheduler
     healthcheck:
       test: [ "CMD", "curl", "--fail", "http://localhost:8974/health" ]
-      interval: 90s
-      timeout: 15s
+      interval: 30s
+      timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 30s
     restart: always
     depends_on:
       <<: *airflow-common-depends-on
@@ -174,10 +174,10 @@ services:
       test:
         - "CMD-SHELL"
         - 'celery --app airflow.providers.celery.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}" || celery --app airflow.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}"'
-      interval: 90s
-      timeout: 15s
+      interval: 30s
+      timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 30s
     environment:
       <<: *airflow-common-env
       DUMB_INIT_SETSID: "0"
@@ -197,10 +197,10 @@ services:
       test:
         - "CMD-SHELL"
         - 'celery --app airflow.providers.celery.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}" || celery --app airflow.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}"'
-      interval: 90s
-      timeout: 15s
+      interval: 30s
+      timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 30s
     environment:
       <<: *airflow-common-env
       DUMB_INIT_SETSID: "0"
@@ -218,10 +218,10 @@ services:
     container_name: airflow-triggerer
     healthcheck:
       test: [ "CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"' ]
-      interval: 90s
-      timeout: 15s
+      interval: 30s
+      timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 30s
     restart: always
     depends_on:
       <<: *airflow-common-depends-on
@@ -464,3 +464,4 @@ services:
       - spark-master
     networks:
       - hadoop-network
+
