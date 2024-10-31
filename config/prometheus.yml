@@ -6,7 +6,20 @@ scrape_configs:
     static_configs:
       - targets: ['statsd-exporter:9102']  # This is the StatsD exporter
 
+  - job_name: 'prometheus'  # For Prometheus itself.
+    static_configs:
+      - targets: ['34.1.133.197:9090']
+
+  - job_name: 'node_exporter'  # Scrape Node Exporter.
+    static_configs:
+      - targets: ['34.1.133.197:9100']  # Replace <vm-ip> with your VM IP.
+
+  - job_name: 'cadvisor'  # Scrape cAdvisor metrics.
+    static_configs:
+      - targets: ['34.1.133.197:8081']
+
 remote_write:
   - url: "https://prometheus-prod-37-prod-ap-southeast-1.grafana.net/api/prom/push"
     basic_auth:
-      username: "1840228"  # Your Grafana Cloud Prometheus instance ID
+      username: "1840228"  # Your Grafana Cloud Prometheus instance IDglobal:
+      password: "glc_eyJvIjoiMTI0NDM5MCIsIm4iOiJzdGFjay0xMDYxNjIwLWludGVncmF0aW9uLWthaCIsImsiOiJUd0plMnU0RWt4NHBPMjh1N2E4eDNyMzgiLCJtIjp7InIiOiJwcm9kLWFwLXNvdXRoZWFzdC0xIn19"
