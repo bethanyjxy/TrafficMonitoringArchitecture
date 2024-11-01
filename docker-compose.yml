@@ -97,7 +97,6 @@ services:
     ports:
       - "9125:9125/udp"
       - "9102:9102"  # Prometheus will scrape this port
-      - "9125:9125/udp"
     environment:
       - STATSD_MAPPING_CONFIG=/tmp/statsd_mapping.yml
     volumes:
