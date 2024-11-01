@@ -16,8 +16,7 @@ dag = DAG(
     'traffic_prediction',
     default_args=default_args,
     description='DAG for traffic Prediction',
-    schedule='@daily',  # Run once a day at midnight
-    timezone='Asia/Singapore',  # Set timezone to Singapore here
+    schedule='0 15 * * *', 
 )
 
 # Task to run the Python script
