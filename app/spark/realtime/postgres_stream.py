@@ -1,7 +1,28 @@
 from pyspark.sql import SparkSession
-from postgresql.postgres_config import SPARK_POSTGRES
 from stream_process import create_spark_session, read_kafka_stream, process_stream
 
+SPARK_POSTGRES = {
+    'url': 'jdbc:postgresql://postgres:5432/traffic_db',
+    'properties': {
+        'user': 'traffic_admin',
+        'password': 'traffic_pass',
+        'driver': 'org.postgresql.Driver'
+    }
+}
+
+
+
+'''
+    return {
+        "url": SPARK_POSTGRES['url'],
+        "properties": {
+            "user": SPARK_POSTGRES['user'],
+            "password": SPARK_POSTGRES['password'],
+            "driver": SPARK_POSTGRES['driver']
+        }
+    }
+
+'''
 def write_to_postgres(df, table_name, postgres_url, postgres_properties):
     """Write processed DataFrame to PostgreSQL."""
     try:
