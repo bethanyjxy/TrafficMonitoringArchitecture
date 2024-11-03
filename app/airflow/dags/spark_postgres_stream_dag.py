@@ -29,6 +29,7 @@ dag = DAG(
 )
 
 run_spark_postgres_stream = BashOperator(
+    task_id='run_spark_postgres_stream',
     bash_command='''
         spark-submit \
         --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1 \
