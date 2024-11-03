@@ -36,6 +36,7 @@ x-airflow-common: &airflow-common
     KAFKA_TOPIC_TRAFFIC_IMAGES: traffic_images
     KAFKA_TOPIC_TRAFFIC_SPEEDBANDS: traffic_speedbands
     KAFKA_TOPIC_TRAFFIC_VMS: traffic_vms
+    AIRFLOW_CONN_SPARK_DEFAULT: spark://spark-master:7077
   volumes:
     - ./app/airflow/dags:/opt/airflow/dags
     - ./app/airflow/logs:/opt/airflow/logs
