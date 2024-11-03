@@ -271,7 +271,7 @@ def register_callbacks(app):
             if filter_type == 'make':
                 name = 'Manufacturer'
             else:
-                name = 'Credit Ratings'
+                name = 'CC Ratings'
             
             # Create a bar chart for overall population
             fig = px.bar(
