@@ -34,6 +34,8 @@ dag = DAG(
     description='Run Kafka producer scripts to fetch and produce traffic data',
     schedule_interval='@once',  # Run once and let the script handle looping
     catchup=False,
+    max_active_runs=1,  # Only one active run at a time
+    concurrency=1,  # Ensure one task runs at a time
 )
 
 # Use PythonOperator to run the producer script with subprocess

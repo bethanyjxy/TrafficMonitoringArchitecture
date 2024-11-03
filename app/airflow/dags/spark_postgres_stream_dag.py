@@ -1,10 +1,8 @@
 from airflow import DAG
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
- 
+
 import pendulum
 from datetime import timedelta
-
-
 # Define default arguments for the DAG
 
 default_args = {
