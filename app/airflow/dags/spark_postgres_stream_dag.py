@@ -32,7 +32,7 @@ dag = DAG(
 run_spark_postgres_stream = SparkSubmitOperator(
 
     task_id="run_spark_postgres_stream",
-    application="/opt/spark/data/spark/realtime/postgres_stream.py",
+    application="/opt/airflow/app/spark/realtime/postgres_stream.py",
     conn_id="spark_default",  # Ensure your Airflow connection uses the correct Spark master URL
     name="Airflow_Spark_Job",
     conf={
