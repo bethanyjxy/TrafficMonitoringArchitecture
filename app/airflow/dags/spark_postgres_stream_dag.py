@@ -1,5 +1,5 @@
 from airflow import DAG
-from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
+from airflow.operators.bash import BashOperator
 
 import pendulum
 from datetime import timedelta
@@ -28,15 +28,14 @@ dag = DAG(
     catchup=False,
 )
 
-# Task to run the Spark streaming job
-run_spark_postgres_stream = SparkSubmitOperator(
-
-    task_id="run_spark_postgres_stream",
-    application='/opt/airflow/app/spark/realtime/postgres_stream.py',  # Adjust path as needed
-    conn_id='spark_default',
-    packages='org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1',
-    jars='/opt/spark/jars/postgresql-42.2.18.jar',
-    conf={'spark.executor.memory': '2g', 'spark.executor.cores': '2'},
-    )
-
-run_spark_postgres_stream
+run_spark_postgres_stream = BashOperator(
+    bash_command='''
+        spark-submit \
+        --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1 \
+        --jars /opt/spark/jars/postgresql-42.2.18.jar \
+        /opt/airflow/app/spark/realtime/postgres_stream.py \
+        2>&1
+    ''',
+    execution_timeout=timedelta(days=7),
+    dag=dag,
+)
