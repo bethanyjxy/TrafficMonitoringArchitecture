@@ -31,19 +31,20 @@ dag = DAG(
 # Task to run the Spark streaming job
 run_spark_postgres_stream = SparkSubmitOperator(
 
-    task_id='run_spark_postgres_stream',
+    task_id="run_spark_postgres_stream",
     application="/opt/spark/data/spark/realtime/postgres_stream.py",
-    conn_id="spark_default",
+    conn_id="spark_default",  # Ensure your Airflow connection uses the correct Spark master URL
+    name="Airflow_Spark_Job",
     conf={
         "spark.executor.memory": "2g",
         "spark.driver.memory": "2g",
         "spark.default.parallelism": "4",
-        "spark.executor.cores": "2"
+        "spark.executor.cores": "2",
     },
-    jars="/opt/spark/data/spark/jars/postgresql-42.2.18.jar",
     packages="org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1",
-    name="Airflow_Spark_Job",
+    jars="/opt/spark/data/spark/jars/postgresql-42.2.18.jar",
     verbose=True,
+    master="spark://spark-master:7077",  # Change this line from 'yarn' to Spark master URL
     dag=dag,
 )
 
