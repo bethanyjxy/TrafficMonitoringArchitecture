@@ -36,7 +36,6 @@ run_spark_postgres_stream = SparkSubmitOperator(
     conn_id="spark_default",  # Ensure your Airflow connection uses the correct Spark master URL
     name="Airflow_Spark_Job",
     conf={
-        'spark.master': 'spark://b40af799d60b:7077',  # Address of the Spark master
         'spark.jars': '/opt/spark/jars/postgresql-42.2.18.jar',  # PostgreSQL driver in Spark container
     },
     packages='org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1',  # Kafka package for Spark
