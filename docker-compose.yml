@@ -438,7 +438,7 @@ services:
       - SPARK_RPC_MESSAGE_MAXSIZE=1024
       - SPARK_MASTER_WEBUI_PORT=8082
     volumes:
-      - ./app/spark:/opt/spark/data
+      - ./app:/opt/spark/data
     depends_on:
       - namenode
       - kafka
