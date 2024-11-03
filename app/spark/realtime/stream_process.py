@@ -6,6 +6,7 @@ def create_spark_session():
     # Initialize Spark session with Kafka support
     spark = SparkSession.builder \
         .appName("KafkaToSparkStream") \
+        .master("spark://spark-master:7077") \
         .getOrCreate()
     return spark
 
