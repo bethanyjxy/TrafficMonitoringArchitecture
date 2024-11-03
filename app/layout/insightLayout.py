@@ -71,7 +71,7 @@ layout = html.Div([
                     id='filter-dropdown',
                     options=[
                         {'label': 'Manufacturer', 'value': 'make'},
-                        {'label': 'Credit Rating', 'value': 'cc'}
+                        {'label': 'CC Rating', 'value': 'cc'}
                     ],
                     value='make',  # Default selection
                     clearable= False,
