@@ -32,14 +32,11 @@ dag = DAG(
 run_spark_postgres_stream = SparkSubmitOperator(
 
     task_id="run_spark_postgres_stream",
-    application="/opt/airflow/app/spark/realtime/postgres_stream.py",
-    conn_id="spark_default",  # Ensure your Airflow connection uses the correct Spark master URL
-    name="Airflow_Spark_Job",
-    conf={
-        'spark.jars': '/opt/spark/jars/postgresql-42.2.18.jar',  # PostgreSQL driver in Spark container
-    },
-    packages='org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1',  # Kafka package for Spark
-    dag=dag,
-)
+    application='/opt/airflow/app/spark/realtime/postgres_stream.py',  # Adjust path as needed
+    conn_id='spark_default',
+    packages='org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1',
+    jars='/opt/spark/jars/postgresql-42.2.18.jar',
+    conf={'spark.executor.memory': '2g', 'spark.executor.cores': '2'},
+    )
 
 run_spark_postgres_stream
