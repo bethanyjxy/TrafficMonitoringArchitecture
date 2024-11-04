@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.providers.postgres.operators.postgres import PostgresOperator
-
+import pendulum
 # Define default arguments
 default_args = {
     'owner': 'airflow',
@@ -14,8 +14,8 @@ with DAG(
     'delete_old_records',
     default_args=default_args,
     description='DAG to delete old records from Postgres tables',
-    schedule_interval=timedelta(days=1),
-    start_date=datetime(2023, 1, 1),
+    schedule_interval=timedelta(days=4),
+    start_date=pendulum.today('UTC'),
     catchup=False,
 ) as dag:
 
