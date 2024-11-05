@@ -27,13 +27,11 @@ dag = DAG(
 # Define the SparkSubmitOperator to run the Spark streaming job
 run_spark_postgres_stream = SparkSubmitOperator(
     task_id='run_spark_postgres_stream',
-    application='/opt/airflow/app/spark/realtime/postgres_stream.py',  # Path to your Spark script
-    conn_id=None,  # No specific Spark connection ID required
-    master='spark://spark-master:7077',
+    application='/opt/airflow/app/spark/realtime/postgres_stream.py',
+    conn_id=None,  # Explicitly set to None to avoid connection lookup
     name='spark_postgres_stream_job',
-    application_args=[],  # Add any specific arguments if your Spark job requires them
     conf={
-        'spark.sql.adaptive.enabled': 'true',  # Use Spark master URL in your network
+        'spark.master': 'spark://spark-master:7077',  # Master URL moved here
         'spark.executor.memory': '2g',
         'spark.driver.memory': '2g'
     },
