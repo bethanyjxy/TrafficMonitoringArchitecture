@@ -38,6 +38,6 @@ run_spark_postgres_stream = SparkSubmitOperator(
     },
     packages='org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1',  # Include Kafka integration package
     jars='/opt/spark/jars/postgresql-42.2.18.jar',  # Path to PostgreSQL JDBC jar
-    execution_timeout=timedelta(days=14),
+    execution_timeout=timedelta(days=30),
     dag=dag,
 )
