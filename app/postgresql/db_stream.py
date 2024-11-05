@@ -222,3 +222,26 @@ def fetch_images_table():
     
     # Convert the list of dictionaries to a Pandas DataFrame
     return pd.DataFrame(data_dicts)
+
+def fetch_traffic_jams():
+    """Fetch traffic jams by selecting records with SpeedBand < 3 and calculating total count and average speed."""
+    query = """
+    SELECT 
+        COUNT(*) AS jam_count,
+        AVG((CAST("MinimumSpeed" AS FLOAT) + CAST("MaximumSpeed" AS FLOAT)) / 2) AS avg_speed
+    FROM speedbands_table
+    WHERE "SpeedBand" < 3;
+    """
+    
+    conn = connect_db()
+    if not conn:
+        return {"jam_count": 0, "avg_speed": None}
+
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        result = cursor.fetchone()
+    
+    conn.close()
+
+    # Return a dictionary with jam count and average speed
+    return {"jam_count": result[0], "avg_speed": result[1] if result else None}
