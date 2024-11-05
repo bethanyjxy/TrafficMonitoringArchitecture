@@ -16,7 +16,7 @@ dag = DAG(
     'daily_incident_batch',
     default_args=default_args,
     description='Daily batch processing for traffic incident reports',
-    schedule='0 15 * * *',  # Run daily at 3 PM UTC (11 PM Singapore Time)
+    schedule='0 22 * * *',  # Run daily at 3 PM UTC (11 PM Singapore Time)
 )
 
 # Task to run the Python script
