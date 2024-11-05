@@ -26,6 +26,7 @@ SPARK_POSTGRES = {
 def write_to_postgres(df, table_name, postgres_url, postgres_properties):
     """Write processed DataFrame to PostgreSQL."""
     try:
+        df.show(truncate=False)
         df.write.jdbc(url=postgres_url['url'], table=table_name, mode="append", properties=postgres_properties)
     except Exception as e:
         print(f"Error writing to PostgreSQL table {table_name}: {e}")
