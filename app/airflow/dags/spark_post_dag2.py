@@ -15,7 +15,7 @@ default_args = {
 
 # Initialize the DAG
 dag = DAG(
-    'spark_postgres_stream_dag',
+    'spark_postgres_stream_dag2',
     default_args=default_args,
     max_active_runs=1,  # Only one active run at a time
     concurrency=1,  # Ensure one task runs at a time
@@ -29,10 +29,11 @@ run_spark_postgres_stream = SparkSubmitOperator(
     task_id='run_spark_postgres_stream',
     application='/opt/airflow/app/spark/realtime/postgres_stream.py',  # Path to your Spark script
     conn_id=None,  # No specific Spark connection ID required
+    master='spark://spark-master:7077',
     name='spark_postgres_stream_job',
     application_args=[],  # Add any specific arguments if your Spark job requires them
     conf={
-        'spark.master': 'spark://spark-master:7077',  # Use Spark master URL in your network
+        'spark.sql.adaptive.enabled': 'true',  # Use Spark master URL in your network
         'spark.executor.memory': '2g',
         'spark.driver.memory': '2g'
     },
