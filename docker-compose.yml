@@ -429,7 +429,7 @@ services:
 
   spark-master:
     container_name: spark-master
-    image: bitnami/spark:latest
+    image: bitnami/spark:3.1.1
     ports:
       - "8082:8082" # Spark UI
       - "7077:7077" # Spark master port
@@ -457,7 +457,7 @@ services:
 
   spark-worker:
     container_name: spark-worker
-    image: bitnami/spark:latest
+    image: bitnami/spark:3.1.1
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077

@@ -28,13 +28,8 @@ dag = DAG(
 run_spark_postgres_stream = SparkSubmitOperator(
     task_id='run_spark_postgres_stream',
     application='/opt/airflow/app/spark/realtime/postgres_stream.py',
-    conn_id=None,  # Explicitly set to None to avoid connection lookup
     name='spark_postgres_stream_job',
-    conf={
-        'spark.master': 'spark://spark-master:7077',  # Master URL moved here
-        'spark.executor.memory': '2g',
-        'spark.driver.memory': '2g'
-    },
+    conn_id='spark_default',
     packages='org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1',  # Include Kafka integration package
     jars='/opt/spark/jars/postgresql-42.2.18.jar',  # Path to PostgreSQL JDBC jar
     execution_timeout=timedelta(days=30),
