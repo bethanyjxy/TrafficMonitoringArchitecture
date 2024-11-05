@@ -1,6 +1,6 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import udf, col, from_json,  regexp_extract, current_timestamp, regexp_replace, date_format, trim
-from pyspark.sql.types import StructType, StringType, DoubleType, IntegerType
+from pyspark.sql.types import StructType, StringType, DoubleType, IntegerType, TimestampType
 
 def create_spark_session():
     # Initialize Spark session with Kafka support
@@ -87,7 +87,7 @@ def process_stream(kafka_stream):
         .select(col("value.*"))\
         .na.drop()
        # .withColumn("Location", map_camera_id_udf(col("camera_id")))  
-   
+    image_stream = image_stream.withColumn("img_timestamp", col("img_timestamp").cast(TimestampType()))
       
         
     vms_schema = StructType() \
