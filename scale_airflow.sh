@@ -3,50 +3,58 @@
 # Exit immediately if a command exits with a non-zero status
 set -e
 
-
-
-# Create Overlay Network
-echo "Creating overlay network 'airflow-network'..."
-docker network create --driver overlay airflow-network 
+#sudo docker swarm init
+#sudo docker network create --driver overlay airflow-network
 
 # Create Airflow Worker Service
-echo "Creating Airflow Worker Service..."
-docker service create \
-  --name service-airflow-worker \
+echo "Creating Airflow Worker 1 Service..."
+sudo docker service create \
+  --name service-airflow-worker-1 \
   --replicas 5 \
   --network airflow-network \
   --env AIRFLOW__CORE__EXECUTOR=CeleryExecutor \
-  --env AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://traffic_admin:traffic_pass@postgres:5432/airflow_db \
-  trafficmonitoringarchitecture-airflow-worker
+  --env AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://traffic_admin:traffic_pass@postgres-server/airflow_db \
+  --env AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://traffic_admin:traffic_pass@postgres-server/airflow_db \
+  --env AIRFLOW__CELERY__BROKER_URL=redis://:@redis:6379/0 \
+  --env AIRFLOW__CORE__LOAD_EXAMPLES=false \
+  --env AIRFLOW__API__AUTH_BACKENDS='airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session' \
+  --env AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK=true \
+  trafficmonitoringarchitecture-airflow-worker-1
 
-# Create Airflow Scheduler Service
-echo "Creating Airflow Scheduler Service..."
-docker service create \
+#echo "Creating Airflow Worker 2 Service..."
+#sudo docker service create \
+#  --name service-airflow-worker-2\
+#  --replicas 5 \
+#  --network airflow-network \
+#  --env AIRFLOW__CORE__EXECUTOR=CeleryExecutor \
+#  --env AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://traffic_admin:traffic_pass@p>
+#  trafficmonitoringarchitecture-airflow-worker-2
+
+sudo docker service create \
   --name service-airflow-scheduler \
   --replicas 1 \
   --network airflow-network \
   --env AIRFLOW__CORE__EXECUTOR=CeleryExecutor \
-  --env AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://traffic_admin:traffic_pass@postgres:5432/airflow_db \
+  --env AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://traffic_admin:traffic_pass@postgres-server/airflow_db \
   trafficmonitoringarchitecture-airflow-scheduler
 
-# Create Airflow Triggerer Service
-echo "Creating Airflow Triggerer Service..."
-docker service create \
-  --name service-airflow-triggerer \
+sudo docker service create \
+  --name service-airflow-trigger \
   --replicas 1 \
   --network airflow-network \
-  --env AIRFLOW__CORE__EXECUTOR=CeleryExecutor \
-  --env AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://traffic_admin:traffic_pass@postgres:5432/airflow_db \
+  --env AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://traffic_admin:traffic_pass@postgres-server/airflow_db \
   trafficmonitoringarchitecture-airflow-triggerer
+
 
 # List services
 echo "Listing services..."
-docker service ls 
+sudo docker service ls 
 
-# Scale Services (optional, can be modified as needed)
+# Scale Services (can be modified as needed)
 echo "Scaling Airflow services..."
-docker service scale service-airflow-worker=5
-docker service scale service-airflow-scheduler=1
-docker service scale service-airflow-triggerer=1
+sudo docker service scale service-airflow-worker-1=5
+#sudo docker service scale service-airflow-worker-2=5
+
 
 echo "Setup complete."
+

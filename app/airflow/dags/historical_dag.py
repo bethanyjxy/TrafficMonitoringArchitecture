@@ -17,7 +17,7 @@ dag = DAG(
     'historical_dag',
     default_args=default_args,
     description='Run a Spark job to process historical data',
-    schedule='@daily',  # Can be '0 12 * * *' to run every day at noon
+    schedule='@once',  # Can be '0 12 * * *' to run every day at noon
 )
 
 # Task to run Spark job from the command line

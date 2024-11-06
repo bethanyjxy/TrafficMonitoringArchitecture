@@ -1,39 +1,54 @@
+/* Global Settings */
+:root {
+    --sidebar-width: 60px; /* Default collapsed width */
+    --sidebar-expanded-width: 200px; /* Expanded width */
+    --sidebar-bg-color: #343a40; /* Sidebar background */
+    --font-color: white;
+    --transition-duration: 0.3s;
+}
+.logo h4 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+    margin: 0;
+}
+
+/* Body and Font Styling */
 body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
     display: flex;
     flex-direction: column;
-    z-index: 1;
 }
 
+/* Import FontAwesome Icons */
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
 
-
+/* Logo Styling */
 .logo i {
     font-size: 1.5rem;
-    color: white;
-    margin-right: 25px;
-    margin-left: 5px;
+    color: var(--font-color);
+    margin: 0 15px;
 }
 
-/* Base styles for the sidebar */
+/* Sidebar Base Styles */
 .sidebar {
-    position: absolute;
+    position: fixed;
     left: 0;
     top: 45px;
-    width: auto;
+    width: var(--sidebar-width);
     height: calc(100vh - 45px);
-    transition: width 0.3s ease;
+    background-color: var(--sidebar-bg-color);
+    transition: width var(--transition-duration) ease;
     overflow-x: hidden;
-    margin-top: 0;
+    color: var(--font-color);
 }
 
 .sidebar-content {
-    margin-top: 0;
-    margin-left: 0;
-    color: white;
     font-family: 'Montserrat', sans-serif;
+    padding-top: 10px;
 }
 
 .sidebar ul {
@@ -42,38 +57,47 @@ body {
 }
 
 .sidebar ul li {
-    margin: 15px 0;
+    margin: 12px 0;
 }
 
+/* Sidebar Styling and Overflow Fix */
 .sidebar ul li a {
-    color: white;
+    color: var(--font-color);
     display: flex;
     align-items: center;
+    padding: 10px 15px;
     text-decoration: none;
-    margin-bottom: 20px;
+    transition: background var(--transition-duration) ease;
+    white-space: nowrap; /* Prevents text from wrapping */
+    overflow: hidden; /* Ensures text doesn’t overflow the container */
+    text-overflow: ellipsis; /* Adds ellipsis if text is too long */
+}
+
+.sidebar ul li a:hover {
+    background-color: rgba(255, 255, 255, 0.1); /* Subtle hover effect */
 }
 
 .sidebar ul li a i {
     margin-right: 10px;
 }
 
-/* Hide text when sidebar is collapsed */
-.sidebar ul li a .menu-text {
-    display: none;
-    white-space: nowrap;
-}
-
-/* Expand sidebar on hover */
+/* Sidebar Expansion */
 .sidebar:hover {
-    width: 200px;
-
+    width: var(--sidebar-expanded-width);
 }
 
 .sidebar:hover .menu-text {
     display: inline-block;
 }
 
-/* The hidden trigger zone for hover detection */
+/* Menu Text */
+.menu-text {
+    display: none;
+    white-space: nowrap;
+    transition: opacity var(--transition-duration) ease;
+}
+
+/* Trigger Zone for Hover Effect */
 .trigger-zone {
     position: absolute;
     left: 0;
@@ -83,13 +107,31 @@ body {
     z-index: 999;
 }
 
-/* Hovering over the trigger zone reveals the sidebar */
 .trigger-zone:hover+.sidebar {
     left: 0;
 }
 
+/* Mobile View Settings */
 @media (max-width: 768px) {
     .sidebar {
+        position: absolute;
         left: -200px;
+        width: var(--sidebar-expanded-width);
+    }
+
+    /* Toggle Button (Optional) */
+    .toggle-btn {
+        display: block;
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        z-index: 1000;
+        font-size: 1.2rem;
+        cursor: pointer;
+        color: var(--font-color);
+    }
+
+    .sidebar.expanded {
+        left: 0;
     }
 }

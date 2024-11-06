@@ -4,7 +4,6 @@ import plotly.express as px
 from dash import html, dcc, callback_context
 from dash.dependencies import Input, Output
 from postgresql.db_batch import *
-
 layout = html.Div([
     html.H3('Traffic Insights', className="text-center mb-5 mt-2"),
     
@@ -59,7 +58,6 @@ layout = html.Div([
         )
     ], justify="between", className="mb-4"),
     ]),
-
     
     # 4th row
     html.Div([
@@ -71,7 +69,7 @@ layout = html.Div([
                     id='filter-dropdown',
                     options=[
                         {'label': 'Manufacturer', 'value': 'make'},
-                        {'label': 'Credit Rating', 'value': 'cc'}
+                        {'label': 'CC Rating', 'value': 'cc'}
                     ],
                     value='make',  # Default selection
                     clearable= False,
@@ -111,7 +109,6 @@ layout = html.Div([
     ], className="mb-4"),
 ])
 ])
-
 # Define callbacks
 def register_callbacks(app):
     @app.callback(
@@ -121,13 +118,10 @@ def register_callbacks(app):
     def update_trend_chart(n):
         # Fetch data from the database (fetch_report_incident already gets date and result)
         df = fetch_report_incident()
-
         # Convert the date column to a datetime format if it's not already
         df['date'] = pd.to_datetime(df['date'])
-
         # Get the current month name
         current_month = datetime.now().strftime('%B')
-
         # Plot the line chart with dates on the x-axis
         fig = px.bar(
             df, 
@@ -136,12 +130,10 @@ def register_callbacks(app):
             title="Daily Incident Trends",  # Title reflects the current month
             labels={"date": "Date", "result": "Number of Incidents"}
         )
-
         # Customize hover template to show the date and number of incidents
         fig.update_traces(
             hovertemplate="Date: %{x}<br>Number of Incidents: %{y}<extra></extra>"
         )
-
         # Update the layout
         fig.update_layout(
             margin={"r": 0, "t": 50, "l": 0, "b": 0},
@@ -151,9 +143,7 @@ def register_callbacks(app):
             template="simple_white",
             hovermode="x unified",
         )
-
         return fig
-
     @app.callback(
         Output('correlation-chart', 'figure'),
         Input('interval-component-insights', 'n_intervals')
@@ -196,7 +186,6 @@ def register_callbacks(app):
             labels={"year": "Year", "traffic_lights": "Number of Traffic Lights"},
             text="traffic_lights"
         )
-
         # Update the layout and formatting
         fig.update_layout(
             margin={"r":0,"t":50,"l":0,"b":0},
@@ -205,7 +194,6 @@ def register_callbacks(app):
             yaxis_title="Number of Traffic Lights",
             template="plotly_white"
         )
-
         return fig
     
     @app.callback(
@@ -227,9 +215,7 @@ def register_callbacks(app):
                 "variable": "Road Type"  
             }
         )
-
         fig.for_each_trace(lambda t: t.update(name="Expressway" if "ave_speed_expressway" in t.name else "Arterial Roads"))
-
         # Update layout and formatting
         fig.update_layout(
             margin={"r": 0, "t": 50, "l": 0, "b": 0},
@@ -238,7 +224,6 @@ def register_callbacks(app):
             yaxis_title="Average Speed (km/h)",
             template="plotly_white"
         )
-
         return fig
     
     @app.callback(
@@ -251,18 +236,15 @@ def register_callbacks(app):
     def update_population_graph(car_clicks, motorcycle_clicks, filter_type, selected_type):
         # Use callback_context to determine which button was clicked
         ctx = callback_context
-
         # Set default click counts to 0 if they are None
         car_clicks = car_clicks or 0
         motorcycle_clicks = motorcycle_clicks or 0
-
         # Determine if Cars or Motorcycles is selected
         if ctx.triggered:
             button_id = ctx.triggered[0]['prop_id'].split('.')[0]  
             selected_category = 'cars' if button_id == 'car-button' else 'motorcycles'
         else:
             selected_category = 'cars'  # Default to cars if nothing triggered
-
         selected_category = 'cars' if car_clicks > motorcycle_clicks else 'motorcycles'
         
         # Get the overall population
@@ -271,7 +253,7 @@ def register_callbacks(app):
             if filter_type == 'make':
                 name = 'Manufacturer'
             else:
-                name = 'Credit Ratings'
+                name = 'CC Ratings'
             
             # Create a bar chart for overall population
             fig = px.bar(
@@ -288,7 +270,6 @@ def register_callbacks(app):
                 df = fetch_population_cc_table(selected_category, selected_type)  
             else:
                 df = fetch_population_make_table(selected_category, selected_type) 
-
             # Create a bar chart based on the selected filter
             fig = px.bar(
                 df,
@@ -298,7 +279,6 @@ def register_callbacks(app):
                 labels={"year": "Year", "total_number": f"Number of {selected_category.capitalize()}s"},
                 text="total_number"
             )
-
         # Update layout and formatting
         fig.update_layout(
             margin={"r": 0, "t": 50, "l": 0, "b": 0},
@@ -319,18 +299,15 @@ def register_callbacks(app):
     def update_type_dropdown(filter_type, car_clicks, motorcycle_clicks):
         # Use callback_context to determine which button was clicked
         ctx = callback_context
-
         # Set default click counts to 0 if they are None
         car_clicks = car_clicks or 0
         motorcycle_clicks = motorcycle_clicks or 0
-
         # Determine selected category (cars or motorcycles)
         if ctx.triggered:
             button_id = ctx.triggered[0]['prop_id'].split('.')[0]
             selected_category = 'cars' if button_id == 'car-button' else 'motorcycles'
         else:
             selected_category = 'cars'  # Default to cars if nothing triggered
-
         # Fetch the data based on the selected filter type and category
         if filter_type == 'cc':
             df = fetch_unique_type_table(selected_category, 'cc')
@@ -338,7 +315,6 @@ def register_callbacks(app):
             df = fetch_unique_type_table(selected_category, 'make')
         
         options = [{'label': str(car_type), 'value': car_type} for car_type in sorted(df)]
-
         return options
     
 # Callback to update button styles based on selection
@@ -352,7 +328,6 @@ def register_callbacks(app):
         
     # Determine which button was clicked
         triggered = callback_context.triggered[0]['prop_id'].split('.')[0]
-
         if triggered == 'car-button':
             return 'primary', 'secondary'  # Cars button selected
         elif triggered == 'motorcycle-button':
@@ -371,16 +346,12 @@ def register_callbacks(app):
     def update_dropdown_and_graph(selected_road_name):
         road_names_list = fetch_unique_location()
         road_names_options = road_names_list
-
         # Set default to "ADIS ROAD" if no road is selected initially
         if selected_road_name is None:
             selected_road_name = "ADIS ROAD"
-
         df = fetch_average_speedband(selected_road_name)
-
         if df.empty:
             return road_names_options, px.scatter()  
-
         color_map = {
             "Heavy congestion": "red",
             "Moderate congestion": "orange",
@@ -388,15 +359,12 @@ def register_callbacks(app):
             "Light congestion": "green",
             "Unknown": "gray"
         }
-
         # Create an ordered categorical type for congestion levels
         congestion_order = ["Light congestion", "Light to moderate congestion", "Moderate congestion", "Heavy congestion", "Unknown"]
         df['speedband_description'] = pd.Categorical(df['speedband_description'], categories=congestion_order, ordered=True)
         df = df.sort_values('speedband_description')  
-
         # Create a new column for colors based on congestion levels
         df['marker_color'] = df['speedband_description'].map(color_map)
-
         # Create scatter plot
         fig = px.scatter(
             df,
@@ -406,7 +374,6 @@ def register_callbacks(app):
             hover_data={"speedband_description": True, "hour_of_day": True}, 
             custom_data=["speedband_description", "average_speedband"]
         )
-
         # Update the traces to use hovertemplate
         fig.update_traces(
             marker=dict(size=15, color=df['marker_color'], line=dict(width=1)),
@@ -415,10 +382,8 @@ def register_callbacks(app):
                         "<b>Congestion Level</b>: %{customdata[0]}<br>"  
                         "<extra></extra>"  # Remove the default hover box extra info
         )
-
         # Update x-axis for hour of the day
         fig.update_xaxes(tickmode='array', tickvals=list(range(24)), ticktext=list(range(24)))
-
         # Adjust the layout and axes labels
         fig.update_layout(
             margin={"r": 0, "t": 50, "l": 0, "b": 0},
@@ -426,7 +391,4 @@ def register_callbacks(app):
             xaxis_title="Hour of the Day",
             yaxis_title="Traffic Congestion Level" 
         )
-
         return road_names_options, fig
-    
-    
