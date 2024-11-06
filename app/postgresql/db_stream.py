@@ -144,24 +144,23 @@ def fetch_incident_count_today():
 
 
 # Fetch the incidents over time for the past month
-def fetch_incidents_over_time():
-    """Fetch the number of incidents per day over the past 30 days."""
-    current_date = datetime.now().strftime('%Y-%m-%d')
-    
-    query = """
-    SELECT TO_TIMESTAMP(incident_date || '/' || EXTRACT(YEAR FROM CURRENT_DATE) || ' ' || incident_time, 'DD/MM/YYYY HH24:MI') AS incident_datetime, 
-           COUNT(*) AS incident_count
-    FROM incident_table
-    WHERE TO_DATE(incident_date || '/' || EXTRACT(YEAR FROM CURRENT_DATE), 'DD/MM/YYYY') = %s
-    GROUP BY incident_datetime
-    ORDER BY incident_datetime;
-    """
+def fetch_incidents_today():
+    """Fetch today's incidents with their counts over time."""
     conn = connect_db()
     if not conn:
         return pd.DataFrame()
 
+    query = """
+    SELECT TO_TIMESTAMP(incident_date || '/' || EXTRACT(YEAR FROM CURRENT_DATE) || ' ' || incident_time, 'DD/MM/YYYY HH24:MI') AS incident_datetime, 
+           COUNT(*) AS incident_count
+    FROM incident_table
+    WHERE TO_DATE(incident_date || '/' || EXTRACT(YEAR FROM CURRENT_DATE), 'DD/MM/YYYY') = CURRENT_DATE
+    GROUP BY incident_datetime
+    ORDER BY incident_datetime;
+    """
+    
     with conn.cursor() as cursor:
-        cursor.execute(query, (current_date,))
+        cursor.execute(query)
         result = cursor.fetchall()
     
     conn.close()
@@ -247,3 +246,97 @@ def fetch_traffic_jams():
 
     # Return a dictionary with jam count and average speed
     return {"jam_count": result[0], "avg_speed": result[1] if result else None}
+
+def fetch_incident_density():
+    """Fetch incident data with coordinates for density map visualization."""
+    query = """
+    SELECT "Latitude", "Longitude", COUNT(*) AS incident_density
+    FROM incident_table
+    GROUP BY "Latitude", "Longitude"
+    HAVING COUNT(*) > 1  -- Filter to show areas with multiple incidents
+    ORDER BY incident_density DESC
+    LIMIT 500;  -- Adjust the limit based on desired map detail
+    """
+    conn = connect_db()
+    if not conn:
+        return pd.DataFrame()
+
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        result = cursor.fetchall()
+
+    conn.close()
+    df = pd.DataFrame(result, columns=["Latitude", "Longitude", "incident_density"])
+    return df
+
+def fetch_traffic_heatmap_data():
+    conn = connect_db()
+    if not conn:
+        return pd.DataFrame()
+
+    query = """
+    SELECT "Latitude" AS latitude, "Longitude" AS longitude, COUNT(*) AS intensity
+    FROM incident_table
+    GROUP BY "Latitude", "Longitude"
+    """
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        result = cursor.fetchall()
+    conn.close()
+    return pd.DataFrame(result, columns=["latitude", "longitude", "intensity"])
+
+
+def fetch_speed_trend_data():
+    conn = connect_db()
+    if not conn:
+        return pd.DataFrame()
+
+    query = """
+    SELECT timestamp, AVG("MaximumSpeed") AS average_speed
+    FROM speedbands_table
+    GROUP BY timestamp
+    ORDER BY timestamp
+    """
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        result = cursor.fetchall()
+    conn.close()
+    return pd.DataFrame(result, columns=["timestamp", "average_speed"])
+
+def fetch_road_speed_performance_data():
+    conn = connect_db()
+    if not conn:
+        return pd.DataFrame()
+
+    query = """
+    SELECT "RoadName", AVG("MaximumSpeed") AS average_speed
+    FROM speedbands_table
+    GROUP BY "RoadName"
+    ORDER BY average_speed DESC
+    """
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        result = cursor.fetchall()
+    conn.close()
+    return pd.DataFrame(result, columns=["RoadName", "average_speed"])
+
+
+def fetch_recent_vms_messages():
+    """Fetch recent messages from the VMS table."""
+    query = """
+    SELECT "timestamp", "Message"
+    FROM vms_table
+    ORDER BY "timestamp" DESC
+    LIMIT 10;  -- Limit to the most recent 10 messages
+    """
+    conn = connect_db()
+    if not conn:
+        return []
+
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        result = cursor.fetchall()
+
+    conn.close()
+    messages = [{"timestamp": row[0], "Message": row[1]} for row in result]
+    return messages
