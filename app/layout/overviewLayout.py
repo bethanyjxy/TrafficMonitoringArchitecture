@@ -202,7 +202,7 @@ def register_callbacks(app):
         Input('interval-component-overview', 'n_intervals')
     )
     def update_trend_chart(n):
-        df = fetch_incidents_over_time()
+        df = fetch_incidents_today()
         fig = px.area(
             df, 
             x="incident_date", 
