@@ -5,7 +5,6 @@ from dash.dependencies import Input, Output
 
 from postgresql.db_stream import *
 
-
 # Traffic Overview Layout
 layout = html.Div([
     html.H3('Traffic Overview', className="text-center mb-5 mt-2"),
@@ -36,11 +35,11 @@ layout = html.Div([
         # Row with Graphs
         dbc.Row([
             dbc.Col(
-                dcc.Graph(id='pie-chart', className="rounded shadow p-3 mb-4", animate=True),
+                dcc.Graph(id='pie-chart', className="rounded shadow p-3 mb-4"),
                 width=6
             ),
             dbc.Col(
-                dcc.Graph(id='trend-chart', className="rounded shadow p-3 mb-4", animate=True),
+                dcc.Graph(id='trend-chart', className="rounded shadow p-3 mb-4"),
                 width=6
             )
         ], className="mb-4"),
@@ -56,7 +55,6 @@ def register_callbacks(app):
         Input('interval-component-overview', 'n_intervals')
     )
     def update_incident_count(n):
-        # Fetch the number of incidents today
         incident_count = fetch_incident_count_today()
         return f"{incident_count}"
 
@@ -67,24 +65,17 @@ def register_callbacks(app):
         Input('interval-component-overview', 'n_intervals')
     )
     def update_traffic_jams(n):
-        # Fetch traffic jam statistics
         traffic_jam_stats = fetch_traffic_jams()
         jam_count = traffic_jam_stats['jam_count']
         avg_speed = traffic_jam_stats['avg_speed']
-
-        # Format for display
-        jam_count_display = f"{jam_count}"
-        avg_speed_display = f"Avg Speed: {avg_speed:.2f} km/h" if avg_speed is not None else "N/A"
-
-        return jam_count_display, avg_speed_display
+        return f"{jam_count}", f"Avg Speed: {avg_speed:.2f} km/h" if avg_speed else "N/A"
 
     
-    # Callback to update the trend chart with animations
+    # Update trend chart without `animation_frame` for continuous data
     @app.callback(
         Output('trend-chart', 'figure'),
         Input('interval-component-overview', 'n_intervals')
     )
-
     def update_trend_chart(n):
         df = fetch_incidents_over_time()
         fig = px.line(
@@ -96,6 +87,7 @@ def register_callbacks(app):
         )
 
         fig.update_traces(
+            line=dict(width=3),
             hovertemplate="Date: %{x}<br>Number of Incidents: %{y}<extra></extra>"
         )
 
@@ -105,12 +97,13 @@ def register_callbacks(app):
             xaxis_title="Date",
             yaxis_title="Number of Incidents",
             template="simple_white",
-            hovermode="x unified"
+            hovermode="x unified",
+            transition={'duration': 500}  # Smooth transition for each update
         )
         return fig
 
 
-    # Callback to update the pie chart with vehicle incidents
+    # Update pie chart
     @app.callback(
         Output('pie-chart', 'figure'),
         Input('interval-component-overview', 'n_intervals')
@@ -127,5 +120,4 @@ def register_callbacks(app):
         fig.update_traces(
             hovertemplate="<b>%{label}</b><br>Vehicles: %{value}<extra></extra>"
         )
-
         return fig
