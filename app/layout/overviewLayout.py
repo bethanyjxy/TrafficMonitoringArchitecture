@@ -7,35 +7,32 @@ from postgresql.db_stream import *
 
 
 # Traffic Overview Layout
-layout = html.Div([  
+layout = html.Div([
     html.H3('Traffic Overview', className="text-center mb-5 mt-2"),
-    html.Div([
-        # First Row: Metrics Card and Pie Chart
+    dbc.Container([
+        # Row with Metrics
         dbc.Row([
             dbc.Col(
                 dbc.Card([
                     dbc.CardBody([
-                        html.Span("Incidents Today: ", className="card-title", style={'font-size': '24px', 'font-weight': 'bold'}),
-                        html.Span(id="incident-count", className="card-text ", style={'font-size': '24px', 'font-weight': 'bold'}),
-                    ])
-                ], className="shadow p-3 mb-4 bg-primary text-white rounded"),
+                        html.H5("Incidents Today", className="card-title"),
+                        html.H2(id="incident-count", className="card-text text-white"),
+                    ]),
+                ], className="shadow p-3 mb-4 bg-danger text-white rounded"),
                 width=6
             ),
             dbc.Col(
                 dbc.Card([
                     dbc.CardBody([
-                        html.Span("Traffic Jams: ", className="card-title", style={'font-size': '24px', 'font-weight': 'bold'}),
-                        html.Span(id="jam-count", className="card-text", style={'font-size': '24px', 'font-weight': 'bold'}),
-                        html.Br(),
-                        html.Span("Average Speed in Jams: ", style={'font-size': '18px'}),
-                        html.Span(id="avg-speed", className="card-text", style={'font-size': '18px'}),
-                    ])
-                ], className="shadow p-3 mb-4 bg-danger text-white rounded"),
+                        html.H5("Traffic Jams", className="card-title"),
+                        html.H2(id="jam-count", className="card-text text-white"),
+                    ]),
+                ], className="shadow p-3 mb-4 bg-warning text-white rounded"),
                 width=6
             )
-        ], className="mb-4", style={'flex-wrap': 'wrap', 'justify-content': 'space-between'}),
+        ], className="mb-4"),
         
-        # Second Row: Correlation and Trend Charts
+        # Row with Graphs
         dbc.Row([
             dbc.Col(
                 dcc.Graph(id='pie-chart', className="rounded shadow p-3 mb-4"),
@@ -45,12 +42,11 @@ layout = html.Div([
                 dcc.Graph(id='trend-chart', className="rounded shadow p-3 mb-4"),
                 width=6
             )
-        ], className="mb-4", style={'flex-wrap': 'wrap', 'justify-content': 'space-between'}),
+        ], className="mb-4"),
         
-        dcc.Interval(id='interval-component-overview', interval=2*1000, n_intervals=0)  # Auto-refresh every 10 seconds
-    ], style={'overflow-x': 'hidden'})
+        dcc.Interval(id='interval-component-overview', interval=2*1000, n_intervals=0)
+    ], fluid=True)
 ])
-
 # Define callback registration function
 def register_callbacks(app):
     @app.callback(
