@@ -78,25 +78,27 @@ def register_callbacks(app):
     )
     def update_trend_chart(n):
         df = fetch_incidents_over_time()
-        fig = px.line(
+
+        fig = px.area(
             df, 
             x="incident_date", 
             y="incident_count", 
             title="Incident Trends Over Time",
-            labels={"incident_date": "Date", "incident_count": "Number of Incidents"}
+            labels={"incident_date": "Date", "incident_count": "Number of Incidents"},
+            color_discrete_sequence=["#adb5bd"],  # Use a gradient color if desired
         )
-
         fig.update_traces(
-            line=dict(width=3),
+            line=dict(color="#74c0fc"),  # Cyan line color
+            fill='tozeroy',  # Fill the area to the zero line
             hovertemplate="Date: %{x}<br>Number of Incidents: %{y}<extra></extra>"
         )
 
         fig.update_layout(
-            margin={"r":0,"t":50,"l":0,"b":0},
+            margin={"r":0, "t":50, "l":0, "b":0},
             title={'x':0.5, 'xanchor': 'center'},
             xaxis_title="Date",
             yaxis_title="Number of Incidents",
-            template="simple_white",
+            template="plotly_white",
             hovermode="x unified",
             transition={'duration': 500}  # Smooth transition for each update
         )
