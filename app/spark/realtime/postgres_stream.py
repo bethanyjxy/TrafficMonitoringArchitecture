@@ -1,6 +1,6 @@
 from pyspark.sql import SparkSession
 from stream_process import create_spark_session, read_kafka_stream, process_stream
-
+import logging
 SPARK_POSTGRES = {
     'url': 'jdbc:postgresql://postgres:5432/traffic_db',
     'properties': {
@@ -23,13 +23,17 @@ SPARK_POSTGRES = {
     }
 
 '''
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 def write_to_postgres(df, table_name, postgres_url, postgres_properties):
-    """Write processed DataFrame to PostgreSQL."""
+    """Write processed DataFrame to PostgreSQL with error handling."""
     try:
-        df.show(truncate=False)
+        logger.info(f"Writing DataFrame to table {table_name} in PostgreSQL.")
+        df.show(truncate=False)  # Display DataFrame content for debugging
         df.write.jdbc(url=postgres_url['url'], table=table_name, mode="append", properties=postgres_properties)
+        logger.info(f"Successfully wrote to table {table_name}")
     except Exception as e:
-        print(f"Error writing to PostgreSQL table {table_name}: {e}")
+        logger.error(f"Error writing to PostgreSQL table {table_name}: {e}")
 
 def main():
     kafka_broker = "kafka:9092"
