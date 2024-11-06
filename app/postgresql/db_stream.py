@@ -146,21 +146,24 @@ def fetch_incident_count_today():
 # Fetch the incidents over time for the past month
 def fetch_incidents_today():
     """Fetch today's incidents with their counts over time."""
+    current_date = datetime.now().strftime("%d/%m")  # Format today's date as "DD/MM"
+
+    query = """
+    SELECT EXTRACT(HOUR FROM TO_TIMESTAMP("incident_date" || ' ' || "incident_time", 'DD/MM HH24:MI')) AS incident_hour,
+           COUNT(*) AS incident_count
+    FROM incident_table
+    WHERE "incident_date" = %s
+    GROUP BY incident_hour
+    ORDER BY incident_hour;
+    """
+    
     conn = connect_db()
     if not conn:
         return pd.DataFrame()
 
-    query = """
-    SELECT TO_TIMESTAMP(incident_date || '/' || EXTRACT(YEAR FROM CURRENT_DATE) || ' ' || incident_time, 'DD/MM/YYYY HH24:MI') AS incident_datetime, 
-           COUNT(*) AS incident_count
-    FROM incident_table
-    WHERE TO_DATE(incident_date || '/' || EXTRACT(YEAR FROM CURRENT_DATE), 'DD/MM/YYYY') = CURRENT_DATE
-    GROUP BY incident_datetime
-    ORDER BY incident_datetime;
-    """
-    
     with conn.cursor() as cursor:
-        cursor.execute(query)
+        # Execute the query with today's date as a parameter
+        cursor.execute(query, (current_date,))
         result = cursor.fetchall()
     
     conn.close()
