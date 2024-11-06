@@ -149,14 +149,16 @@ def fetch_incidents_today():
     current_date = datetime.now().strftime('%d/%m')  # Format to match incident_date format (e.g., "04/11")
     
     query = f"""
-    SELECT TO_TIMESTAMP("incident_date" || '/{current_year} ' || "incident_time", 'DD/MM/YYYY HH24:MI') AS incident_datetime, 
-        COUNT(*) AS incident_count
-    FROM incident_table
-    WHERE "incident_date" = %s
-    GROUP BY incident_datetime
-    ORDER BY incident_datetime;
+    WITH recent_incidents AS (
+        SELECT 
+            TO_TIMESTAMP(incident_date || '/' || EXTRACT(YEAR FROM CURRENT_DATE) || ' ' || incident_time, 'DD/MM/YYYY HH24:MI') AS incident_datetime,
+            COUNT(*) AS incident_count
+        FROM incident_table
+        GROUP BY incident_datetime
+        ORDER BY incident_datetime
+    )
+    SELECT * FROM recent_incidents;
     """
-    
     conn = connect_db()
     if not conn:
         return pd.DataFrame()
