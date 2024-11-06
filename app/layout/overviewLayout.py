@@ -20,6 +20,18 @@ layout = html.Div([
                     ])
                 ], className="shadow p-3 mb-4 bg-primary text-white rounded"),
                 width=6
+            ),
+            dbc.Col(
+                dbc.Card([
+                    dbc.CardBody([
+                        html.Span("Traffic Jams: ", className="card-title", style={'font-size': '24px', 'font-weight': 'bold'}),
+                        html.Span(id="jam-count", className="card-text", style={'font-size': '24px', 'font-weight': 'bold'}),
+                        html.Br(),
+                        html.Span("Average Speed in Jams: ", style={'font-size': '18px'}),
+                        html.Span(id="avg-speed", className="card-text", style={'font-size': '18px'}),
+                    ])
+                ], className="shadow p-3 mb-4 bg-danger text-white rounded"),
+                width=6
             )
         ], className="mb-4", style={'flex-wrap': 'wrap', 'justify-content': 'space-between'}),
         
@@ -34,6 +46,7 @@ layout = html.Div([
                 width=6
             )
         ], className="mb-4", style={'flex-wrap': 'wrap', 'justify-content': 'space-between'}),
+        
         dcc.Interval(id='interval-component-overview', interval=2*1000, n_intervals=0)  # Auto-refresh every 10 seconds
     ], style={'overflow-x': 'hidden'})
 ])
@@ -49,6 +62,24 @@ def register_callbacks(app):
         incident_count = fetch_incident_count_today()
         return f"{incident_count}"
     # Callback to update the trend chart
+    @app.callback(
+        Output('jam-count', 'children'),
+        Output('avg-speed', 'children'),
+        Input('interval-component-overview', 'n_intervals')
+    )
+    def update_traffic_jams(n):
+        # Fetch traffic jam statistics
+        traffic_jam_stats = fetch_traffic_jams()
+        jam_count = traffic_jam_stats['jam_count']
+        avg_speed = traffic_jam_stats['avg_speed']
+
+        # Format for display
+        jam_count_display = f"{jam_count}"
+        avg_speed_display = f"{avg_speed:.2f} km/h" if avg_speed is not None else "N/A"
+
+        return jam_count_display, avg_speed_display
+
+    
     @app.callback(
         Output('trend-chart', 'figure'),
         Input('interval-component-overview', 'n_intervals')
