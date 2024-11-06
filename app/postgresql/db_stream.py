@@ -148,11 +148,17 @@ def fetch_incidents_over_time():
     """Fetch the number of incidents per day over the past 30 days."""
     current_year = datetime.now().year  # Get the current year
     query = f"""
-    SELECT TO_TIMESTAMP("incident_date" || '/{current_year} ' || "incident_time", 'DD/MM/YYYY HH24:MI') AS incident_datetime, 
-           COUNT(*) AS incident_count
-    FROM incident_table
-    GROUP BY incident_datetime
-    ORDER BY incident_datetime;
+    SSELECT 
+    TO_TIMESTAMP(incident_date || '/' || EXTRACT(YEAR FROM CURRENT_DATE) || ' ' || incident_time, 'DD/MM/YYYY HH24:MI') AS incident_datetime, 
+    COUNT(*) AS incident_count
+    FROM 
+    incident_table
+    WHERE 
+    TO_DATE(incident_date || '/' || EXTRACT(YEAR FROM CURRENT_DATE), 'DD/MM/YYYY') = CURRENT_DATE
+    GROUP BY 
+    incident_datetime
+    ORDER BY 
+    incident_datetime;
     """
     conn = connect_db()
     if not conn:
