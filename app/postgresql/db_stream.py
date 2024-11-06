@@ -161,7 +161,7 @@ def fetch_incidents_over_time():
         return pd.DataFrame()
 
     with conn.cursor() as cursor:
-        cursor.execute(query)
+        cursor.execute(query, (current_date,))
         result = cursor.fetchall()
     
     conn.close()
