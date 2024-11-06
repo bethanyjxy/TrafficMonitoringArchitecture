@@ -198,33 +198,37 @@ def register_callbacks(app):
 
     # Update trend chart
     @app.callback(
-        Output('trend-chart', 'figure'),
-        Input('interval-component-overview', 'n_intervals')
-    )
+    Output('trend-chart', 'figure'),
+    Input('interval-component-overview', 'n_intervals')
+)
     def update_trend_chart(n):
         df = fetch_incidents_today()
+        
         fig = px.area(
             df, 
-            x="incident_date", 
+            x="incident_datetime",  # Now showing datetime throughout the day
             y="incident_count", 
-            title="Incident Trends Over Time",
-            labels={"incident_date": "Date", "incident_count": "Number of Incidents"},
+            title="Incidents Throughout the Day",
+            labels={"incident_datetime": "Time", "incident_count": "Number of Incidents"},
             color_discrete_sequence=["#adb5bd"]
         )
+        
         fig.update_traces(
             line=dict(color="#74c0fc"),
             fill='tozeroy',
-            hovertemplate="Date: %{x}<br>Number of Incidents: %{y}<extra></extra>"
+            hovertemplate="Time: %{x|%H:%M}<br>Number of Incidents: %{y}<extra></extra>"
         )
+        
         fig.update_layout(
             margin={"r":0, "t":50, "l":0, "b":0},
             title={'x':0.5, 'xanchor': 'center'},
-            xaxis_title="Date",
+            xaxis_title="Time",
             yaxis_title="Number of Incidents",
             template="plotly_white",
             hovermode="x unified",
             transition={'duration': 500}
         )
+        
         return fig
 
     # Update pie chart
