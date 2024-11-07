@@ -21,30 +21,39 @@ with DAG(
 
     # Task to delete records from incident_table
     delete_from_incident_table = PostgresOperator(
-        task_id='delete_from_incident_table',
-        postgres_conn_id='postgres_default',  # Use the connection ID you set up
-        sql="DELETE FROM incident_table WHERE timestamp < NOW() - INTERVAL '3 days';"
+    task_id='delete_from_incident_table',
+    postgres_conn_id='postgres_default',
+    sql="""
+        DELETE FROM incident_table 
+        WHERE timestamp::timestamp < NOW() - INTERVAL '4 days';
+    """
     )
 
     # Task to delete records from speedbands_table
     delete_from_speedbands_table = PostgresOperator(
         task_id='delete_from_speedbands_table',
         postgres_conn_id='postgres_default',
-        sql="DELETE FROM speedbands_table WHERE timestamp < NOW() - INTERVAL '3 days';"
+        sql="""
+            DELETE FROM speedbands_table 
+            WHERE timestamp::timestamp < NOW() - INTERVAL '4 days';
+        """
     )
 
     # Task to delete records from vms_table
     delete_from_vms_table = PostgresOperator(
         task_id='delete_from_vms_table',
         postgres_conn_id='postgres_default',
-        sql="DELETE FROM vms_table WHERE timestamp < NOW() - INTERVAL '3 days';"
+        sql="""
+            DELETE FROM vms_table 
+            WHERE timestamp::timestamp < NOW() - INTERVAL '4 days';
+        """
     )
 
     # Task to delete records from image_table
     delete_from_image_table = PostgresOperator(
         task_id='delete_from_image_table',
         postgres_conn_id='postgres_default',
-        sql="DELETE FROM image_table WHERE timestamp < NOW() - INTERVAL '3 days';"
+        sql="DELETE FROM image_table WHERE img_timestamp < NOW() - INTERVAL '4 days';"
     )
 
     # Define task dependencies (optional, depending on if they need to run sequentially)
