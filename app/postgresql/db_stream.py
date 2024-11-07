@@ -162,7 +162,7 @@ def fetch_incident_count_today():
     query = """
     SELECT COUNT(*) AS incident_count
     FROM incident_table
-    WHERE TO_DATE(incident_date || '/' || EXTRACT(YEAR FROM CURRENT_DATE), 'DD/MM/YYYY') = CURRENT_DATE
+    WHERE TO_DATE(incident_date || '/' || EXTRACT(YEAR FROM TIMEZONE('Asia/Singapore', NOW())), 'DD/MM/YYYY') = TIMEZONE('Asia/Singapore', NOW())::date
     LIMIT 100;
 
     """
@@ -191,7 +191,7 @@ def fetch_incident_map():
     # Query to select all records where the incident_date is today
     query = sql.SQL("""
         SELECT * FROM incident_table
-        WHERE incident_date = %s
+        WHERE TO_DATE(incident_date || '/' || EXTRACT(YEAR FROM TIMEZONE('Asia/Singapore', NOW())), 'DD/MM/YYYY') = TIMEZONE('Asia/Singapore', NOW())::date
     """)
 
     # Execute the query with today's date as a parameter
