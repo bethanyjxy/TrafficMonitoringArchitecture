@@ -11,10 +11,44 @@ import requests
 
 
 # Define the layout
+
+
 layout = html.Div([
-    # Page Title
-    html.H3('Real-Time Live Traffic', className="text-left mb-4"),
     
+    html.H3('Real-Time Live Traffic', className="text-left mb-4"),
+    # Page Title
+    dbc.Row([
+        dbc.Col(
+            dbc.Card(
+                dbc.CardBody([
+                    html.H6("Total Incidents Today", className="card-title"),
+                    html.P(id="incident-count", className="card-text"),  # Dynamic content
+                ]),
+                color="info", inverse=True, className="mb-4"
+            ),
+            width=3
+        ),
+        dbc.Col(
+            dbc.Card(
+                dbc.CardBody([
+                    html.H6("Current Traffic Jams", className="card-title"),
+                    html.P(id="jam-count", className="card-text"),  # Dynamic content
+                ]),
+                color="danger", inverse=True, className="mb-4"
+            ),
+            width=3
+        ),
+        dbc.Col(
+            dbc.Card(
+                dbc.CardBody([
+                    html.H6("Average Speed", className="card-title"),
+                    html.P(id="avg-speed", className="card-text"),  # Dynamic content
+                ]),
+                color="warning", inverse=True, className="mb-4"
+            ),
+            width=3
+        ),
+    ], className="mb-4"),
     # Dropdown to select the table
     dbc.Row([
         dbc.Col(
@@ -111,6 +145,30 @@ layout = html.Div([
 
 # Define callback registration 
 def register_callbacks(app):
+     # Update incident count dynamically
+    @app.callback(
+        Output('incident-count', 'children'),
+        Input('interval-component-overview', 'n_intervals')
+    )
+    def update_incident_count(n):
+        incident_count = fetch_incident_count_today()
+        return f"{incident_count}"
+
+    # Update traffic jam count and average speed dynamically
+    @app.callback(
+        Output('jam-count', 'children'),
+        Output('avg-speed', 'children'),
+        Input('interval-component-overview', 'n_intervals')
+    )
+    def update_traffic_jams(n):
+        traffic_jam_stats = fetch_traffic_jams()
+        jam_count = traffic_jam_stats.get('jam_count', 'N/A')
+        avg_speed = traffic_jam_stats.get('avg_speed', 'N/A')
+        return f"{jam_count}", f"Avg Speed: {avg_speed:.2f} km/h" if avg_speed != 'N/A' else "N/A"
+    
+    
+    
+    
     
     #Function to toggle location drop down when speedbands_table is selected 
     @app.callback(

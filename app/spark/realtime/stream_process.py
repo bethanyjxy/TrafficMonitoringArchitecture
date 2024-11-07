@@ -1,6 +1,6 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import udf, col, from_json,  regexp_extract, current_timestamp, regexp_replace, date_format, trim
-from pyspark.sql.types import StructType, StringType, DoubleType, IntegerType, TimestampType
+from pyspark.sql.types import StructType, StringType, DoubleType, IntegerType, expr,TimestampType
 
 def create_spark_session():
     # Initialize Spark session with Kafka support
@@ -45,8 +45,8 @@ def process_stream(kafka_stream):
         .withColumn("incident_time", regexp_extract(col("Message"), time_regex, 1)) \
         .withColumn("incident_message", regexp_replace(col("Message"), pattern_regex, "")) \
         .withColumn("incident_message", trim(col("incident_message"))) \
-        .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") ) \
-        .dropDuplicates(["Type", "Latitude", "Longitude", "Message"]) 
+        .withColumn("timestamp", date_format(current_timestamp() + expr('INTERVAL 8 HOURS'), "yyyy-MM-dd HH:mm:ss")) \
+        .dropDuplicates(["Type", "Latitude", "Longitude", "Message"])
           
     speedbands_schema = StructType() \
         .add("LinkID", StringType()) \
@@ -63,7 +63,7 @@ def process_stream(kafka_stream):
     speedbands_stream = kafka_stream.filter(col("topic") == "traffic_speedbands") \
         .withColumn("value", from_json(col("value"), speedbands_schema)) \
         .select(col("value.*"))\
-        .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") ) \
+        .withColumn("timestamp", date_format(current_timestamp() + expr('INTERVAL 8 HOURS'), "yyyy-MM-dd HH:mm:ss")) \
         .dropDuplicates(["LinkID"])
         
     speedbands_stream = speedbands_stream \
@@ -85,7 +85,9 @@ def process_stream(kafka_stream):
     image_stream = kafka_stream.filter(col("topic") == "traffic_images") \
         .withColumn("value", from_json(col("value"), images_schema))\
         .select(col("value.*"))\
-        .na.drop()
+        .na.drop()\
+        .withColumn("img_timestamp", date_format(current_timestamp() + expr('INTERVAL 8 HOURS'), "yyyy-MM-dd HH:mm:ss"))
+
        # .withColumn("Location", map_camera_id_udf(col("camera_id")))  
         
     vms_schema = StructType() \
@@ -99,7 +101,7 @@ def process_stream(kafka_stream):
         .withColumn("value", from_json(col("value"), vms_schema)) \
         .select(col("value.*"))\
         .filter(col("Message") != "") \
-        .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") ) \
+        .withColumn("timestamp", date_format(current_timestamp() + expr('INTERVAL 8 HOURS'), "yyyy-MM-dd HH:mm:ss")) \
         .dropDuplicates(["EquipmentID"])
 
         
