@@ -16,37 +16,6 @@ import requests
 layout = html.Div([
     
     html.H3('Real-Time Live Traffic', className="text-left mb-4"),
-    # Page Title
-    dbc.Row([
-        dbc.Col(
-            dbc.Card([
-                dbc.CardBody([
-                    html.H5("Incidents Today", className="card-title"),
-                    html.H2(id="incident-count", className="card-text text-white", style={'transition': 'all 0.5s ease'}),
-                ]),
-            ], className="shadow p-3 mb-4 bg-success text-white rounded"),
-            width=4
-        ),
-        dbc.Col(
-            dbc.Card([
-                dbc.CardBody([
-                    html.H5("Average Speed", className="card-title"),
-                    html.H2(id="avg-speed", className="card-text text-white", style={'transition': 'all 0.5s ease'}),
-                ]),
-            ], className="shadow p-3 mb-4 bg-danger text-white rounded"),
-            width=4
-        ),
-        
-        dbc.Col(
-            dbc.Card([
-                dbc.CardBody([
-                    html.H5("Traffic Jams", className="card-title"),
-                    html.H2(id="jam-count", className="card-text text-white", style={'transition': 'all 0.5s ease'}),
-                ]),
-            ], className="shadow p-3 mb-4 bg-warning text-white rounded"),
-            width=4
-        )
-    ], className="mb-4"),
     # Dropdown to select the table
     dbc.Row([
         dbc.Col(
@@ -136,49 +105,18 @@ layout = html.Div([
     ), 
 
     # Incident Table Section with Loading Spinner
-    dcc.Loading(
-        id="loading-incident-table",
-        type="circle",
-        children=dbc.Row([
-            dbc.Col([
-                html.H3('Recent Incidents', className="text-left mb-4"),
-                html.Div(id='incident-table')
-            ], width=12, className="shadow-sm p-3 mb-4 bg-white rounded")  
-        ], justify="center")
-    ),
-    
-    # Auto-refresh every min
+    dbc.Row([
+        dbc.Col([
+            html.H3('Recent Incidents', className="text-left mb-4"),
+            html.Div(id='incident-table')
+        ], width=12, className="shadow-sm p-3 mb-4 bg-white rounded")  
+    ], justify="center"),
+# Auto-refresh every min
     dcc.Interval(id='interval-component', interval=60*1000, n_intervals=0)
 ], style={'max-width': '100%', 'margin': '0 auto', 'padding': '20px', 'overflow-x': 'hidden'})
 
-
-
 # Define callback registration 
 def register_callbacks(app):
-     # Update incident count dynamically
-    @app.callback(
-        Output('incident-count', 'children'),
-        Input('interval-component-overview', 'n_intervals')
-    )
-    def update_incident_count(n):
-        incident_count = fetch_incident_count_today()
-        return f"{incident_count}"
-
-    # Update traffic jam count and average speed dynamically
-    @app.callback(
-        Output('jam-count', 'children'),
-        Output('avg-speed', 'children'),
-        Input('interval-component-overview', 'n_intervals')
-    )
-    def update_traffic_jams(n):
-        traffic_jam_stats = fetch_traffic_jams()
-        jam_count = traffic_jam_stats.get('jam_count', 'N/A')
-        avg_speed = traffic_jam_stats.get('avg_speed', 'N/A')
-        return f"{jam_count}", f"Avg Speed: {avg_speed:.2f} km/h" if avg_speed != 'N/A' else "N/A"
-    
-    
-    
-    
     
     #Function to toggle location drop down when speedbands_table is selected 
     @app.callback(
