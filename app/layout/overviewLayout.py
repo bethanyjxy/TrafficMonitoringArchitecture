@@ -23,7 +23,7 @@ layout = html.Div([
             dbc.Col(
                 dbc.Card([
                     dbc.CardBody([
-                        html.H5("Average Speed", className="card-title"),
+                        html.H5("", className="card-title"),
                         html.H2(id="avg-speed", className="card-text text-white", style={'transition': 'all 0.5s ease'}),
                     ]),
                 ], className="shadow p-3 mb-4 bg-danger text-white rounded"),
