@@ -70,6 +70,8 @@ def fetch_stream_table(table_name):
     conn.close()
     return data_dicts
 
+
+
 def fetch_speedband_location(location):
     conn = connect_db()
     if not conn:
@@ -175,6 +177,35 @@ def fetch_incident_count_today():
     conn.close()
     return result[0] if result else 0
 
+def fetch_incident_map():
+    """Fetch all records from the incident_table where the incident_date is today."""
+    conn = connect_db()
+    if not conn:
+        return []
+
+    cursor = conn.cursor()
+
+    # Get today's date in 'YYYY-MM-DD' format
+    today_date = datetime.now().strftime('%Y-%m-%d')
+
+    # Query to select all records where the incident_date is today
+    query = sql.SQL("""
+        SELECT * FROM incident_table
+        WHERE incident_date = %s
+    """)
+
+    # Execute the query with today's date as a parameter
+    cursor.execute(query, (today_date,))
+    
+    # Fetch all rows and column names
+    data = cursor.fetchall()
+    column_names = [desc[0].lower() for desc in cursor.description]  # Convert column names to lowercase
+    
+    # Convert each row to a dictionary mapping column names to values
+    data_dicts = [dict(zip(column_names, row)) for row in data]
+
+    conn.close()
+    return data_dicts
 
 # Fetch the incidents over time for the past month
 def fetch_incidents_today():

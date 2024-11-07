@@ -413,6 +413,8 @@ def register_callbacks(app):
         df = pd.DataFrame(data)
 
         if selected_table == 'incident_table':
+            data = fetch_incident_map()
+            df = pd.DataFrame(data)
             # Ensure data is available
             if df.empty:
                 return html.P("No data available."), None
