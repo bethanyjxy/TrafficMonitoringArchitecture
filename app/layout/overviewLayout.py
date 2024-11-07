@@ -23,9 +23,18 @@ layout = html.Div([
             dbc.Col(
                 dbc.Card([
                     dbc.CardBody([
+                        html.H5("Average Speed", className="card-title"),
+                        html.H2(id="avg-speed", className="card-text text-white", style={'transition': 'all 0.5s ease'}),
+                    ]),
+                ], className="shadow p-3 mb-4 bg-danger text-white rounded"),
+                width=4
+            ),
+            
+            dbc.Col(
+                dbc.Card([
+                    dbc.CardBody([
                         html.H5("Traffic Jams", className="card-title"),
                         html.H2(id="jam-count", className="card-text text-white", style={'transition': 'all 0.5s ease'}),
-                        html.H5(id="avg-speed", className="card-subtitle text-light mt-2", style={'transition': 'all 0.5s ease'})
                     ]),
                 ], className="shadow p-3 mb-4 bg-warning text-white rounded"),
                 width=4
