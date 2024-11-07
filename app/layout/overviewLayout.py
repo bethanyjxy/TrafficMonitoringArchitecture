@@ -17,7 +17,7 @@ layout = html.Div([
                         html.H5("Incidents Today", className="card-title"),
                         html.H2(id="incident-count", className="card-text text-white", style={'transition': 'all 0.5s ease'}),
                     ]),
-                ], className="shadow p-3 mb-4 bg-danger text-white rounded"),
+                ], className="shadow p-3 mb-4 bg-success text-white rounded"),
                 width=4
             ),
             dbc.Col(

@@ -19,35 +19,33 @@ layout = html.Div([
     # Page Title
     dbc.Row([
         dbc.Col(
-            dbc.Card(
+            dbc.Card([
                 dbc.CardBody([
-                    html.H6("Total Incidents Today", className="card-title"),
-                    html.P(id="incident-count", className="card-text"),  # Dynamic content
+                    html.H5("Incidents Today", className="card-title"),
+                    html.H2(id="incident-count", className="card-text text-white", style={'transition': 'all 0.5s ease'}),
                 ]),
-                color="info", inverse=True, className="mb-4"
-            ),
-            width=3
+            ], className="shadow p-3 mb-4 bg-success text-white rounded"),
+            width=4
         ),
         dbc.Col(
-            dbc.Card(
+            dbc.Card([
                 dbc.CardBody([
-                    html.H6("Current Traffic Jams", className="card-title"),
-                    html.P(id="jam-count", className="card-text"),  # Dynamic content
+                    html.H5("Average Speed", className="card-title"),
+                    html.H2(id="avg-speed", className="card-text text-white", style={'transition': 'all 0.5s ease'}),
                 ]),
-                color="danger", inverse=True, className="mb-4"
-            ),
-            width=3
+            ], className="shadow p-3 mb-4 bg-danger text-white rounded"),
+            width=4
         ),
+        
         dbc.Col(
-            dbc.Card(
+            dbc.Card([
                 dbc.CardBody([
-                    html.H6("Average Speed", className="card-title"),
-                    html.P(id="avg-speed", className="card-text"),  # Dynamic content
+                    html.H5("Traffic Jams", className="card-title"),
+                    html.H2(id="jam-count", className="card-text text-white", style={'transition': 'all 0.5s ease'}),
                 ]),
-                color="warning", inverse=True, className="mb-4"
-            ),
-            width=3
-        ),
+            ], className="shadow p-3 mb-4 bg-warning text-white rounded"),
+            width=4
+        )
     ], className="mb-4"),
     # Dropdown to select the table
     dbc.Row([
