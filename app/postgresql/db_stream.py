@@ -45,12 +45,17 @@ def fetch_stream_table(table_name):
     # Calculate the timestamp for 1 days ago
     days_ago = datetime.now() - timedelta(days=1)
 
-    # Use sql.Identifier for safe table name injection
+    timestamp_column = "img_timestamp" if table_name == "image_table" else "timestamp"
+
+    # Use sql.Identifier for safe table and column name injection
     query = sql.SQL("""
-        SELECT * FROM {} 
-        WHERE CAST("timestamp" AS timestamp) >= %s
+        SELECT * FROM {table}
+        WHERE CAST({timestamp_column} AS timestamp) >= %s
         LIMIT 500
-    """).format(sql.Identifier(table_name))
+    """).format(
+        table=sql.Identifier(table_name),
+        timestamp_column=sql.Identifier(timestamp_column)
+    )
     
     # Execute the query with the timestamp as a parameter
     cursor.execute(query, (days_ago,))
