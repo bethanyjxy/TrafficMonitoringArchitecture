@@ -145,7 +145,7 @@ def register_callbacks(app):
         Input('interval-component', 'n_intervals')
     )
     def update_table(n):
-        data = fetch_stream_table('incident_table')
+        data = fetch_incident_table()
         df = pd.DataFrame(data)
         
         if df.empty:
