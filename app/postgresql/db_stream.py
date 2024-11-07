@@ -100,6 +100,34 @@ def fetch_speedband_location(location):
     df = pd.DataFrame(data, columns=column_names)
     return df  # Return the DataFrame
 
+def fetch_incident_table():
+    # Define your database connection parameters
+    conn = connect_db()
+    if not conn:
+        return pd.DataFrame()  # Return an empty DataFrame if the connection fails
+
+    cursor = conn.cursor()
+    
+    # SQL query to fetch latest incidents
+    query = """
+    SELECT incident_date, incident_time, incident_message
+    FROM incident_table
+    ORDER BY TO_TIMESTAMP(incident_date || ' ' || incident_time, 'DD/MM HH24:MI') DESC
+    LIMIT 50;
+    """
+    
+    # Execute query and fetch data
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        data = cursor.fetchall()
+    
+    # Convert to DataFrame for easy manipulation
+    df = pd.DataFrame(data, columns=['incident_date', 'incident_time', 'incident_message'])
+    
+    # Close connection
+    conn.close()
+    
+    return df
 
 
 def fetch_unique_location():
