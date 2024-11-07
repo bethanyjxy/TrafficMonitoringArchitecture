@@ -86,7 +86,6 @@ def process_stream(kafka_stream):
         .withColumn("value", from_json(col("value"), images_schema))\
         .select(col("value.*"))\
         .na.drop()\
-        .withColumn("img_timestamp", date_format(current_timestamp() + expr('INTERVAL 8 HOURS'), "yyyy-MM-dd HH:mm:ss"))
 
        # .withColumn("Location", map_camera_id_udf(col("camera_id")))  
         

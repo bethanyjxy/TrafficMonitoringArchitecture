@@ -79,65 +79,77 @@ layout = html.Div([
         )
     ], id='location-row', style={'display': 'none'}),  # Hide initially
     
-    # Row for the map
-    dbc.Row([
-        dbc.Col(
-            html.Div(id='map-output', style={'padding': '10px'}),
-            width=12,  
-            className="shadow-sm p-3 mb-4 bg-white rounded" ,
-            id = "general-map-row",
-            style={'display':'block'},
-        )
-    ], justify="center"),  
-    
-    # Row for the speedband map
-    dbc.Row([  
-        dbc.Col(
-            html.Div([
-                dcc.Graph(id='speedband-map'),
-            ]),
-            width=12,  
-            className="shadow-sm p-3 mb-4 bg-white rounded",
-            id="speedband-map-row",
-            style={'display': 'none'}, 
-        )
-    ], justify="center"),
+    dcc.Loading(
+        id="loading-map",
+        type="circle",
+        children=dbc.Row([
+            dbc.Col(
+                html.Div(id='map-output', style={'padding': '10px'}),
+                width=12,  
+                className="shadow-sm p-3 mb-4 bg-white rounded",
+                id="general-map-row",
+                style={'display': 'block'},
+            )
+        ], justify="center"),
+        fullscreen=True  # This option shows the spinner in fullscreen
+    ),
 
-    # Row for the map and image container
-    dbc.Row([  
-        dbc.Col(
-            html.Div([
-                dcc.Graph(id='camera-map'),
-            ]),
-            width=7,  
-            className="shadow-sm p-3 mb-4 bg-white rounded",
-            id = "camera-map-row",
-            style={'display':'none'},
-        ),
-        dbc.Col(
-            html.Div(id='image-container', style={'marginTop': '20px', 'textAlign': 'center'}),
-            width=5, 
-            className="shadow-sm p-3 mb-4 bg-white rounded",
-            id = "image-container-row",
-            style={'display':'none'}
-            
-        ),
-    ], justify="center") , 
-    
+    # Speedband Map Row with Loading Spinner
+    dcc.Loading(
+        id="loading-speedband-map",
+        type="circle",
+        children=dbc.Row([  
+            dbc.Col(
+                html.Div([
+                    dcc.Graph(id='speedband-map'),
+                ]),
+                width=12,  
+                className="shadow-sm p-3 mb-4 bg-white rounded",
+                id="speedband-map-row",
+                style={'display': 'none'}, 
+            )
+        ], justify="center")
+    ),
 
-    # Row for the incident table below the map
-    dbc.Row([
-        dbc.Col([
-            html.H3('Recent Incidents', className="text-left mb-4"),
-            html.Div(id='incident-table')
-        ], width=12, className="shadow-sm p-3 mb-4 bg-white rounded")  
-    ], justify="center"), 
-    
+    # Camera Map and Image Container with Loading Spinner
+    dcc.Loading(
+        id="loading-camera-map",
+        type="circle",
+        children=dbc.Row([  
+            dbc.Col(
+                html.Div([
+                    dcc.Graph(id='camera-map'),
+                ]),
+                width=7,  
+                className="shadow-sm p-3 mb-4 bg-white rounded",
+                id="camera-map-row",
+                style={'display': 'none'},
+            ),
+            dbc.Col(
+                html.Div(id='image-container', style={'marginTop': '20px', 'textAlign': 'center'}),
+                width=5, 
+                className="shadow-sm p-3 mb-4 bg-white rounded",
+                id="image-container-row",
+                style={'display': 'none'}
+            ),
+        ], justify="center")
+    ), 
+
+    # Incident Table Section with Loading Spinner
+    dcc.Loading(
+        id="loading-incident-table",
+        type="circle",
+        children=dbc.Row([
+            dbc.Col([
+                html.H3('Recent Incidents', className="text-left mb-4"),
+                html.Div(id='incident-table')
+            ], width=12, className="shadow-sm p-3 mb-4 bg-white rounded")  
+        ], justify="center")
+    ),
     
     # Auto-refresh every min
     dcc.Interval(id='interval-component', interval=60*1000, n_intervals=0)
 ], style={'max-width': '100%', 'margin': '0 auto', 'padding': '20px', 'overflow-x': 'hidden'})
-
 
 
 
