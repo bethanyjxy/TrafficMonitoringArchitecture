@@ -87,8 +87,6 @@ def process_stream(kafka_stream):
         .select(col("value.*"))\
         .na.drop()
        # .withColumn("Location", map_camera_id_udf(col("camera_id")))  
-    image_stream = image_stream.withColumn("img_timestamp", col("img_timestamp").cast(TimestampType()))
-      
         
     vms_schema = StructType() \
         .add("EquipmentID", StringType()) \
