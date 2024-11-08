@@ -30,7 +30,7 @@ layout = html.Div([
             dbc.Col(
                 dbc.Card([
                     dbc.CardBody([
-                        html.H5("", className="card-title"),
+                        html.H5("Average Speed", className="card-title"),
                         html.H2(id="avg-speed", className="card-text text-white", style={'transition': 'all 0.5s ease'}),
                     ]),
                 ], className="shadow p-3 mb-4 bg-danger text-white rounded"),
@@ -137,7 +137,7 @@ def register_callbacks(app):
         traffic_jam_stats = fetch_traffic_jams()
         jam_count = traffic_jam_stats.get('jam_count', 'N/A')
         avg_speed = traffic_jam_stats.get('avg_speed', 'N/A')
-        return f"{jam_count}", f"Avg Speed: {avg_speed:.2f} km/h" if avg_speed != 'N/A' else "N/A"
+        return f"{jam_count}", f"{avg_speed:.2f} km/h" if avg_speed != 'N/A' else "N/A"
 
     # Update VMS messages
     @app.callback(
