@@ -47,6 +47,11 @@ layout = html.Div([
             width=3
         )
     ], id='location-row', style={'display': 'none'}),  # Hide initially
+
+    dbc.Row([
+        dbc.Col(html.Span("Live", className="badge bg-success mx-2"), width="auto"),
+        dbc.Col(html.P(id="last-updated", className="text-muted"), width="auto")
+    ], justify="left", className="mb-3"),
     
     # Row for the map
     dbc.Row([
@@ -120,8 +125,14 @@ layout = html.Div([
 # Define callback registration 
 def register_callbacks(app):
      # Update incident count dynamically
-    
-    
+
+    @app.callback(
+        Output("last-updated", "children"),
+        Input("interval-component-overview", "n_intervals")
+    )
+    def update_timestamp(n):
+        singapore_time = datetime.utcnow() + timedelta(hours=8)
+        return f"Last updated: {singapore_time.strftime('%H:%M:%S')} SGT"
     
     
     #Function to toggle location drop down when speedbands_table is selected 
