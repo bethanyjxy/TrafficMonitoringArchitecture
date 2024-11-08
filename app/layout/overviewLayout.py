@@ -8,7 +8,14 @@ from postgresql.db_stream import *
 # Traffic Overview Layout
 layout = html.Div([
     html.H3('Traffic Overview', className="text-center mb-5 mt-2"),
+
     dbc.Container([
+        # Live Indicator Row
+        dbc.Row([
+            dbc.Col(html.Span("Live", className="badge bg-success mx-2"), width="auto"),
+            dbc.Col(html.P(id="last-updated", className="text-muted"), width="auto")
+        ], justify="left", className="mb-3"),
+
         # Row with Metrics
         dbc.Row([
             dbc.Col(
@@ -29,7 +36,6 @@ layout = html.Div([
                 ], className="shadow p-3 mb-4 bg-danger text-white rounded"),
                 width=4
             ),
-            
             dbc.Col(
                 dbc.Card([
                     dbc.CardBody([
@@ -43,19 +49,41 @@ layout = html.Div([
 
         # Row with Graphs: Incident Density Map and Trend Chart
         dbc.Row([
-            dbc.Col(dcc.Graph(id='pie-chart', className="rounded shadow p-3 mb-4"), width=4),
-            
-            dbc.Col(dcc.Graph(id='trend-chart', className="rounded shadow p-3 mb-4"), width=8)
+            dbc.Col(
+                dcc.Loading(
+                    type="circle",
+                    children=dcc.Graph(id='pie-chart', className="rounded shadow p-3 mb-4")
+                ),
+                width=4
+            ),
+            dbc.Col(
+                dcc.Loading(
+                    type="circle",
+                    children=dcc.Graph(id='trend-chart', className="rounded shadow p-3 mb-4")
+                ),
+                width=8
+            )
         ], className="mb-4"),
 
-        # Additional Row with Pie Chart, Speed Trend Chart, and Road Speed Performance
+        # Additional Row with Incident Density Map and Speed Trend Chart
         dbc.Row([
-            dbc.Col(dcc.Graph(id='incident-density-map', className="rounded shadow p-3 mb-4"), width=8),
-            dbc.Col(dcc.Graph(id='speed-trend-chart', className="rounded shadow p-3 mb-4"), width=4)
-            
+            dbc.Col(
+                dcc.Loading(
+                    type="circle",
+                    children=dcc.Graph(id='incident-density-map', className="rounded shadow p-3 mb-4")
+                ),
+                width=8
+            ),
+            dbc.Col(
+                dcc.Loading(
+                    type="circle",
+                    children=dcc.Graph(id='speed-trend-chart', className="rounded shadow p-3 mb-4")
+                ),
+                width=4
+            )
         ], className="mb-4"),
 
-        # Real-time VMS Messages List
+        # Real-time VMS Messages List and Road Speed Performance
         dbc.Row([
             dbc.Col(
                 dbc.Card([
@@ -66,18 +94,31 @@ layout = html.Div([
                 ], className="shadow p-3 mb-4 bg-light rounded"),
                 width=6
             ),
-            dbc.Col(dcc.Graph(id='road-speed-performance', className="rounded shadow p-3 mb-4"), width=6)
+            dbc.Col(
+                dcc.Loading(
+                    type="circle",
+                    children=dcc.Graph(id='road-speed-performance', className="rounded shadow p-3 mb-4")
+                ),
+                width=6
+            )
         ], className="mb-4"),
 
-
-
         # Auto-refresh interval
-        dcc.Interval(id='interval-component-overview', interval=2*1000, n_intervals=0)
+        dcc.Interval(id='interval-component-overview', interval=30*1000, n_intervals=0)
     ], fluid=True)
 ])
 
+
 # Define callback registration function
 def register_callbacks(app):
+    @app.callback(
+    Output("last-updated", "children"),
+    Input("interval-component-overview", "n_intervals")
+    )
+    def update_timestamp(n):
+        singapore_time = datetime.utcnow() + timedelta(hours=8)
+        return f"Last updated: {singapore_time.strftime('%H:%M:%S')} SGT"
+        
     @app.callback(
         Output('incident-count', 'children'),
         Input('interval-component-overview', 'n_intervals')
