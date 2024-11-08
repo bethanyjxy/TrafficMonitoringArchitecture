@@ -8,7 +8,7 @@ from dash import html,dcc,dash_table
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 import requests
-
+from datetime import datetime, date
 
 # Define the layout
 
@@ -53,6 +53,29 @@ layout = html.Div([
         dbc.Col(html.P(id="last-updated", className="text-muted"), width="auto")
     ], justify="left", className="mb-3"),
     
+    dbc.Row([
+    dbc.Col(
+        dcc.DatePickerSingle(
+            id='date-picker',
+            min_date_allowed=date(2023, 1, 1),
+            max_date_allowed=date.today(),
+            date=date.today(),  # Default to today
+            display_format='YYYY-MM-DD',
+            className="mb-4"
+        ),
+        width=3
+    ),
+    dbc.Col(
+        dcc.Dropdown(
+            id='time-dropdown',
+            options=[{'label': f'{hour:02d}:00', 'value': hour} for hour in range(24)],
+            placeholder="Select hour",
+            clearable=True,
+            className="mb-4"
+        ),
+        width=3
+    ),
+], justify="left"),
     # Row for the map
     dbc.Row([
         dbc.Col(
@@ -425,48 +448,57 @@ def register_callbacks(app):
         Output('map-output', 'children'),
         [Input('interval-component', 'n_intervals'), Input('table-selector', 'value'), Input('location-dropdown', 'value')]
     )
-    def update_map(n, selected_table, location):
-
+    def update_map(n, selected_table, location, selected_date, selected_hour):
+        # Fetch data from the selected table
         data = fetch_stream_table(selected_table)
         df = pd.DataFrame(data)
 
+        # Filter for incidents table and check if date and time filters apply
         if selected_table == 'incident_table':
+            # Fetch incident data
             data = fetch_incident_map()
             df = pd.DataFrame(data)
+
             # Ensure data is available
             if df.empty:
                 return html.P("No data available."), None
 
+            # Filter by selected date and time if provided
+            if selected_date:
+                df = df[df['incident_date'] == selected_date]
+            if selected_hour is not None:
+                df = df[pd.to_datetime(df['incident_time'], format='%H:%M').dt.hour == selected_hour]
+
+            # Plot the filtered data on the map
             fig = px.scatter_mapbox(df, lat="latitude", lon="longitude", hover_name="type", hover_data=["message"],
                                     color="type", zoom=11, height=600, width=1385)
 
             # Set map style and marker behavior on hover
             fig.update_traces(marker=dict(size=14, sizemode='area'), 
-                          selector=dict(mode='markers'),
-                          hoverinfo='text',
-                          hoverlabel=dict(bgcolor="white", font_size=12, font_family="Arial"))
-        
+                            selector=dict(mode='markers'),
+                            hoverinfo='text',
+                            hoverlabel=dict(bgcolor="white", font_size=12, font_family="Arial"))
+            
             fig.update_layout(
                 mapbox_style="open-street-map",
                 mapbox=dict(
-                center=dict(lat=1.3521, lon=103.8198),  # Singapore coordinates
-                zoom=11
-            ),               
-                margin={"r": 0, "t": 0, "l": 0, "b": 0} # Remove margins
+                    center=dict(lat=1.3521, lon=103.8198),  # Singapore coordinates
+                    zoom=11
+                ),               
+                margin={"r": 0, "t": 0, "l": 0, "b": 0}  # Remove margins
             )
-
             fig.update_traces(marker=dict(sizemode="diameter", size=12, opacity=0.7))
             
             return dcc.Graph(figure=fig)
-        
+
         elif selected_table == 'vms_table':
             # Ensure data is available
             if df.empty:
                 return html.P("No data available."), None
-            
-            # Scatter map with VMS locations as points
+
+            # Plot VMS data on the map
             fig = px.scatter_mapbox(df, lat="latitude", lon="longitude", hover_name="message",
-                                    zoom=11, height=600,width=1200)
+                                    zoom=11, height=600, width=1200)
 
             # Set map style and marker behavior on hover
             fig.update_traces(marker=dict(size=10, sizemode='area'),  
@@ -481,13 +513,12 @@ def register_callbacks(app):
                     center=dict(lat=1.3521, lon=103.8198),  # Singapore coordinates
                     zoom=11
                 ),
-                margin={"r":0,"t":0,"l":0,"b":0},  # Remove margins
-                
+                margin={"r": 0, "t": 0, "l": 0, "b": 0},  # Remove margins
             )
             fig.update_traces(marker=dict(sizemode="diameter", size=12, opacity=0.7))
 
             return dcc.Graph(figure=fig), None
-            
+                
             
 # Define the mapping of CameraID to Location
 camera_location_mapping = {
