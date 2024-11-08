@@ -16,7 +16,7 @@ dag = DAG(
     'traffic_prediction',
     default_args=default_args,
     description='DAG for traffic Prediction',
-    schedule='0 15 * * *', 
+    schedule='0 23 * * *', 
 )
 
 # Task to run the Python script
