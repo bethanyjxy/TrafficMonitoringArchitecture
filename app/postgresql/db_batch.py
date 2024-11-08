@@ -297,9 +297,10 @@ def fetch_average_speedband(road_name):
     with conn.cursor() as cursor:
         query = """
         SELECT "RoadName", "hour_of_day", "average_speedband", 
-               "rounded_speedband", "speedband_description", "recorded_at"
+       "rounded_speedband", "speedband_description", "recorded_at"
         FROM traffic_speedband_prediction
-        WHERE recorded_at <= NOW() AND "RoadName" = %s
+        WHERE recorded_at AT TIME ZONE 'Asia/Singapore' <= NOW() AT TIME ZONE 'Asia/Singapore' 
+        AND "RoadName" = %s
         ORDER BY recorded_at;
         """
         cursor.execute(query, (road_name,))

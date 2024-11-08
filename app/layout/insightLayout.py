@@ -4,67 +4,82 @@ import plotly.express as px
 from dash import html, dcc, callback_context
 from dash.dependencies import Input, Output
 from postgresql.db_batch import *
+
+
 layout = html.Div([
-    html.H3('Traffic Insights', className="text-center mb-5 mt-2"),
-    
-    # First Row
+    # 1st Row with loading spinners
     dbc.Row([
         dbc.Col(
-            dcc.Graph(id='correlation-chart', className="rounded shadow p-3 mb-4"),
+            dcc.Loading(
+                type="circle",
+                children=dcc.Graph(id='correlation-chart', className="rounded shadow p-3 mb-4")
+            ),
             width=6
         ),
         dbc.Col(
-            dcc.Graph(id='trend-chart', className="rounded shadow p-3 mb-4"),
+            dcc.Loading(
+                type="circle",
+                children=dcc.Graph(id='trend-chart', className="rounded shadow p-3 mb-4")
+            ),
             width=6
         )
     ], className="mb-4", style={'flex-wrap': 'wrap', 'justify-content': 'space-between'}),
-    
+
     # Interval for updating insights
     dcc.Interval(id='interval-component-insights', interval=300*1000, n_intervals=0),
-    
-    # 2nd Row
+
+    # 2nd Row with loading spinners
     html.Div([
-    dbc.Row([
-        dbc.Col(
-           dcc.Graph(id='speed-graph', className="rounded shadow p-3 mb-4"),
-           width=6,
-        ),
-        dbc.Col(
-            dcc.Graph(id='trafficlights-graph', className="rounded shadow p-3 mb-4"),
-            width=6,
-        )
-    ],  justify="between", className="mb-4"),
+        dbc.Row([
+            dbc.Col(
+                dcc.Loading(
+                    type="circle",
+                    children=dcc.Graph(id='speed-graph', className="rounded shadow p-3 mb-4")
+                ),
+                width=6,
+            ),
+            dbc.Col(
+                dcc.Loading(
+                    type="circle",
+                    children=dcc.Graph(id='trafficlights-graph', className="rounded shadow p-3 mb-4")
+                ),
+                width=6,
+            )
+        ], justify="between", className="mb-4"),
     ]),
-    
-    # 3rd Row
+
+    # 3rd Row with dropdown and graph with loading spinner
     html.Div([
         html.H3('Traffic Flow Prediction', className="text-center mb-4"),
-    dbc.Row([
-        dbc.Col(
-            dcc.Dropdown(
-                id='road-name-dropdown',
-                options=[],
-                placeholder="Select a road name",
-                clearable=False,
-                className="mb-4"
-            ),
-            width=12,
-        )
+        dbc.Row([
+            dbc.Col(
+                dcc.Dropdown(
+                    id='road-name-dropdown',
+                    options=[],
+                    placeholder="Select a road name",
+                    clearable=False,
+                    className="mb-4"
+                ),
+                width=12,
+            )
+        ]),
+        dbc.Row([
+            dbc.Col(
+                dcc.Loading(
+                    type="circle",
+                    children=dcc.Graph(id='average-speed-graph', className="rounded shadow p-3 mb-4")
+                ),
+                width=12,
+            )
+        ], justify="between", className="mb-4"),
     ]),
-    dbc.Row([
-        dbc.Col(
-            dcc.Graph(id='average-speed-graph', className="rounded shadow p-3 mb-4"),
-            width=12,
-        )
-    ], justify="between", className="mb-4"),
-    ]),
-    
-    # 4th row
+
+    # 4th Row with dropdowns, button group, and loading spinner for graph
     html.Div([
-    html.H3('Vehicle Population', className="text-center mb-4"),
-    
-    dbc.Row([
-        dbc.Col(
+        html.H3('Vehicle Population', className="text-center mb-4"),
+
+        dbc.Row([
+            dbc.Col(
                 dcc.Dropdown(
                     id='filter-dropdown',
                     options=[
@@ -72,42 +87,46 @@ layout = html.Div([
                         {'label': 'CC Rating', 'value': 'cc'}
                     ],
                     value='make',  # Default selection
-                    clearable= False,
-                    className="mb-3"  
+                    clearable=False,
+                    className="mb-3"
                 ),
                 width=6
             ),
             dbc.Col(
                 dcc.Dropdown(
                     id='type-dropdown',
-                    options=[],  
-                    value=None, 
-                    clearable = True,
-                    className="mb-3" 
+                    options=[],
+                    value=None,
+                    clearable=True,
+                    className="mb-3"
                 ),
                 width=6
             ),
-    ]),
-    
-    dbc.Row([  
-        dbc.Col(
-            dcc.Graph(id='population-graph', className="rounded shadow p-3 mb-4"),  
-            width=12
-        ),
-    ]),
-    dbc.Row([
-        dbc.Col(
-            dbc.ButtonGroup(
-                [
-                    dbc.Button("Cars", id='car-button', color='primary', className='rounded', n_clicks=1),  # Default selected
-                    dbc.Button("Motorcycles", id='motorcycle-button', color='secondary', className='mx-2 rounded')
-                ],
-                className='d-flex justify-content-center'  
+        ]),
+
+        dbc.Row([
+            dbc.Col(
+                dcc.Loading(
+                    type="circle",
+                    children=dcc.Graph(id='population-graph', className="rounded shadow p-3 mb-4")
+                ),
+                width=12
             ),
-            width={'size': 12, 'offset': 0} 
-        )
-    ], className="mb-4"),
-])
+        ]),
+
+        dbc.Row([
+            dbc.Col(
+                dbc.ButtonGroup(
+                    [
+                        dbc.Button("Cars", id='car-button', color='primary', className='rounded', n_clicks=1),
+                        dbc.Button("Motorcycles", id='motorcycle-button', color='secondary', className='mx-2 rounded')
+                    ],
+                    className='d-flex justify-content-center'
+                ),
+                width={'size': 12, 'offset': 0}
+            )
+        ], className="mb-4"),
+    ])
 ])
 # Define callbacks
 def register_callbacks(app):
