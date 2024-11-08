@@ -75,23 +75,30 @@ layout = html.Div([
     # Row for the map and image container
     dbc.Row([  
         dbc.Col(
-            html.Div([
-                dcc.Graph(id='camera-map'),
-            ]),
+            dcc.Loading(
+                id="loading-camera-map",
+                type="circle",
+                children=html.Div([
+                    dcc.Graph(id='camera-map'),
+                ])
+            ),
             width=7,  
             className="shadow-sm p-3 mb-4 bg-white rounded",
-            id = "camera-map-row",
-            style={'display':'none'},
+            id="camera-map-row",
+            style={'display': 'none'},
         ),
         dbc.Col(
-            html.Div(id='image-container', style={'marginTop': '20px', 'textAlign': 'center'}),
+            dcc.Loading(
+                id="loading-image-container",
+                type="circle",
+                children=html.Div(id='image-container', style={'marginTop': '20px', 'textAlign': 'center'})
+            ),
             width=5, 
             className="shadow-sm p-3 mb-4 bg-white rounded",
-            id = "image-container-row",
-            style={'display':'none'}
-            
+            id="image-container-row",
+            style={'display': 'none'}
         ),
-    ], justify="center") , 
+    ], justify="center"),
     
 
     # Row for the incident table below the map
@@ -105,7 +112,7 @@ layout = html.Div([
     
     # Auto-refresh every min
     dcc.Interval(id='interval-component', interval=60*1000, n_intervals=0)
-], style={'max-width': '100%', 'margin': '0 auto', 'padding': '20px', 'overflow-x': 'hidden'})
+], style={'max-width': '90%', 'margin': '0 auto', 'padding': '20px', 'overflow-x': 'hidden'})
 
 
 
