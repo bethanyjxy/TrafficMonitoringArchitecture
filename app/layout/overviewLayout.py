@@ -43,15 +43,16 @@ layout = html.Div([
 
         # Row with Graphs: Incident Density Map and Trend Chart
         dbc.Row([
-            dbc.Col(dcc.Graph(id='incident-density-map', className="rounded shadow p-3 mb-4"), width=4),
+            dbc.Col(dcc.Graph(id='pie-chart', className="rounded shadow p-3 mb-4"), width=4),
+            
             dbc.Col(dcc.Graph(id='trend-chart', className="rounded shadow p-3 mb-4"), width=8)
         ], className="mb-4"),
 
         # Additional Row with Pie Chart, Speed Trend Chart, and Road Speed Performance
         dbc.Row([
-            dbc.Col(dcc.Graph(id='pie-chart', className="rounded shadow p-3 mb-4"), width=4),
-            dbc.Col(dcc.Graph(id='speed-trend-chart', className="rounded shadow p-3 mb-4"), width=4),
-            dbc.Col(dcc.Graph(id='road-speed-performance', className="rounded shadow p-3 mb-4"), width=4)
+            dbc.Col(dcc.Graph(id='incident-density-map', className="rounded shadow p-3 mb-4"), width=8),
+            dbc.Col(dcc.Graph(id='speed-trend-chart', className="rounded shadow p-3 mb-4"), width=4)
+            
         ], className="mb-4"),
 
         # Real-time VMS Messages List
@@ -65,7 +66,7 @@ layout = html.Div([
                 ], className="shadow p-3 mb-4 bg-light rounded"),
                 width=6
             ),
-            dbc.Col(dcc.Graph(id='traffic-heatmap', className="rounded shadow p-3 mb-4"), width=6)
+            dbc.Col(dcc.Graph(id='road-speed-performance', className="rounded shadow p-3 mb-4"), width=6)
         ], className="mb-4"),
 
 
@@ -172,38 +173,6 @@ def register_callbacks(app):
         fig.update_layout(template="plotly_white", xaxis_tickangle=-45)
         return fig
 
-
-
-    @app.callback(
-    Output('traffic-heatmap', 'figure'),
-    Input('interval-component-overview', 'n_intervals')
-    )
-    def update_traffic_heatmap(n):
-        df = fetch_traffic_heatmap_data()
-
-        # Verify the dataframe structure to confirm required columns
-        if not {'latitude', 'longitude', 'intensity'}.issubset(df.columns):
-            print("DataFrame missing required columns: 'latitude', 'longitude', 'intensity'")
-            return {}
-
-        fig = px.density_mapbox(
-            df,
-            lat="latitude",
-            lon="longitude",
-            z="intensity",
-            radius=10,
-            center=dict(lat=1.3521, lon=103.8198),  # Set to Singapore coordinates as a fallback
-            zoom=10,
-            mapbox_style="carto-positron"  # Alternative style that doesn’t require a Mapbox token
-        )
-
-        fig.update_layout(
-            title="Traffic Heat Map",
-            title_x=0.5,
-            margin={"r":0, "t":50, "l":0, "b":0}
-        )
-
-        return fig
 
     # Update trend chart
     @app.callback(

@@ -321,6 +321,7 @@ def fetch_incident_density():
     query = """
     SELECT "Latitude", "Longitude", COUNT(*) AS incident_density
     FROM incident_table
+    WHERE TO_DATE(incident_date || '/' || EXTRACT(YEAR FROM TIMEZONE('Asia/Singapore', NOW())), 'DD/MM/YYYY') = TIMEZONE('Asia/Singapore', NOW())::date
     GROUP BY "Latitude", "Longitude"
     HAVING COUNT(*) > 1  -- Filter to show areas with multiple incidents
     ORDER BY incident_density DESC
@@ -337,22 +338,6 @@ def fetch_incident_density():
     conn.close()
     df = pd.DataFrame(result, columns=["Latitude", "Longitude", "incident_density"])
     return df
-
-def fetch_traffic_heatmap_data():
-    conn = connect_db()
-    if not conn:
-        return pd.DataFrame()
-
-    query = """
-    SELECT "Latitude" AS latitude, "Longitude" AS longitude, COUNT(*) AS intensity
-    FROM incident_table
-    GROUP BY "Latitude", "Longitude"
-    """
-    with conn.cursor() as cursor:
-        cursor.execute(query)
-        result = cursor.fetchall()
-    conn.close()
-    return pd.DataFrame(result, columns=["latitude", "longitude", "intensity"])
 
 
 def fetch_speed_trend_data():
