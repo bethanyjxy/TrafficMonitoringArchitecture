@@ -51,7 +51,7 @@ def fetch_stream_table(table_name):
     query = sql.SQL("""
         SELECT * FROM {table}
         WHERE ({timestamp_column}::timestamp AT TIME ZONE 'Asia/Singapore') >= %s
-        LIMIT 500
+        LIMIT 500;
     """).format(
         table=sql.Identifier(table_name),
         timestamp_column=sql.Identifier(timestamp_column)
