@@ -53,7 +53,14 @@ with DAG(
     delete_from_image_table = PostgresOperator(
         task_id='delete_from_image_table',
         postgres_conn_id='postgres_default',
-        sql="DELETE FROM image_table WHERE img_timestamp::timestamp < NOW() - INTERVAL '4 days';"
+        sql="""
+        DELETE FROM image_table
+            WHERE (camera_id, img_timestamp) NOT IN (
+                SELECT camera_id, MAX(img_timestamp)
+                FROM image_table
+                GROUP BY camera_id
+            );
+        """
     )
 
     # Define task dependencies (optional, depending on if they need to run sequentially)
