@@ -4,10 +4,10 @@ import plotly.express as px
 from dash import html, dcc, callback_context
 from dash.dependencies import Input, Output
 from postgresql.db_batch import *
-
-
 layout = html.Div([
-    # 1st Row with loading spinners
+    html.H3('Traffic Insights', className="text-center mb-5 mt-2"),
+    
+    # First Row
     dbc.Row([
         dbc.Col(
             dcc.Loading(
