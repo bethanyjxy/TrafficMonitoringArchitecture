@@ -274,9 +274,10 @@ def fetch_images_table():
     # Define the query to select all images 
     query = """
     SELECT DISTINCT ON (camera_id) *
-    FROM image_table
-    ORDER BY camera_id, img_timestamp::timestamp with time zone DESC;
+        FROM image_table
+        ORDER BY camera_id, img_timestamp DESC;
     """
+    #ORDER BY camera_id, img_timestamp::timestamp with time zone DESC;
     
     # Execute the query
     cursor.execute(query)
