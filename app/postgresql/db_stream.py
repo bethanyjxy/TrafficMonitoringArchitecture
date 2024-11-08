@@ -50,8 +50,8 @@ def fetch_stream_table(table_name):
     # Use sql.Identifier for safe table and column name injection
     query = sql.SQL("""
         SELECT * FROM {table}
-        WHERE ({timestamp_column}::timestamp AT TIME ZONE 'Asia/Singapore') >= %s
-        LIMIT 500;
+        WHERE (TO_TIMESTAMP({timestamp_column}, 'YYYY-MM-DD HH24:MI:SS') AT TIME ZONE 'Asia/Singapore') >= %s
+        LIMIT 500
     """).format(
         table=sql.Identifier(table_name),
         timestamp_column=sql.Identifier(timestamp_column)
