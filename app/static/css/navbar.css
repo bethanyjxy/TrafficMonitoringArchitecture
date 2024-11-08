@@ -1,7 +1,7 @@
 /* Global Settings */
 :root {
     --sidebar-width: 60px; /* Default collapsed width */
-    --sidebar-expanded-width: 200px; /* Expanded width */
+    --sidebar-expanded-width: 215px; /* Expanded width */
     --sidebar-bg-color: #343a40; /* Sidebar background */
     --font-color: white;
     --transition-duration: 0.3s;
