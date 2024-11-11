@@ -212,14 +212,13 @@ def fetch_vms_incident_correlation():
     SELECT v."Message" AS vms_message, COUNT(*) AS incident_count
     FROM vms_table v
     LEFT JOIN incident_table i
-    ON ST_DWithin(
-        ST_SetSRID(ST_MakePoint(v."Longitude", v."Latitude"), 4326),
-        ST_SetSRID(ST_MakePoint(i."Longitude", i."Latitude"), 4326),
-        11132  -- Approximately 0.1 degrees in meters
-    )
-    AND ABS(EXTRACT(EPOCH FROM (i.incident_timestamp - v."timestamp"::TIMESTAMP))) <= 3600
+    ON i."Latitude" BETWEEN v."Latitude" - 0.1 AND v."Latitude" + 0.1
+    AND i."Longitude" BETWEEN v."Longitude" - 0.1 AND v."Longitude" + 0.1
+    AND ABS(EXTRACT(EPOCH FROM (
+        TO_TIMESTAMP(i."incident_date" || '/2024 ' || i."incident_time", 'DD/MM/YYYY HH24:MI') - v."timestamp"::TIMESTAMP))) <= 3600
     GROUP BY v."Message"
     ORDER BY incident_count DESC;
+    ;
     """
     conn = connect_db()
     if not conn:
