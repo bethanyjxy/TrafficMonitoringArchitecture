@@ -23,5 +23,3 @@ remote_write:
     basic_auth:
         username : "1895912"
         password : "glc_eyJvIjoiMTI3MDgzOCIsIm4iOiJzdGFjay0xMDg5NDYwLWhtLXdyaXRlLWZ5cCIsImsiOiJzWDU5S1I4MzBLQVc3YkczZHI3dDQyS3UiLCJtIjp7InIiOiJwcm9kLWFwLXNvdXRoZWFzdC0xIn19"
-      #username: "1840228"  # Your Grafana Cloud Prometheus instance IDglobal:
-      #password: "glc_eyJvIjoiMTI0NDM5MCIsIm4iOiJzdGFjay0xMDYxNjIwLWludGVncmF0aW9uLWthaCIsImsiOiJUd0plMnU0RWt4NHBPMjh1N2E4eDNyMzgiLCJtIjp7InIiOiJwcm9kLWFwLXNvdXRoZWFzdC0xIn19"
