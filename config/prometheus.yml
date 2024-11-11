@@ -21,5 +21,7 @@ scrape_configs:
 remote_write:
   - url: "https://prometheus-prod-37-prod-ap-southeast-1.grafana.net/api/prom/push"
     basic_auth:
-      username: "1840228"  # Your Grafana Cloud Prometheus instance IDglobal:
-      password: "glc_eyJvIjoiMTI0NDM5MCIsIm4iOiJzdGFjay0xMDYxNjIwLWludGVncmF0aW9uLWthaCIsImsiOiJUd0plMnU0RWt4NHBPMjh1N2E4eDNyMzgiLCJtIjp7InIiOiJwcm9kLWFwLXNvdXRoZWFzdC0xIn19"
+        username : "1895912"
+        password : "glc_eyJvIjoiMTI3MDgzOCIsIm4iOiJzdGFjay0xMDg5NDYwLWludGVncmF0aW9uLWZ5cCIsImsiOiJZa2g4OHFxMUIzTVh3MlY1aTQ5V045RDQiLCJtIjp7InIiOiJwcm9kLWFwLXNvdXRoZWFzdC0xIn19"
+      #username: "1840228"  # Your Grafana Cloud Prometheus instance IDglobal:
+      #password: "glc_eyJvIjoiMTI0NDM5MCIsIm4iOiJzdGFjay0xMDYxNjIwLWludGVncmF0aW9uLWthaCIsImsiOiJUd0plMnU0RWt4NHBPMjh1N2E4eDNyMzgiLCJtIjp7InIiOiJwcm9kLWFwLXNvdXRoZWFzdC0xIn19"
