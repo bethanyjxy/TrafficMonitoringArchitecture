@@ -214,29 +214,6 @@ services:
     networks:
       - hadoop-network
 
-  airflow-worker-2:
-    <<: *airflow-common
-    command: celery worker
-    container_name: airflow-worker-2
-    healthcheck:
-      test:
-        - "CMD-SHELL"
-        - 'celery --app airflow.providers.celery.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}" || celery --app airflow.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}"'
-      interval: 90s
-      timeout: 15s
-      retries: 5
-      start_period: 60s
-    environment:
-      <<: *airflow-common-env
-      DUMB_INIT_SETSID: "0"
-    restart: always
-    depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
-    networks:
-      - hadoop-network
-
   airflow-triggerer:
     <<: *airflow-common
     command: triggerer
