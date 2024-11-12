@@ -7,6 +7,7 @@ def create_spark_session():
     spark = SparkSession.builder \
         .appName("KafkaToSparkStream") \
         .getOrCreate()
+    spark.sparkContext.setLogLevel("WARN")
     return spark
 
 def read_kafka_stream(spark, kafka_broker, kafka_topics):
