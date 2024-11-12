@@ -66,7 +66,11 @@ def process_stream(kafka_stream):
         .select(col("value.*"))\
         .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") ) \
         .dropDuplicates(["LinkID"])
-    speedbands_stream.show(truncate=False)    
+    
+    speedbands_stream_query = speedbands_stream.writeStream \
+        .format("console") \
+        .outputMode("append") \
+        .start()    
     speedbands_stream = speedbands_stream \
         .withColumn("MinimumSpeed", col("MinimumSpeed").cast("int")) \
         .withColumn("MaximumSpeed", col("MaximumSpeed").cast("int")) \
@@ -94,7 +98,11 @@ def process_stream(kafka_stream):
         .add("Latitude", DoubleType()) \
         .add("Longitude", DoubleType()) \
         .add("Message", StringType())
-    vms_stream.show(truncate=False)
+    
+    vms_stream_query = vms_stream.writeStream \
+        .format("console") \
+        .outputMode("append") \
+        .start()
     # VMS stream processing
     vms_stream = kafka_stream.filter(col("topic") == "traffic_vms") \
         .withColumn("value", from_json(col("value"), vms_schema)) \
@@ -106,7 +114,7 @@ def process_stream(kafka_stream):
         
 
 
-    return incident_stream, speedbands_stream, image_stream, vms_stream
+    return incident_stream,speedbands_stream_query, image_stream, vms_stream_query
 
 def write_to_console(df, table_name):
     print(f"--- Output for {table_name} ---")
