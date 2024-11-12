@@ -6,6 +6,7 @@ def create_spark_session():
     # Initialize Spark session with Kafka support
     spark = SparkSession.builder \
         .appName("KafkaToSparkStream") \
+        .config("spark.sql.streaming.forceDeleteTempCheckpointLocation", "true") \
         .getOrCreate()
     spark.sparkContext.setLogLevel("WARN")
     return spark
