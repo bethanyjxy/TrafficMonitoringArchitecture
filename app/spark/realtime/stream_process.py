@@ -8,7 +8,6 @@ def create_spark_session():
         .appName("KafkaToSparkStream") \
         .config("spark.sql.streaming.forceDeleteTempCheckpointLocation", "true") \
         .getOrCreate()
-    spark.sparkContext.setLogLevel("WARN")
     return spark
 
 def read_kafka_stream(spark, kafka_broker, kafka_topics):
