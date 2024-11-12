@@ -63,15 +63,22 @@ def process_stream(kafka_stream):
             
     speedbands_stream = kafka_stream.filter(col("topic") == "traffic_speedbands") \
         .withColumn("value", from_json(col("value"), speedbands_schema)) \
-        .select(col("value.*")) \
-        .withColumn("timestamp", date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss")) \
+        .select(col("value.*"))\
+        .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") ) \
         .dropDuplicates(["LinkID"])
-    
-    # Debug output for speedbands_stream
+        
+    speedbands_stream = speedbands_stream \
+        .withColumn("MinimumSpeed", col("MinimumSpeed").cast("int")) \
+        .withColumn("MaximumSpeed", col("MaximumSpeed").cast("int")) \
+        .withColumn("StartLon", col("StartLon").cast("double")) \
+        .withColumn("StartLat", col("StartLat").cast("double")) \
+        .withColumn("EndLon", col("EndLon").cast("double")) \
+        .withColumn("EndLat", col("EndLat").cast("double"))    
+        
     speedbands_stream_query = speedbands_stream.writeStream \
         .format("console") \
         .outputMode("append") \
-        .start()   
+        .start()
         
     images_schema = StructType() \
         .add("camera_id", StringType()) \
@@ -87,20 +94,27 @@ def process_stream(kafka_stream):
         .na.drop()
        # .withColumn("Location", map_camera_id_udf(col("camera_id")))  
         
+    vms_schema = StructType() \
+        .add("EquipmentID", StringType()) \
+        .add("Latitude", DoubleType()) \
+        .add("Longitude", DoubleType()) \
+        .add("Message", StringType())
+    
+    # VMS stream processing
     vms_stream = kafka_stream.filter(col("topic") == "traffic_vms") \
         .withColumn("value", from_json(col("value"), vms_schema)) \
-        .select(col("value.*")) \
+        .select(col("value.*"))\
         .filter(col("Message") != "") \
-        .withColumn("timestamp", date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss")) \
+        .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") ) \
         .dropDuplicates(["EquipmentID"])
-    
-    # Debug output for vms_stream
+
     vms_stream_query = vms_stream.writeStream \
         .format("console") \
         .outputMode("append") \
         .start()
-    
-    return incident_stream, speedbands_stream_query, image_stream, vms_stream_query
+
+
+    return incident_stream,  speedbands_stream_query, image_stream, vms_stream_query
 
 def write_to_console(df, table_name):
     print(f"--- Output for {table_name} ---")
