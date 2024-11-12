@@ -54,12 +54,12 @@ def process_stream(kafka_stream):
         .add("RoadName", StringType()) \
         .add("RoadCategory", StringType()) \
         .add("SpeedBand", IntegerType()) \
-        .add("MinimumSpeed", StringType()) \
-        .add("MaximumSpeed", StringType()) \
-        .add("StartLon", StringType()) \
-        .add("StartLat", StringType()) \
-        .add("EndLon", StringType()) \
-        .add("EndLat", StringType())  
+        .add("MinimumSpeed", IntegerType()) \
+        .add("MaximumSpeed", IntegerType()) \
+        .add("StartLon", DoubleType()) \
+        .add("StartLat", DoubleType()) \
+        .add("EndLon", DoubleType()) \
+        .add("EndLat", DoubleType())  
             
     speedbands_stream = kafka_stream.filter(col("topic") == "traffic_speedbands") \
         .withColumn("value", from_json(col("value"), speedbands_schema)) \
@@ -67,19 +67,7 @@ def process_stream(kafka_stream):
         .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") ) \
         .dropDuplicates(["LinkID"])
         
-    speedbands_stream = speedbands_stream \
-        .withColumn("MinimumSpeed", col("MinimumSpeed").cast("int")) \
-        .withColumn("MaximumSpeed", col("MaximumSpeed").cast("int")) \
-        .withColumn("StartLon", col("StartLon").cast("double")) \
-        .withColumn("StartLat", col("StartLat").cast("double")) \
-        .withColumn("EndLon", col("EndLon").cast("double")) \
-        .withColumn("EndLat", col("EndLat").cast("double"))    
-        
-    speedbands_stream_query = speedbands_stream.writeStream \
-        .format("console") \
-        .outputMode("append") \
-        .start()
-        
+    
     images_schema = StructType() \
         .add("camera_id", StringType()) \
         .add("image_url", StringType())\
@@ -108,13 +96,10 @@ def process_stream(kafka_stream):
         .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") ) \
         .dropDuplicates(["EquipmentID"])
 
-    vms_stream_query = vms_stream.writeStream \
-        .format("console") \
-        .outputMode("append") \
-        .start()
+        
 
 
-    return incident_stream,  speedbands_stream_query, image_stream, vms_stream_query
+    return incident_stream, speedbands_stream, image_stream, vms_stream
 
 def write_to_console(df, table_name):
     print(f"--- Output for {table_name} ---")
