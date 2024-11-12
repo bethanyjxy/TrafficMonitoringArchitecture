@@ -109,6 +109,7 @@ def process_stream(kafka_stream):
     return incident_stream, speedbands_stream, image_stream, vms_stream
 
 def write_to_console(df, table_name):
+    print(f"--- Output for {table_name} ---")
     # Output the dataframe to the console for testing purposes
     df.show(truncate=False)
 
