@@ -17,7 +17,7 @@ def read_kafka_stream(spark, kafka_broker, kafka_topics):
         .format("kafka") \
         .option("kafka.bootstrap.servers", kafka_broker) \
         .option("subscribe", kafka_topics) \
-        .option("startingOffsets", "earliest") \
+        .option("startingOffsets", "latest") \
         .load()
 
     # Select and cast the Kafka value (which is in bytes) to String
@@ -66,7 +66,7 @@ def process_stream(kafka_stream):
         .select(col("value.*"))\
         .withColumn("timestamp",date_format(current_timestamp(), "yyyy-MM-dd HH:mm:ss") ) \
         .dropDuplicates(["LinkID"])
-        
+    speedbands_stream.show(truncate=False)    
     speedbands_stream = speedbands_stream \
         .withColumn("MinimumSpeed", col("MinimumSpeed").cast("int")) \
         .withColumn("MaximumSpeed", col("MaximumSpeed").cast("int")) \
@@ -94,7 +94,7 @@ def process_stream(kafka_stream):
         .add("Latitude", DoubleType()) \
         .add("Longitude", DoubleType()) \
         .add("Message", StringType())
-    
+    vms_stream.show(truncate=False)
     # VMS stream processing
     vms_stream = kafka_stream.filter(col("topic") == "traffic_vms") \
         .withColumn("value", from_json(col("value"), vms_schema)) \
