@@ -26,11 +26,14 @@ SPARK_POSTGRES = {
 '''
 def write_to_postgres(df, table_name, postgres_url, postgres_properties):
     try:
+        # Log the count and schema of the DataFrame
+        print(f"Writing to PostgreSQL table {table_name}. Row count: {df.count()}")
+        df.printSchema()
+        df.show()  # Print a sample of the DataFrame rows
         df.write.jdbc(url=postgres_url['url'], table=table_name, mode="append", properties=postgres_properties)
     except Exception as e:
         print(f"Error writing to PostgreSQL table {table_name}: {e}")
         raise
-
 
 def main():
     # Kafka configurations

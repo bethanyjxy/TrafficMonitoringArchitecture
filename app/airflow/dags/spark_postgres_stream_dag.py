@@ -37,6 +37,6 @@ run_spark_postgres_stream = BashOperator(
         /opt/airflow/app/spark/realtime/postgres_stream.py \
         2>&1
     ''',
-    execution_timeout=timedelta(days=7),
+    execution_timeout=timedelta(days=30),
     dag=dag,
 )
