@@ -16,7 +16,7 @@ def read_kafka_stream(spark, kafka_broker, kafka_topics):
         .format("kafka") \
         .option("kafka.bootstrap.servers", kafka_broker) \
         .option("subscribe", kafka_topics) \
-        .option("startingOffsets", "earliest") \
+        .option("startingOffsets", "latest") \
         .load()
 
     # Select and cast the Kafka value (which is in bytes) to String
