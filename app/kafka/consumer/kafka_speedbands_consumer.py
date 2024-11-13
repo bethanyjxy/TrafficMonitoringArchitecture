@@ -8,6 +8,9 @@ consumer = initialize_consumer(topic)
 def consume_kafka_messages():
     """Continuously consume Kafka messages and send them to HDFS."""
     print(f"Listening to {topic} topic...")
+    batch_size = 10  # Commit every 10 messages
+    message_count = 0
+
     try:
         while True:
             msg = consumer.poll(timeout=1.0)
@@ -17,7 +20,14 @@ def consume_kafka_messages():
             if not handle_errors(msg):
                 continue
             handle_speedbands_message(msg)
-            commit_offsets(consumer)
+
+            # Increment the message counter
+            message_count += 1
+
+            # Commit offsets after every batch of messages
+            if message_count >= batch_size:
+                commit_offsets(consumer)
+                message_count = 0  # Reset the counter after committing
     except KeyboardInterrupt:
         pass
     finally:
