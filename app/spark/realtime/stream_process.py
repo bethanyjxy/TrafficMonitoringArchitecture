@@ -110,9 +110,12 @@ def process_stream(kafka_stream):
     return incident_stream, speedbands_stream, image_stream, vms_stream
 
 def write_to_console(df, table_name):
-    print(f"--- Output for {table_name} ---")
-    # Output the dataframe to the console for testing purposes
-    df.show(truncate=False)
+
+    if df.count() > 0:
+        print(f"--- Output for {table_name} ---")
+        df.show(truncate=False)
+    else:
+        print(f"--- No data for {table_name} ---")
 
 def main():
     # Kafka configurations
@@ -124,7 +127,11 @@ def main():
 
     # Read Kafka stream
     kafka_stream = read_kafka_stream(spark, kafka_broker, kafka_topics)
-
+    kafka_stream = kafka_stream.selectExpr("CAST(topic AS STRING)", "CAST(value AS STRING)")
+    kafka_stream.writeStream \
+    .format("console") \
+    .outputMode("append") \
+    .start()
     # Process streams
     incident_stream, speedbands_stream, image_stream, vms_stream = process_stream(kafka_stream)
 
