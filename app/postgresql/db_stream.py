@@ -367,10 +367,11 @@ def fetch_road_speed_performance_data():
         return pd.DataFrame()
 
     query = """
-    SELECT "RoadName", AVG("MaximumSpeed") AS average_speed
+    SELECT "RoadName", AVG((CAST("MinimumSpeed" AS FLOAT) + CAST("MaximumSpeed" AS FLOAT)) / 2) AS avg_speed
     FROM speedbands_table
+    WHERE DATE(("timestamp"::timestamp AT TIME ZONE 'UTC') + INTERVAL '8 hours') = CURRENT_DATE
     GROUP BY "RoadName"
-    ORDER BY average_speed DESC
+    ORDER BY avg_speed DESC
     """
     with conn.cursor() as cursor:
         cursor.execute(query)
