@@ -246,6 +246,7 @@ def fetch_vehicle_type_incidents():
     query = """
     SELECT "Type" AS vehicle_type, COUNT(*) AS vehicle_count
     FROM incident_table
+    WHERE TO_DATE(incident_date || '/' || EXTRACT(YEAR FROM CURRENT_DATE), 'DD/MM/YYYY') = CURRENT_DATE
     GROUP BY vehicle_type
     ORDER BY vehicle_count DESC;
     """
@@ -298,10 +299,12 @@ def fetch_traffic_jams():
     """Fetch traffic jams by selecting records with SpeedBand < 3 and calculating total count and average speed."""
     query = """
     SELECT 
-        COUNT(*) AS jam_count,
-        AVG((CAST("MinimumSpeed" AS FLOAT) + CAST("MaximumSpeed" AS FLOAT)) / 2) AS avg_speed
+    COUNT(*) AS jam_count,
+    AVG((CAST("MinimumSpeed" AS FLOAT) + CAST("MaximumSpeed" AS FLOAT)) / 2) AS avg_speed
     FROM speedbands_table
-    WHERE "SpeedBand" < 3;
+    WHERE "SpeedBand" < 3
+    AND DATE(("timestamp"::timestamp AT TIME ZONE 'UTC') + INTERVAL '8 hours') = CURRENT_DATE;
+        
     """
     
     conn = connect_db()
