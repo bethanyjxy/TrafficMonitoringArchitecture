@@ -12,7 +12,7 @@ default_args = {
     'depends_on_past': False,
     'email_on_failure': False,
     'email_on_retry': False,
-    'retries': 1,  # Retry once if the task fails
+    'retries': 5,  # Retry once if the task fails
 
 }
 
