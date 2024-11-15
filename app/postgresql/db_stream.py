@@ -383,10 +383,12 @@ def fetch_road_speed_performance_data():
 def fetch_recent_vms_messages():
     """Fetch recent messages from the VMS table."""
     query = """
-    SELECT "timestamp", "Message"
+    SELECT 
+    ("timestamp"::timestamp AT TIME ZONE 'UTC') AT TIME ZONE 'Singapore' AS "timestamp_sgt",
+    "Message"
     FROM vms_table
-    ORDER BY "timestamp" DESC
-    LIMIT 10;  -- Limit to the most recent 10 messages
+    ORDER BY "timestamp_sgt" DESC
+    LIMIT 10; -- Limit to the most recent 10 messages
     """
     conn = connect_db()
     if not conn:
