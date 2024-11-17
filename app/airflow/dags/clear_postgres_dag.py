@@ -14,7 +14,7 @@ with DAG(
     'delete_old_records',
     default_args=default_args,
     description='DAG to delete old records from Postgres tables',
-    schedule_interval=timedelta(days=4),
+    schedule_interval=timedelta(days=2),
     start_date=pendulum.today('UTC'),
     catchup=False,
 ) as dag:
@@ -25,7 +25,7 @@ with DAG(
     postgres_conn_id='postgres_default',
     sql="""
         DELETE FROM incident_table 
-        WHERE timestamp::timestamp < NOW() - INTERVAL '3 days';
+        WHERE timestamp::timestamp < NOW() - INTERVAL '2 days';
     """
     )
 
@@ -35,7 +35,7 @@ with DAG(
         postgres_conn_id='postgres_default',
         sql="""
             DELETE FROM speedbands_table 
-            WHERE timestamp::timestamp < NOW() - INTERVAL '3 days';
+            WHERE timestamp::timestamp < NOW() - INTERVAL '2 days';
         """
     )
 
@@ -45,7 +45,7 @@ with DAG(
         postgres_conn_id='postgres_default',
         sql="""
             DELETE FROM vms_table 
-            WHERE timestamp::timestamp < NOW() - INTERVAL '3 days';
+            WHERE timestamp::timestamp < NOW() - INTERVAL '2 days';
         """
     )
 
