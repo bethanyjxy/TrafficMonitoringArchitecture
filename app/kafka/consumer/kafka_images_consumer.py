@@ -38,7 +38,7 @@ def handle_images_message(message):
     """Process traffic images messages."""
     data = json.loads(message.value().decode('utf-8'))
     print(f"Received traffic image: {data}")
-    send_to_hdfs(topic, data)
+    #send_to_hdfs(topic, data)  #enable this if sufficient disk memory is available 
 
 if __name__ == "__main__":
     consume_kafka_messages()
