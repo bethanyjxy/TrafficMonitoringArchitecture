@@ -25,7 +25,7 @@ with DAG(
     postgres_conn_id='postgres_default',
     sql="""
         DELETE FROM incident_table 
-        WHERE timestamp::timestamp < NOW() - INTERVAL '4 days';
+        WHERE timestamp::timestamp < NOW() - INTERVAL '3 days';
     """
     )
 
@@ -35,7 +35,7 @@ with DAG(
         postgres_conn_id='postgres_default',
         sql="""
             DELETE FROM speedbands_table 
-            WHERE timestamp::timestamp < NOW() - INTERVAL '4 days';
+            WHERE timestamp::timestamp < NOW() - INTERVAL '3 days';
         """
     )
 
@@ -45,7 +45,7 @@ with DAG(
         postgres_conn_id='postgres_default',
         sql="""
             DELETE FROM vms_table 
-            WHERE timestamp::timestamp < NOW() - INTERVAL '4 days';
+            WHERE timestamp::timestamp < NOW() - INTERVAL '3 days';
         """
     )
 
