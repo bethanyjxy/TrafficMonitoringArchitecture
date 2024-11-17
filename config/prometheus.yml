@@ -8,15 +8,15 @@ scrape_configs:
 
   - job_name: 'prometheus'  # For Prometheus itself.
     static_configs:
-      - targets: ['34.1.133.197:9090']
+      - targets: ['35.247.149.151:9090']
 
   - job_name: 'node_exporter'  # Scrape Node Exporter.
     static_configs:
-      - targets: ['34.1.133.197:9100']  # Replace <vm-ip> with your VM IP.
+      - targets: ['35.247.149.151:9100']  # Replace <vm-ip> with your VM IP.
 
   - job_name: 'cadvisor'  # Scrape cAdvisor metrics.
     static_configs:
-      - targets: ['34.1.133.197:8081']
+      - targets: ['35.247.149.151:8081']
 
 remote_write:
   - url: "https://prometheus-prod-37-prod-ap-southeast-1.grafana.net/api/prom/push"
