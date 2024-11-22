@@ -218,7 +218,7 @@ def fetch_incidents_today():
             TO_TIMESTAMP(incident_date || '/' || EXTRACT(YEAR FROM CURRENT_DATE) || ' ' || incident_time, 'DD/MM/YYYY HH24:MI') AS incident_datetime,
             COUNT(*) AS incident_count
         FROM incident_table
-        WHERE TO_DATE(incident_date || '/' || EXTRACT(YEAR FROM CURRENT_DATE), 'DD/MM/YYYY') = CURRENT_DATE
+        WHERE TO_DATE(incident_date || '/' || EXTRACT(YEAR FROM TIMEZONE('Asia/Singapore', NOW())), 'DD/MM/YYYY') = TIMEZONE('Asia/Singapore', NOW())::date
         GROUP BY incident_datetime
         ORDER BY incident_datetime
     )
