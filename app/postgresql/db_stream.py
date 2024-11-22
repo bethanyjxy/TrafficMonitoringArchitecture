@@ -352,6 +352,7 @@ def fetch_speed_trend_data():
     query = """
     SELECT timestamp, AVG("MaximumSpeed") AS average_speed
     FROM speedbands_table
+    WHERE DATE(("timestamp"::timestamp AT TIME ZONE 'UTC') + INTERVAL '8 hours') = CURRENT_DATE
     GROUP BY timestamp
     ORDER BY timestamp
     """
