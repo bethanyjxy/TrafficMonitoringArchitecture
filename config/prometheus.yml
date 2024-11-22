@@ -4,7 +4,7 @@ global:
 scrape_configs:
   - job_name: 'airflow'
     static_configs:
-      - targets: ['35.247.149.151:9102']  # This is the StatsD exporter
+      - targets: ['statsd-exporter:9102']  # This is the StatsD exporter
 
   - job_name: 'prometheus'  # For Prometheus itself.
     static_configs:
