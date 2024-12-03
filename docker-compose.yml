@@ -36,6 +36,10 @@ x-airflow-common: &airflow-common
     KAFKA_TOPIC_TRAFFIC_IMAGES: traffic_images
     KAFKA_TOPIC_TRAFFIC_SPEEDBANDS: traffic_speedbands
     KAFKA_TOPIC_TRAFFIC_VMS: traffic_vms
+    # Log Rotation and Retention Settings for minimal disk usage
+    AIRFLOW__LOGGING__LOG_RETENTION: 2  # Retain logs for 2 days only
+    AIRFLOW__LOGGING__MAX_LOG_SIZE: 10485760  # Max log size (10 MB per file)
+    AIRFLOW__LOGGING__LOG_ROTATE_INTERVAL: 86400  # Rotate logs every 24 hours (in seconds)
 
   volumes:
     - ./app/airflow/dags:/opt/airflow/dags
