@@ -66,6 +66,7 @@ services:
       - hadoop-network
     ports:
       - "3100:3100"
+    restart: always
     volumes:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -75,6 +76,7 @@ services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
+    restart: always
     networks:
       - hadoop-network
     ports:
@@ -89,6 +91,7 @@ services:
   node_exporter:
     image: quay.io/prometheus/node-exporter:latest
     container_name: node_exporter
+    restart: always
     networks:
       - hadoop-network
     ports:
@@ -102,6 +105,7 @@ services:
     ports:
       - "9125:9125/udp"
       - "9102:9102"  # Prometheus will scrape this port
+    restart: always
     environment:
       - STATSD_MAPPING_CONFIG=/tmp/statsd_mapping.yml
     volumes:
@@ -114,6 +118,7 @@ services:
     container_name: prometheus
     volumes:
       - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+    restart: always
     ports:
       - "9090:9090" # You can expose Prometheus here if you want to test locally
     networks:
@@ -331,6 +336,7 @@ services:
     container_name: zookeeper
     networks:
       - hadoop-network
+    restart: always
     environment:
       - ZOO_PORT_NUMBER=2181
       - ALLOW_ANONYMOUS_LOGIN=yes
@@ -346,6 +352,7 @@ services:
       - hadoop-network
     ports:
       - '9092:9092'
+    restart: always
     depends_on:
       - zookeeper
     environment:
@@ -466,6 +473,7 @@ services:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077
       - SPARK_RPC_MESSAGE_MAXSIZE=1024
+    restart: always
     depends_on:
       - spark-master
     networks:
