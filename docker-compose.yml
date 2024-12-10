@@ -66,12 +66,11 @@ services:
       - hadoop-network
     ports:
       - "3100:3100"
-    restart: always
     volumes:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./loki-config.yml:/etc/loki/loki-config.yml:ro
-    restart: unless-stopped
+    restart: always
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
@@ -81,22 +80,21 @@ services:
       - hadoop-network
     ports:
       - "8081:8080"  # Expose cAdvisor's metrics API
+    restart: always
     volumes:
       - /:/rootfs:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
-    restart: unless-stopped
 
   node_exporter:
     image: quay.io/prometheus/node-exporter:latest
     container_name: node_exporter
-    restart: always
     networks:
       - hadoop-network
     ports:
       - "9100:9100"  # Expose Node Exporter's metrics API
-    restart: unless-stopped
+    restart: always
 
   statsd-exporter:
     image: prom/statsd-exporter:latest
@@ -352,7 +350,6 @@ services:
       - hadoop-network
     ports:
       - '9092:9092'
-    restart: always
     depends_on:
       - zookeeper
     environment:
@@ -362,7 +359,6 @@ services:
       - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092
       - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
       - ALLOW_PLAINTEXT_LISTENER=yes
-
     restart: always
     healthcheck:
       test: [ "CMD", "nc", "-z", "kafka", "9092" ]
